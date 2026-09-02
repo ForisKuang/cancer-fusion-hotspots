@@ -231,6 +231,8 @@ def normalize(
                 Annotation=row.get("Annotation"),
                 Event_info=row.get("Event_Info"),
                 Source_row_number=source_row_number,
+                Tumor_type=clinical_row.get("Tumor_type"),
+                Oncotree_code=clinical_row.get("Oncotree_code"),
             )
         )
 

@@ -1,8 +1,10 @@
+import json
 from unittest.mock import MagicMock
 
 import pytest
 
 from cfh.genes.registry import load_gene_config
+from cfh.mapping import genome_nexus_source as gns
 from cfh.mapping import transcript_source
 
 
@@ -78,3 +80,72 @@ def test_ensembl_client_calls_expected_url_and_params(monkeypatch):
     args, kwargs = mock_session.get.call_args
     assert args[0] == "https://rest.ensembl.org/overlap/translation/ENSP00000288602"
     assert kwargs["params"] == {"feature": "protein_feature"}
+
+
+def test_resolve_breakpoint_protein_position_prefers_annotation_exon():
+    gene_config = load_gene_config("braf")
+    result = transcript_source.resolve_breakpoint_protein_position(
+        "KIAA1549-BRAF fusion, exon16:exon9, in-frame", gene_config
+    )
+    assert result.source == "annotation"
+    assert result.breakpoint_exon == 16
+
+
+def test_resolve_breakpoint_protein_position_uses_genome_nexus_for_real_estimate(
+    genome_nexus_canonical_transcript_fixture_path,
+):
+    gene_config = load_gene_config("braf")
+    payload = json.loads(genome_nexus_canonical_transcript_fixture_path.read_text())
+    mock_gn_client = MagicMock()
+    mock_gn_client.fetch_canonical_transcript.return_value = payload
+
+    canonical = gns.parse_canonical_transcript(payload)
+    exon5 = next(e for e in canonical.exons if e.rank == 5)
+    breakpoint_genomic = exon5.start + 62
+
+    result = transcript_source.resolve_breakpoint_protein_position(
+        None,
+        gene_config,
+        breakpoint_genomic=breakpoint_genomic,
+        genome_nexus_client=mock_gn_client,
+    )
+
+    assert result.source == "genome_nexus_fallback"
+    assert result.breakpoint_protein_position is not None
+    assert result.is_intronic_breakpoint is False
+    assert result.breakpoint_exon == 5
+    assert result.transcript_id == "NM_004333"
+
+
+def test_resolve_breakpoint_protein_position_falls_back_to_ensembl_when_gene_not_in_genome_nexus():
+    gene_config = load_gene_config("braf")
+    mock_gn_client = MagicMock()
+    mock_gn_client.fetch_canonical_transcript.side_effect = gns.GenomeNexusGeneNotFound("nope")
+    mock_ensembl_client = MagicMock()
+    mock_ensembl_client.fetch_protein_features.return_value = []
+
+    result = transcript_source.resolve_breakpoint_protein_position(
+        None,
+        gene_config,
+        breakpoint_genomic=140507800,
+        genome_nexus_client=mock_gn_client,
+        ensembl_protein_id="ENSP00000288602",
+        ensembl_client=mock_ensembl_client,
+    )
+
+    assert result.source == "ensembl_fallback"
+    mock_ensembl_client.fetch_protein_features.assert_called_once_with("ENSP00000288602")
+
+
+def test_resolve_breakpoint_protein_position_raises_when_genuinely_unmappable():
+    gene_config = load_gene_config("braf")
+    mock_gn_client = MagicMock()
+    mock_gn_client.fetch_canonical_transcript.side_effect = gns.GenomeNexusGeneNotFound("nope")
+
+    with pytest.raises(transcript_source.EnsemblFallbackUnavailable):
+        transcript_source.resolve_breakpoint_protein_position(
+            None,
+            gene_config,
+            breakpoint_genomic=140507800,
+            genome_nexus_client=mock_gn_client,
+        )

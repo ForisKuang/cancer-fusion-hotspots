@@ -1,8 +1,11 @@
 """Resolve a fusion breakpoint to a transcript/exon position.
 
 Primary source: exon numbers already present in the cBioPortal SV
-annotation text. Fallback: Ensembl's REST overlap API for the protein's
-features, used when the annotation doesn't mention an exon at all.
+annotation text. Fallbacks, in order: Genome Nexus's canonical-transcript
+exon structure (real breakpoint-to-protein-position mapping from a genomic
+coordinate, keyed only by gene symbol), then Ensembl's REST overlap API
+for the protein's features (keyed by an Ensembl protein id), used when the
+annotation doesn't mention an exon at all.
 """
 
 from __future__ import annotations
@@ -14,6 +17,12 @@ from typing import Any
 import requests
 
 from cfh.genes.registry import GeneConfig
+from cfh.mapping.genome_nexus_source import (
+    GenomeNexusClient,
+    GenomeNexusGeneNotFound,
+    map_genomic_breakpoint_to_protein_position,
+    parse_canonical_transcript,
+)
 
 _EXON_PATTERN = re.compile(r"exon\s*(\d+)", re.IGNORECASE)
 
@@ -44,6 +53,15 @@ class TranscriptMapping:
     stays ``None`` on this path -- that is a data-source limitation, not a
     silently-dropped answer.
     """
+    breakpoint_protein_position: int | None = None
+    """Estimated protein residue for the breakpoint, computed from Genome
+    Nexus exon coordinates via :func:`~cfh.mapping.genome_nexus_source.
+    map_genomic_breakpoint_to_protein_position` (source ==
+    ``"genome_nexus_fallback"``). Unlike the Ensembl overlap fallback, this
+    path produces a real position estimate, not just an "is there a
+    feature here" check.
+    """
+    is_intronic_breakpoint: bool | None = None
 
 
 class EnsemblClient:
@@ -132,4 +150,81 @@ def resolve_transcript_mapping(
         source="ensembl_fallback",
         ensembl_features=features,
         breakpoint_protein_features=breakpoint_protein_features,
+    )
+
+
+def resolve_breakpoint_protein_position(
+    annotation: str | None,
+    gene_config: GeneConfig,
+    *,
+    breakpoint_genomic: int | None = None,
+    genome_nexus_client: "GenomeNexusClient | None" = None,
+    ensembl_protein_id: str | None = None,
+    ensembl_client: "EnsemblClient | Any | None" = None,
+) -> TranscriptMapping:
+    """Resolve a breakpoint to a real protein-position estimate where possible.
+
+    Fallback order when the annotation has no exon number:
+
+    1. Genome Nexus's canonical-transcript endpoint (keyed only by
+       ``gene_config.gene_symbol`` -- no pre-existing Ensembl protein id
+       needed). When a ``breakpoint_genomic`` coordinate is supplied, this
+       uses the transcript's real exon coordinates to compute an actual
+       protein-position estimate
+       (:func:`~cfh.mapping.genome_nexus_source.map_genomic_breakpoint_to_protein_position`),
+       not just a "some feature overlaps here" flag.
+    2. If Genome Nexus has no canonical-transcript mapping for this gene at
+       all (:class:`~cfh.mapping.genome_nexus_source.GenomeNexusGeneNotFound`),
+       falls back to the Ensembl ``overlap/translation`` protein-feature
+       check from :func:`resolve_transcript_mapping`, when
+       ``ensembl_protein_id`` is supplied.
+    3. If neither is available, raises :class:`EnsemblFallbackUnavailable`
+       -- the genuinely unmappable case.
+    """
+    exon = extract_exon_from_annotation(annotation)
+    if exon is not None:
+        return TranscriptMapping(
+            transcript_id=gene_config.canonical_transcript_id,
+            breakpoint_exon=exon,
+            source="annotation",
+        )
+
+    client = genome_nexus_client or GenomeNexusClient()
+    try:
+        payload = client.fetch_canonical_transcript(gene_config.gene_symbol)
+    except GenomeNexusGeneNotFound:
+        payload = None
+
+    if payload is not None:
+        canonical = parse_canonical_transcript(payload)
+        if breakpoint_genomic is not None and canonical.exons:
+            strand = canonical.exons[0].strand
+            position = map_genomic_breakpoint_to_protein_position(
+                canonical.exons, breakpoint_genomic, strand
+            )
+            return TranscriptMapping(
+                transcript_id=canonical.refseq_mrna_id or canonical.transcript_id,
+                breakpoint_exon=position.exon_rank,
+                source="genome_nexus_fallback",
+                breakpoint_protein_position=position.protein_position,
+                is_intronic_breakpoint=position.is_intronic,
+            )
+        return TranscriptMapping(
+            transcript_id=canonical.refseq_mrna_id or canonical.transcript_id,
+            breakpoint_exon=None,
+            source="genome_nexus_fallback",
+        )
+
+    if ensembl_protein_id:
+        return resolve_transcript_mapping(
+            annotation,
+            gene_config,
+            ensembl_protein_id=ensembl_protein_id,
+            ensembl_client=ensembl_client,
+        )
+
+    raise EnsemblFallbackUnavailable(
+        "annotation has no exon number, Genome Nexus has no canonical-transcript "
+        "mapping for this gene, and no ensembl_protein_id was supplied -- no "
+        "fallback could be attempted"
     )

@@ -19,12 +19,15 @@ pipeline that:
    either from a downloaded study archive or the cBioPortal REST API.
 2. **Normalizes** raw SV rows into a typed `FusionEvent` model, classifying
    event type (fusion / deletion / inversion / translocation), reading
-   frame, and 5'/3' orientation without ever guessing when the source data
-   is ambiguous.
+   frame, 5'/3' orientation, and tumor-type/OncoTree provenance (joined
+   from clinical data) without ever guessing when the source data is
+   ambiguous.
 3. **Maps** each event's breakpoint onto transcript exons and protein
-   domains (via RefSeq annotations, with an Ensembl REST fallback, and
-   UniProt/InterPro domain sources), producing a `FusionFeature` describing
-   which domains are retained, disrupted, or lost.
+   domains (via RefSeq annotations, Genome Nexus's canonical-transcript
+   and exon-coordinate data as the primary generic fallback, and an
+   Ensembl REST / UniProt+InterPro cross-check), producing a
+   `FusionFeature` describing which domains are retained, disrupted, or
+   lost.
 4. **Runs pluggable hotspot-detection algorithms** against the normalized
    events and features, each producing a structured `AlgorithmResult`.
 
