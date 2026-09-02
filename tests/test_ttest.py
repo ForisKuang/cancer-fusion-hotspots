@@ -1,3 +1,4 @@
+import math
 import random
 
 import pytest
@@ -49,3 +50,30 @@ def test_positive_and_negative_controls():
 def test_requires_at_least_two_observations_per_group():
     with pytest.raises(ValueError):
         welch_t_test([1.0], [1.0, 2.0])
+
+
+def test_zero_variance_groups_with_different_values_matches_scipy():
+    """Regression test: both groups constant but different values must not
+    raise (Satterthwaite df was previously a 0/0 ZeroDivisionError)."""
+    group_a = [1.0, 1.0]
+    group_b = [2.0, 2.0]
+
+    result = welch_t_test(group_a, group_b)
+    expected = ttest_ind(group_a, group_b, equal_var=False)
+
+    assert result["t_statistic"] == expected.statistic
+    assert result["p_value"] == pytest.approx(expected.pvalue)
+    assert result["df"] == pytest.approx(float(expected.df))
+
+
+def test_zero_variance_identical_groups_does_not_raise():
+    """Regression test: both groups constant and equal must also not raise."""
+    group_a = [5.0, 5.0]
+    group_b = [5.0, 5.0]
+
+    result = welch_t_test(group_a, group_b)
+    expected = ttest_ind(group_a, group_b, equal_var=False)
+
+    assert result["df"] == pytest.approx(float(expected.df))
+    assert math.isnan(result["t_statistic"])
+    assert math.isnan(result["p_value"])

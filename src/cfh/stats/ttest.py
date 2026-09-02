@@ -22,6 +22,10 @@ def _welch_satterthwaite_df(group_a: list[float], group_b: list[float]) -> float
     se_b2 = var_b / n_b
     numerator = (se_a2 + se_b2) ** 2
     denominator = (se_a2**2) / (n_a - 1) + (se_b2**2) / (n_b - 1)
+    if denominator == 0:
+        # Both groups have zero variance -- the Satterthwaite formula is 0/0.
+        # scipy.stats.ttest_ind falls back to df=1.0 in this case; match it.
+        return 1.0
     return numerator / denominator
 
 

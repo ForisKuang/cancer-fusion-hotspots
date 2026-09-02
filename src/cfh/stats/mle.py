@@ -80,6 +80,12 @@ def binomial_mle_confidence_interval(
     else:
         raise ValueError(f"Unknown method {method!r}; expected 'wilson' or 'clopper_pearson'")
 
+    # Floating-point residue can otherwise place the interval bound on the
+    # wrong side of the point estimate at the successes=0 or successes=n
+    # boundary (e.g. ci_high == 0.9999999999999999 when point_estimate == 1.0).
+    ci_low = min(ci_low, point_estimate)
+    ci_high = max(ci_high, point_estimate)
+
     return {
         "point_estimate": point_estimate,
         "ci_low": ci_low,

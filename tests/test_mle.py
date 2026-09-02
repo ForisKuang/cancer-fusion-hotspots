@@ -59,3 +59,14 @@ def test_invalid_counts_raise():
         binomial_mle_confidence_interval(11, 10)
     with pytest.raises(ValueError):
         binomial_mle_confidence_interval(1, 0)
+
+
+@pytest.mark.parametrize("method", ["wilson", "clopper_pearson"])
+@pytest.mark.parametrize("successes,n", [(0, 100), (100, 100)])
+def test_boundary_cases_keep_estimate_within_interval_exactly(successes, n, method):
+    """Regression test: floating-point residue must never place the point
+    estimate outside its own confidence interval at the successes=0 or
+    successes=n boundary (e.g. ci_high == 0.9999999999999999 < 1.0)."""
+    result = binomial_mle_confidence_interval(successes, n, method=method)
+
+    assert result["ci_low"] <= result["point_estimate"] <= result["ci_high"]
