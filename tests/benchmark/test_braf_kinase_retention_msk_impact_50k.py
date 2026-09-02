@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -15,7 +17,11 @@ from cfh.mapping.feature_mapper import map_event
 from cfh.mapping.transcript_source import resolve_breakpoint_protein_position
 from cfh.model.fusion_event import FusionEvent
 from cfh.model.fusion_feature import FusionFeature
-from cfh.stats.breakpoint_tests import fishers_frame_domain_test, permutation_null_test
+from cfh.stats.breakpoint_tests import (
+    build_frame_domain_contingency_table,
+    fishers_frame_domain_test,
+    permutation_null_test,
+)
 
 _FIXTURE = Path(__file__).parents[1] / "fixtures" / "braf_fusion_calls_benchmark.json"
 _PROFILE_ID = "msk_impact_50k_2026_structural_variants"
@@ -64,7 +70,20 @@ def _assert_benchmark(events: list[FusionEvent], features: list[FusionFeature]) 
 
 def test_braf_kinase_retention_is_enriched_in_fixture():
     events, features = _fixture_events_and_features()
-    _assert_benchmark(events, features)
+    config = load_gene_config("braf")
+    table = build_frame_domain_contingency_table(events, features, config)
+    odds_ratio, p_value = fishers_frame_domain_test(table)
+
+    assert table == [[6, 0], [0, 8]]
+    assert odds_ratio == float("inf")
+    assert p_value == pytest.approx(0.000333000333000333)
+
+    result = DomainRetentionAlgorithm().run(
+        events, features, config, {"seed": 42, "n_permutations": 1_000}
+    )
+    assert result.Tables["frame_domain_contingency_table"] == table
+    assert result.Summary["fisher_odds_ratio"] == odds_ratio
+    assert result.Summary["fisher_p_value"] == pytest.approx(p_value)
 
 
 def test_fisher_handles_the_paper_like_zero_off_diagonal_cell():
@@ -135,6 +154,81 @@ def _real_events_and_features(calls: list[dict]) -> tuple[list[FusionEvent], lis
             )
         )
     return events, features
+
+
+def test_real_call_field_mapping_covers_braf_connection_orientations(monkeypatch):
+    """Exercise the live-path field aliases and all BRAF orientation branches offline."""
+    resolved_breakpoints = []
+    mapped_features = []
+
+    def fake_resolve(_annotation, _config, *, breakpoint_genomic):
+        resolved_breakpoints.append(breakpoint_genomic)
+        return SimpleNamespace(breakpoint_protein_position=breakpoint_genomic + 10)
+
+    def fake_map(event, _config, *, role, junction_position_aa):
+        mapped_features.append((event.Event_id, role, junction_position_aa))
+        return FusionFeature(
+            Event_id=event.Event_id,
+            Gene="BRAF",
+            Role=role,
+            Junction_position_aa=junction_position_aa,
+            Domain_retention_flags={"kinase": "retained"},
+        )
+
+    module = sys.modules[__name__]
+    monkeypatch.setattr(module, "resolve_breakpoint_protein_position", fake_resolve)
+    monkeypatch.setattr(module, "map_event", fake_map)
+    calls = [
+        {
+            "structuralVariantId": "SV-1",
+            "site1HugoSymbol": "PARTNER1",
+            "site2HugoSymbol": "BRAF",
+            "connectionType": "5to3",
+            "site2Position": 100,
+            "site2EffectOnFrame": "in-frame",
+        },
+        {
+            "structural_variant_id": "SV-2",
+            "site1_hugo_symbol": "BRAF",
+            "site2_hugo_symbol": "PARTNER2",
+            "connection_type": "3to5",
+            "site1_position": 200,
+            "site2_effect_on_frame": "in-frame",
+        },
+        {
+            "structuralVariantId": "SV-3",
+            "site1HugoSymbol": "BRAF",
+            "site2HugoSymbol": "PARTNER3",
+            "connectionType": "5to3",
+            "site1Position": 300,
+            "site2EffectOnFrame": "out-of-frame",
+        },
+        {
+            "structural_variant_id": "SV-4",
+            "site1_hugo_symbol": "PARTNER4",
+            "site2_hugo_symbol": "BRAF",
+            "connection_type": "3to5",
+            "site2_position": 400,
+            "site2_effect_on_frame": "out-of-frame",
+        },
+    ]
+
+    events, features = _real_events_and_features(calls)
+
+    assert [event.Event_id for event in events] == ["SV-1", "SV-2", "SV-3", "SV-4"]
+    assert resolved_breakpoints == [100, 200, 300, 400]
+    assert [(feature.Role, feature.Junction_position_aa) for feature in features] == [
+        ("three_prime", 110),
+        ("three_prime", 210),
+        ("five_prime", 310),
+        ("five_prime", 410),
+    ]
+    assert mapped_features == [
+        ("SV-1", "three_prime", 110),
+        ("SV-2", "three_prime", 210),
+        ("SV-3", "five_prime", 310),
+        ("SV-4", "five_prime", 410),
+    ]
 
 
 @pytest.mark.network
