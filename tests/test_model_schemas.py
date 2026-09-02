@@ -27,6 +27,8 @@ FUSION_EVENT_FIELDS = {
     "Annotation",
     "Event_info",
     "Source_row_number",
+    "Tumor_type",
+    "Oncotree_code",
 }
 
 FUSION_FEATURE_FIELDS = {

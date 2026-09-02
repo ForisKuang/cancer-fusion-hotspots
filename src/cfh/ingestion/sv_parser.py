@@ -62,7 +62,14 @@ def _parse_row(raw_row: dict[str, Any], line_number: int) -> dict[str, Any]:
 
     for column in EXPECTED_COLUMNS:
         value = _clean(raw_row.get(column))
-        if column in _NUMERIC_COLUMNS and value is not None:
+        if value is None:
+            # Covers both a header the file never declared and a declared
+            # column left blank on this row -- either way the field is
+            # missing and that's worth flagging, not just for Sample_Id.
+            warnings.append(f"missing {column}")
+            record[column] = None
+            continue
+        if column in _NUMERIC_COLUMNS:
             parsed = _coerce_int(value)
             if parsed is None:
                 warnings.append(f"could not parse {column}={value!r} as integer")
@@ -72,14 +79,22 @@ def _parse_row(raw_row: dict[str, Any], line_number: int) -> dict[str, Any]:
         else:
             record[column] = value
 
-    if not record.get("Sample_Id"):
-        warnings.append("missing Sample_Id")
-
     extra = {
         key: value
         for key, value in raw_row.items()
         if key is not None and key not in EXPECTED_COLUMNS
     }
+
+    # csv.DictReader stashes any tab-delimited values beyond the header's
+    # column count under the `None` key as a list, instead of raising or
+    # dropping them; keep those too rather than silently discarding them.
+    surplus_values = raw_row.get(None)
+    if surplus_values:
+        extra["_surplus_fields"] = surplus_values
+        warnings.append(
+            f"row has {len(surplus_values)} surplus field(s) beyond the expected header"
+        )
+
     record["Extra_fields"] = extra or None
     record["Source_row_number"] = line_number
     record["Parse_warnings"] = "; ".join(warnings) if warnings else None

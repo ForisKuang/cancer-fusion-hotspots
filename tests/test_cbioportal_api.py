@@ -1,7 +1,9 @@
+import inspect
 from unittest.mock import MagicMock
 
 import pytest
 
+from cfh.genes.registry import load_gene_config
 from cfh.ingestion import cbioportal_api
 
 
@@ -12,8 +14,9 @@ def test_fetch_structural_variants_posts_expected_body_without_real_network():
     mock_response.raise_for_status.return_value = None
     mock_session.post.return_value = mock_response
 
+    gene_config = load_gene_config("braf")
     result = cbioportal_api.fetch_structural_variants(
-        [cbioportal_api.BRAF_ENTREZ_GENE_ID],
+        [gene_config.entrez_gene_id],
         [cbioportal_api.DEFAULT_SV_MOLECULAR_PROFILE_ID],
         session=mock_session,
     )
@@ -29,23 +32,41 @@ def test_fetch_structural_variants_posts_expected_body_without_real_network():
     }
 
 
-def test_fetch_braf_structural_variants_uses_defaults_without_real_network():
+def test_fetch_structural_variants_supports_arbitrary_genes_without_real_network():
+    """The client itself must stay gene-agnostic -- any Entrez id list works."""
     mock_session = MagicMock()
-    mock_response = MagicMock()
-    mock_response.json.return_value = []
-    mock_session.post.return_value = mock_response
+    mock_session.post.return_value.json.return_value = []
 
-    cbioportal_api.fetch_braf_structural_variants(session=mock_session)
+    cbioportal_api.fetch_structural_variants(
+        [7157, 673, 5290],  # TP53, BRAF, PIK3CA -- arbitrary, not special-cased
+        ["some_other_study_structural_variants"],
+        session=mock_session,
+    )
 
     _, kwargs = mock_session.post.call_args
-    assert kwargs["json"]["entrezGeneIds"] == [673]
-    assert kwargs["json"]["molecularProfileIds"] == [
-        "msk_impact_50k_2026_structural_variants"
-    ]
+    assert kwargs["json"]["entrezGeneIds"] == [7157, 673, 5290]
+    assert kwargs["json"]["molecularProfileIds"] == ["some_other_study_structural_variants"]
+
+
+def test_molecular_profile_ids_has_no_msk_specific_default():
+    """Regression: molecular_profile_ids must be required, not silently
+    defaulted to the MSK-IMPACT profile -- a caller supplying only gene IDs
+    must not end up silently querying MSK-IMPACT data.
+    """
+    signature = inspect.signature(cbioportal_api.fetch_structural_variants)
+    molecular_profile_ids_param = signature.parameters["molecular_profile_ids"]
+    assert molecular_profile_ids_param.default is inspect.Parameter.empty
+
+    with pytest.raises(TypeError):
+        cbioportal_api.fetch_structural_variants([673])
 
 
 @pytest.mark.network
 def test_fetch_structural_variants_real_network_call():
     """Excluded from default `pytest -m "not network"` runs."""
-    result = cbioportal_api.fetch_braf_structural_variants()
+    gene_config = load_gene_config("braf")
+    result = cbioportal_api.fetch_structural_variants(
+        [gene_config.entrez_gene_id],
+        [cbioportal_api.DEFAULT_SV_MOLECULAR_PROFILE_ID],
+    )
     assert isinstance(result, list)

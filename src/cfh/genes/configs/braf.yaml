@@ -1,6 +1,7 @@
 gene_symbol: BRAF
 canonical_transcript_id: NM_004333
 protein_id: P15056
+entrez_gene_id: 673
 key_domains:
   - name: "Protein kinase domain"
     source: uniprot

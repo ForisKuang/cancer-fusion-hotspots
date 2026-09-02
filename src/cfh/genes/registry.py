@@ -36,6 +36,8 @@ class GeneConfig(BaseModel):
     autoinhibitory_domains: list[str] = []
     expected_retained_exon_hint: Optional[str] = None
     analysis_modes: list[str] = []
+    entrez_gene_id: Optional[int] = None
+    """NCBI Entrez gene id, e.g. for cBioPortal structural-variant API queries."""
 
 
 def _config_path(gene_symbol: str) -> Path:
