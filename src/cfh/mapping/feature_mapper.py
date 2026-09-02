@@ -8,7 +8,7 @@ the fetched domain source, never from a literal in this module.
 
 from __future__ import annotations
 
-from cfh.genes.registry import GeneConfig
+from cfh.genes.registry import GeneConfig, KeyDomain
 from cfh.mapping.domain_source import ProteinDomain, UniProtDomainSource
 from cfh.model.fusion_event import FusionEvent
 from cfh.model.fusion_feature import FusionFeature
@@ -45,10 +45,15 @@ def _normalize_domain_name(name: str) -> str:
 
 
 def _find_matching_domain(
-    domains: list[ProteinDomain], config_domain_name: str
+    domains: list[ProteinDomain], config_domain: KeyDomain
 ) -> ProteinDomain | None:
-    target = _normalize_domain_name(config_domain_name)
+    target = _normalize_domain_name(config_domain.name)
     for domain in domains:
+        if config_domain.accession and config_domain.accession in {
+            domain.accession,
+            domain.name,
+        }:
+            return domain
         candidate = _normalize_domain_name(domain.name)
         if target == candidate or target in candidate or candidate in target:
             return domain
@@ -107,7 +112,7 @@ def map_event(
     disrupted_domains: list[str] = []
 
     for key_domain in gene_config.key_domains:
-        matched = _find_matching_domain(domains, key_domain.name)
+        matched = _find_matching_domain(domains, key_domain)
         flag_key = key_domain.key or _normalize_domain_name(key_domain.name)
         status = classify_domain_retention(
             matched.start_aa if matched else None,

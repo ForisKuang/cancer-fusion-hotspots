@@ -61,6 +61,29 @@ def test_molecular_profile_ids_has_no_msk_specific_default():
         cbioportal_api.fetch_structural_variants([673])
 
 
+def test_structural_variant_api_rows_are_adapted_to_production_normalizer_schema():
+    rows = cbioportal_api.structural_variants_to_dataframe(
+        [
+            {
+                "sampleId": "SAMPLE-001",
+                "site1HugoSymbol": "KIAA1549",
+                "site2HugoSymbol": "BRAF",
+                "site2Position": 140493152,
+                "site2EffectOnFrame": "NA",
+                "connectionType": "3to3",
+                "eventInfo": "Protein Fusion: in frame  {KIAA1549:BRAF}",
+                "patientId": "PATIENT-001",
+            }
+        ]
+    )
+
+    assert rows.loc[0, "Sample_Id"] == "SAMPLE-001"
+    assert rows.loc[0, "Site2_Effect_On_Frame"] == "NA"
+    assert rows.loc[0, "Event_Info"] == "Protein Fusion: in frame  {KIAA1549:BRAF}"
+    assert rows.loc[0, "Source_row_number"] == 1
+    assert rows.loc[0, "Extra_fields"]["patientId"] == "PATIENT-001"
+
+
 @pytest.mark.network
 def test_fetch_structural_variants_real_network_call():
     """Excluded from default `pytest -m "not network"` runs."""

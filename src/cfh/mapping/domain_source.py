@@ -20,7 +20,8 @@ class ProteinDomain:
     name: str
     start_aa: int
     end_aa: int
-    source: str  # "uniprot" | "interpro"
+    source: str  # "uniprot" | "interpro" | "genome_nexus"
+    accession: str | None = None
 
 
 _DOMAIN_FEATURE_TYPES = {"domain", "region"}

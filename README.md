@@ -70,6 +70,15 @@ Run the test suite (excluding tests that hit real external services):
 pytest -m "not network"
 ```
 
+Run the prototype live cBioPortal/Genome Nexus benchmark and write event-level
+TSV, structured JSON, and a Markdown summary:
+
+```bash
+cfh real-benchmark BRAF msk_impact_50k_2026 --output-dir reports
+```
+
+This command makes unauthenticated requests to both public services.
+
 ## Repository layout
 
 ```

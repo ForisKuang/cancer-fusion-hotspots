@@ -200,6 +200,7 @@ def pfam_domains_to_protein_domains(canonical: CanonicalTranscript) -> list[Prot
             start_aa=domain.start_aa,
             end_aa=domain.end_aa,
             source="genome_nexus",
+            accession=domain.pfam_id,
         )
         for domain in canonical.pfam_domains
     ]

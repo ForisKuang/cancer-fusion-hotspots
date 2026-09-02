@@ -7,6 +7,7 @@ unrecognized, both are left ambiguous rather than guessed.
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import pandas as pd
@@ -36,7 +37,7 @@ def _detect_frame_status(row: dict[str, Any]) -> str:
     text = _text_blob(row)
     if "out-of-frame" in text or "out of frame" in text:
         return "out-of-frame"
-    if "in-frame" in text:
+    if "in-frame" in text or "in frame" in text:
         return "in-frame"
     return "unknown"
 
@@ -45,7 +46,29 @@ def _is_antisense(row: dict[str, Any]) -> bool:
     return "antisense" in _text_blob(row)
 
 
+def _fusion_order_from_event_info(row: dict[str, Any]) -> tuple[str | None, str | None]:
+    """Read the explicit 5'→3' gene order from cBioPortal fusion text.
+
+    Real MSK-IMPACT API records use all four connection types because those
+    values describe breakpoint-end directions, not necessarily transcript
+    order.  Protein-fusion records separately encode transcript order as
+    ``{FIVE_PRIME:THREE_PRIME}`` or ``(FIVE_PRIME-THREE_PRIME)``.
+    """
+    event_info = str(row.get("Event_Info") or "")
+    if "protein fusion" not in event_info.lower():
+        return None, None
+    match = re.search(r"\{\s*([^:{}\s]+)\s*:\s*([^{}:\s]+)\s*\}", event_info)
+    if match is None:
+        match = re.search(r"\(\s*([^()\s-]+)\s*-\s*([^()\s-]+)\s*\)", event_info)
+    if match is None:
+        return None, None
+    return match.group(1), match.group(2)
+
+
 def _orientation(row: dict[str, Any]) -> tuple[str | None, str | None]:
+    explicit_five_prime, explicit_three_prime = _fusion_order_from_event_info(row)
+    if explicit_five_prime is not None:
+        return explicit_five_prime, explicit_three_prime
     connection = (row.get("Connection_Type") or "").strip().lower()
     if connection == "5to3":
         return row.get("Site1_Hugo_Symbol"), row.get("Site2_Hugo_Symbol")
