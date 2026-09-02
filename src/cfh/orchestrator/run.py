@@ -26,13 +26,23 @@ def _input_fingerprint(events: Sequence[FusionEvent], features: Sequence[FusionF
     return hashlib.sha256(serialized.encode()).hexdigest()
 
 
-def _params_for(name: str, params: dict[str, Any] | None) -> dict[str, Any]:
+def _params_for(
+    name: str,
+    params: dict[str, Any] | None,
+    algorithm_names: Sequence[str] | None = None,
+) -> dict[str, Any]:
     """Resolve optional per-algorithm parameters without sharing mutable state."""
     if not params:
         return {}
     named_params = params.get(name)
     if isinstance(named_params, dict):
         return dict(named_params)
+    if algorithm_names and any(
+        isinstance(params.get(algorithm), dict) for algorithm in algorithm_names
+    ):
+        return {}
+    if all(isinstance(value, dict) for value in params.values()):
+        return {}
     return dict(params)
 
 
@@ -101,7 +111,7 @@ def run_algorithms(
                 [event.model_copy(deep=True) for event in events],
                 [feature.model_copy(deep=True) for feature in features],
                 gene_config.model_copy(deep=True),
-                _params_for(name, params),
+                _params_for(name, params, algorithm_names),
                 input_fingerprint,
             ): index
             for index, name in enumerate(algorithm_names)

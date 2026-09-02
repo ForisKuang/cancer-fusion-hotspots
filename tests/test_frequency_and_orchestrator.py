@@ -8,7 +8,7 @@ from cfh.genes.registry import GeneConfig
 from cfh.model.algorithm_result import AlgorithmResult
 from cfh.model.fusion_event import FusionEvent
 from cfh.model.fusion_feature import FusionFeature
-from cfh.orchestrator.run import results_to_json, run_algorithms
+from cfh.orchestrator.run import _params_for, results_to_json, run_algorithms
 
 
 def _gene_config() -> GeneConfig:
@@ -125,3 +125,8 @@ def test_orchestrator_results_are_json_serializable():
         "frequency",
         "exon_retention",
     ]
+
+
+def test_params_are_isolated_without_breaking_flat_algorithm_params():
+    assert _params_for("frequency", {"exon_retention": {"target_exon": 8}}) == {}
+    assert _params_for("frequency", {"dedup_by_patient": True}) == {"dedup_by_patient": True}
