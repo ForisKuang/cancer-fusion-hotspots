@@ -30,18 +30,27 @@ class GeneConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     gene_symbol: str
-    canonical_transcript_id: str
-    protein_id: str
+    canonical_transcript_id: Optional[str] = None
+    protein_id: Optional[str] = None
     key_domains: list[KeyDomain] = []
     autoinhibitory_domains: list[str] = []
     expected_retained_exon_hint: Optional[str] = None
     analysis_modes: list[str] = []
     entrez_gene_id: Optional[int] = None
     """NCBI Entrez gene id, e.g. for cBioPortal structural-variant API queries."""
+    gene_pair: Optional[list[str]] = None
+    partner_5p: Optional[str] = None
+    partner_3p: Optional[str] = None
+    description: Optional[str] = None
 
 
 def _config_path(gene_symbol: str) -> Path:
-    return CONFIGS_DIR / f"{gene_symbol.lower()}.yaml"
+    target = CONFIGS_DIR / f"{gene_symbol.lower()}.yaml"
+    if not target.exists():
+        hyphenated = CONFIGS_DIR / f"{gene_symbol.lower().replace('_', '-')}.yaml"
+        if hyphenated.exists():
+            return hyphenated
+    return target
 
 
 def load_gene_config(gene_symbol: str) -> GeneConfig:

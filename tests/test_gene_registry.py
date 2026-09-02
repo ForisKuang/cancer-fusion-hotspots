@@ -11,6 +11,17 @@ def test_loads_braf_yaml_into_validated_gene_config():
     assert "kinase" in config.key_domains[0].name.lower()
 
 
+def test_loads_eml4_alk_yaml_into_validated_gene_config():
+    config = load_gene_config("EML4-ALK")
+    assert isinstance(config, GeneConfig)
+    assert config.gene_symbol == "EML4-ALK"
+    assert config.gene_pair == ["EML4", "ALK"]
+    assert config.partner_5p == "EML4"
+    modes = set(config.analysis_modes)
+    assert "joint_partner" in modes or "joint_partner_dependency" in modes
+
+
 def test_unknown_gene_raises():
     with pytest.raises(FileNotFoundError):
         load_gene_config("not_a_real_gene")
+

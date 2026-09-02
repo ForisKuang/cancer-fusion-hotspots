@@ -1,0 +1,10 @@
+gene_symbol: EML4-ALK
+gene_pair:
+  - EML4
+  - ALK
+partner_5p: EML4
+partner_3p: ALK
+analysis_modes:
+  - joint_partner
+  - joint_partner_dependency
+description: "EML4-ALK fusion: EML4 N-terminal coiled-coil domain enables ligand-independent constitutive dimerization and oncogenic activation of the ALK receptor tyrosine kinase domain."
