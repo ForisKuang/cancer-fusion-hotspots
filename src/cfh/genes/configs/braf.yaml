@@ -1,0 +1,14 @@
+gene_symbol: BRAF
+canonical_transcript_id: NM_004333
+protein_id: P15056
+key_domains:
+  - name: "Protein kinase domain"
+    source: uniprot
+    key: kinase
+autoinhibitory_domains:
+  - "RAS-binding domain"
+  - "Cysteine-rich domain"
+expected_retained_exon_hint: null
+analysis_modes:
+  - breakpoint_hotspot
+  - domain_retention

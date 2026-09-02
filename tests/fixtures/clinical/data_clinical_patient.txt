@@ -1,0 +1,13 @@
+#Patient Identifier	Sex
+#Identifier for the patient.	Sex of the patient.
+#STRING	STRING
+#1	1
+PATIENT_ID	SEX
+PATIENT-001	Female
+PATIENT-002	Male
+PATIENT-003	Female
+PATIENT-004	Male
+PATIENT-005	Female
+PATIENT-006	Male
+PATIENT-007	Female
+PATIENT-008	Male

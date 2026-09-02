@@ -1,0 +1,11 @@
+Sample_Id	Site1_Hugo_Symbol	Site1_Chromosome	Site1_Position	Site2_Hugo_Symbol	Site2_Chromosome	Site2_Position	Site2_Effect_On_Frame	Tumor_Split_Read_Count	Tumor_Paired_End_Read_Count	SV_Status	NCBI_Build	Connection_Type	Breakpoint_Type	Annotation	Event_Info
+SAMPLE-001	BRAF	7	140487000	KIAA1549	7	138500000	in-frame	25	10	SOMATIC	GRCh37	5to3	PRECISE	KIAA1549-BRAF fusion, exon16:exon9, in-frame	KIAA1549-BRAF fusion
+SAMPLE-002	BRAF	7	140453000	BRAF	7	140481000	in-frame	15	5	SOMATIC	GRCh37	5to3	PRECISE	BRAF intragenic deletion, exon3-exon10 deleted	BRAF intragenic deletion
+SAMPLE-003	BRAF	7	140480000	AGK	7	141670000	in-frame	12	6	SOMATIC	GRCh37	3to5	PRECISE	AGK-BRAF inversion fusion, exon8:exon9, in-frame	AGK-BRAF inversion
+SAMPLE-004	BRAF	7	140480000	TPR	1	186320000	in-frame	18	9	SOMATIC	GRCh37	5to3	PRECISE	BRAF-TPR translocation fusion, exon9:exon3, in-frame	BRAF-TPR translocation
+SAMPLE-005	ZKSCAN1	7	99280000	BRAF	7	140434000	out-of-frame	8	3	SOMATIC	GRCh37	5to3	PRECISE	ZKSCAN1-BRAF fusion, antisense orientation, out-of-frame	ZKSCAN1-BRAF antisense fusion
+SAMPLE-006	BRAF	7	140453000	AKAP9	7	91853000	in-frame	20	11	SOMATIC	GRCh37	5to3	PRECISE	AKAP9-BRAF fusion, mid-exon breakpoint in exon9, in-frame	AKAP9-BRAF fusion
+SAMPLE-007	BRAF	7	140453000	NCOA4	10	51570000				SOMATIC	GRCh37	5to3	IMPRECISE
+SAMPLE-008	BRAF	7	140453000	MKRN1	7	140700000	in-frame	IMPPRECISE	14	SOMATIC	GRCh37	5to3	IMPRECISE	MKRN1-BRAF fusion, exon9:exon2, in-frame	MKRN1-BRAF fusion
+SAMPLE-009	BRAF	7	140453000	NTRK1	7	140700000			10	SOMATIC	GRCh37			BRAF-NTRK1 rearrangement, orientation undetermined	BRAF-NTRK1 rearrangement
+	BRAF	7	140453000	FAM131B	7	140493000	in-frame	9	4	SOMATIC	GRCh37	5to3	PRECISE	FAM131B-BRAF fusion, exon1:exon9, in-frame	FAM131B-BRAF fusion

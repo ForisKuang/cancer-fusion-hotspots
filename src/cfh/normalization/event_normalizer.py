@@ -1,0 +1,197 @@
+"""Normalize raw cBioPortal SV rows into typed :class:`FusionEvent` objects.
+
+Orientation (5'/3') and reading frame are only ever reported when the
+source data says so explicitly; when the connection type is missing or
+unrecognized, both are left ambiguous rather than guessed.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+import pandas as pd
+
+from cfh.model.fusion_event import FusionEvent
+
+DEFAULT_COHORT = "msk_impact_50k_2026"
+
+_FRAME_STATUS_MAP = {"in-frame": "in-frame", "out-of-frame": "out-of-frame"}
+_KNOWN_CONNECTION_TYPES = {"5to3", "3to5"}
+
+
+def _text_blob(row: dict[str, Any]) -> str:
+    return f"{row.get('Annotation') or ''} {row.get('Event_Info') or ''}".lower()
+
+
+def _detect_frame_status(row: dict[str, Any]) -> str:
+    effect = (row.get("Site2_Effect_On_Frame") or "").strip().lower()
+    if effect in _FRAME_STATUS_MAP:
+        return _FRAME_STATUS_MAP[effect]
+    text = _text_blob(row)
+    if "out-of-frame" in text or "out of frame" in text:
+        return "out-of-frame"
+    if "in-frame" in text:
+        return "in-frame"
+    return "unknown"
+
+
+def _is_antisense(row: dict[str, Any]) -> bool:
+    return "antisense" in _text_blob(row)
+
+
+def _orientation(row: dict[str, Any]) -> tuple[str | None, str | None]:
+    connection = (row.get("Connection_Type") or "").strip().lower()
+    if connection == "5to3":
+        return row.get("Site1_Hugo_Symbol"), row.get("Site2_Hugo_Symbol")
+    if connection == "3to5":
+        return row.get("Site2_Hugo_Symbol"), row.get("Site1_Hugo_Symbol")
+    return None, None
+
+
+def _classify_intragenic(row: dict[str, Any]) -> dict[str, Any]:
+    """Same gene on both breakpoint sites: an intragenic rearrangement.
+
+    This is a distinct code path from partner-gene fusions: intragenic
+    events are never treated as a two-gene protein fusion.
+    """
+    text = _text_blob(row)
+    if "inversion" in text:
+        event_class = "inversion"
+    elif "deletion" in text:
+        event_class = "deletion"
+    else:
+        event_class = "unknown"
+
+    gene = row.get("Site1_Hugo_Symbol")
+    connection = (row.get("Connection_Type") or "").strip().lower()
+    orientation_known = connection in _KNOWN_CONNECTION_TYPES
+    frame_status = _detect_frame_status(row) if orientation_known else "unknown"
+
+    return {
+        "Event_class": event_class,
+        "Fusion_name": f"{gene} intragenic {event_class}" if gene else None,
+        "Is_protein_fusion": False,
+        "Five_prime_gene": gene if orientation_known else None,
+        "Three_prime_gene": gene if orientation_known else None,
+        "Frame_status": frame_status,
+    }
+
+
+def _classify_intergenic(row: dict[str, Any]) -> dict[str, Any]:
+    """Two different genes: a partner-gene fusion, inversion, or translocation."""
+    text = _text_blob(row)
+    chrom1, chrom2 = row.get("Site1_Chromosome"), row.get("Site2_Chromosome")
+
+    if "inversion" in text:
+        event_class = "inversion"
+    elif "translocation" in text:
+        event_class = "translocation"
+    elif chrom1 and chrom2 and str(chrom1) != str(chrom2):
+        event_class = "translocation"
+    else:
+        event_class = "fusion"
+
+    five_prime, three_prime = _orientation(row)
+    orientation_known = five_prime is not None or three_prime is not None
+    frame_status = _detect_frame_status(row) if orientation_known else "unknown"
+
+    gene1, gene2 = row.get("Site1_Hugo_Symbol"), row.get("Site2_Hugo_Symbol")
+    fusion_name = f"{gene1}-{gene2}" if gene1 and gene2 else None
+
+    return {
+        "Event_class": event_class,
+        "Fusion_name": fusion_name,
+        "Is_protein_fusion": True,
+        "Five_prime_gene": five_prime,
+        "Three_prime_gene": three_prime,
+        "Frame_status": frame_status,
+    }
+
+
+def _confidence_class(row: dict[str, Any]) -> str:
+    breakpoint_type = (row.get("Breakpoint_Type") or "").strip().lower()
+    if breakpoint_type == "precise":
+        return "high"
+    if breakpoint_type == "imprecise":
+        return "low"
+    return "unknown"
+
+
+def _as_int(value: Any) -> int | None:
+    return value if isinstance(value, int) else None
+
+
+def _clinical_lookup(clinical_df: pd.DataFrame | None) -> dict[str, dict[str, Any]]:
+    if clinical_df is None or "Sample_id" not in clinical_df.columns:
+        return {}
+    lookup: dict[str, dict[str, Any]] = {}
+    for _, row in clinical_df.iterrows():
+        sample_id = row.get("Sample_id")
+        if sample_id:
+            lookup[sample_id] = row.to_dict()
+    return lookup
+
+
+def normalize(raw_rows_df: pd.DataFrame, clinical_df: pd.DataFrame | None) -> list[FusionEvent]:
+    """Normalize raw SV rows (see ``sv_parser``) into ``FusionEvent`` objects.
+
+    Output length always equals input row count: normalization never
+    drops or merges rows (deduplication, if any, happens downstream).
+    """
+    clinical_lookup = _clinical_lookup(clinical_df)
+    events: list[FusionEvent] = []
+
+    for _, raw_row in raw_rows_df.iterrows():
+        row = raw_row.where(pd.notnull(raw_row), None).to_dict()
+
+        sample_id = row.get("Sample_Id")
+        clinical_row = clinical_lookup.get(sample_id, {}) if sample_id else {}
+        patient_id = clinical_row.get("Patient_id")
+
+        gene1, gene2 = row.get("Site1_Hugo_Symbol"), row.get("Site2_Hugo_Symbol")
+        if gene1 and gene2 and gene1 == gene2:
+            classification = _classify_intragenic(row)
+        else:
+            classification = _classify_intergenic(row)
+
+        source_row_number = row.get("Source_row_number")
+        event_id = f"EVT-{sample_id or 'UNKNOWN'}-{source_row_number}"
+
+        events.append(
+            FusionEvent(
+                Event_id=event_id,
+                Cohort=DEFAULT_COHORT,
+                Sequencing_panel_id=clinical_row.get("Sequencing_panel_id"),
+                Sample_id=sample_id,
+                Patient_id=patient_id,
+                Site1_gene=gene1,
+                Site2_gene=gene2,
+                Five_prime_gene=classification["Five_prime_gene"],
+                Three_prime_gene=classification["Three_prime_gene"],
+                Fusion_name=classification["Fusion_name"],
+                Event_class=classification["Event_class"],
+                Connection_type=row.get("Connection_Type"),
+                Frame_status=classification["Frame_status"],
+                Is_protein_fusion=classification["Is_protein_fusion"],
+                Is_antisense=_is_antisense(row),
+                Confidence_class=_confidence_class(row),
+                Paired_end_read_support=_as_int(row.get("Tumor_Paired_End_Read_Count")),
+                Split_read_support=_as_int(row.get("Tumor_Split_Read_Count")),
+                Tumor_variant_count=None,
+                Site1_description=(
+                    f"{gene1}:{row.get('Site1_Chromosome')}:{row.get('Site1_Position')}"
+                    if gene1
+                    else None
+                ),
+                Site2_description=(
+                    f"{gene2}:{row.get('Site2_Chromosome')}:{row.get('Site2_Position')}"
+                    if gene2
+                    else None
+                ),
+                Annotation=row.get("Annotation"),
+                Event_info=row.get("Event_Info"),
+                Source_row_number=source_row_number,
+            )
+        )
+
+    return events

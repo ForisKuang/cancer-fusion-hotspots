@@ -1,0 +1,94 @@
+from cfh.ingestion import clinical_parser, sv_parser
+from cfh.normalization.event_normalizer import normalize
+
+
+def _events(sv_fixture_file, clinical_sample_fixture):
+    raw = sv_parser.parse_sv_file(sv_fixture_file)
+    clinical = clinical_parser.parse_clinical_sample(clinical_sample_fixture)
+    return normalize(raw, clinical)
+
+
+def _by_sample(events, sample_id):
+    return next(e for e in events if e.Sample_id == sample_id)
+
+
+def test_output_length_matches_input_row_count(sv_fixture_file, clinical_sample_fixture):
+    raw = sv_parser.parse_sv_file(sv_fixture_file)
+    events = _events(sv_fixture_file, clinical_sample_fixture)
+    assert len(events) == len(raw)
+
+
+def test_intragenic_deletion_is_classified_as_deletion_via_distinct_path(
+    sv_fixture_file, clinical_sample_fixture
+):
+    events = _events(sv_fixture_file, clinical_sample_fixture)
+    deletion_event = _by_sample(events, "SAMPLE-002")
+    fusion_event = _by_sample(events, "SAMPLE-001")
+
+    assert deletion_event.Event_class == "deletion"
+    # Distinct code path, not just relabeling: intragenic events are never
+    # flagged as a two-gene protein fusion.
+    assert deletion_event.Is_protein_fusion is False
+    assert fusion_event.Is_protein_fusion is True
+
+
+def test_inversion_and_translocation_enum_values(sv_fixture_file, clinical_sample_fixture):
+    events = _events(sv_fixture_file, clinical_sample_fixture)
+    assert _by_sample(events, "SAMPLE-003").Event_class == "inversion"
+    assert _by_sample(events, "SAMPLE-004").Event_class == "translocation"
+
+
+def test_antisense_flag(sv_fixture_file, clinical_sample_fixture):
+    events = _events(sv_fixture_file, clinical_sample_fixture)
+    antisense_event = _by_sample(events, "SAMPLE-005")
+    assert antisense_event.Is_antisense is True
+    assert antisense_event.Frame_status == "out-of-frame"
+
+
+def test_mid_exon_fusion_parses_and_classifies_as_fusion(sv_fixture_file, clinical_sample_fixture):
+    events = _events(sv_fixture_file, clinical_sample_fixture)
+    event = _by_sample(events, "SAMPLE-006")
+    assert event.Event_class == "fusion"
+    assert event.Frame_status == "in-frame"
+
+
+def test_missing_annotation_row_has_unknown_frame_status_but_known_orientation(
+    sv_fixture_file, clinical_sample_fixture
+):
+    events = _events(sv_fixture_file, clinical_sample_fixture)
+    event = _by_sample(events, "SAMPLE-007")
+    assert event.Frame_status == "unknown"
+    assert event.Five_prime_gene == "BRAF"
+
+
+def test_imprecise_numeric_row_still_normalizes(sv_fixture_file, clinical_sample_fixture):
+    events = _events(sv_fixture_file, clinical_sample_fixture)
+    event = _by_sample(events, "SAMPLE-008")
+    assert event.Split_read_support is None  # unparsable "IMPPRECISE" -> not coerced
+    assert event.Confidence_class == "low"
+
+
+def test_ambiguous_orientation_is_never_guessed(sv_fixture_file, clinical_sample_fixture):
+    events = _events(sv_fixture_file, clinical_sample_fixture)
+    event = _by_sample(events, "SAMPLE-009")
+    assert event.Five_prime_gene is None
+    assert event.Three_prime_gene is None
+    assert event.Frame_status == "unknown"
+
+
+def test_shared_patient_different_samples_produce_two_distinct_events(
+    sv_fixture_file, clinical_sample_fixture
+):
+    events = _events(sv_fixture_file, clinical_sample_fixture)
+    e1 = _by_sample(events, "SAMPLE-001")
+    e2 = _by_sample(events, "SAMPLE-002")
+    assert e1.Patient_id == e2.Patient_id == "PATIENT-001"
+    assert e1.Sample_id != e2.Sample_id
+    assert e1.Event_id != e2.Event_id
+    assert e1 is not e2
+
+
+def test_missing_sample_id_row_is_kept_not_dropped(sv_fixture_file, clinical_sample_fixture):
+    events = _events(sv_fixture_file, clinical_sample_fixture)
+    missing = [e for e in events if e.Sample_id is None]
+    assert len(missing) == 1
