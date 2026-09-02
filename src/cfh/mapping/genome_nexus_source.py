@@ -246,34 +246,46 @@ def cds_bounds_from_utrs(utrs: list[UtrRecord]) -> tuple[int | None, int | None]
     transcript's annotated UTRs, so an exon that partly overlaps a UTR can
     be clipped to its coding-only portion.
 
-    Strand-generic: which UTR sits at the genomic-low vs. genomic-high end
-    depends on strand, not on which gene this is.
+    A UTR of a given type can be split across multiple exons and so appear
+    as several, non-adjacent segments in the payload (e.g. a plus-strand
+    gene whose first two exons are both entirely or partly 5' UTR). The
+    correct CDS boundary is adjacent to the OUTERMOST such segment -- the
+    one farthest from the CDS -- not merely the first one encountered in
+    the payload's (unordered) list, so every segment of each type must be
+    aggregated, not just one.
+
+    Strand-generic: which UTR type sits at the genomic-low vs. genomic-high
+    end depends on strand, not on which gene this is.
 
     * Plus strand: transcription runs low-to-high genomic coordinates, so
-      the 5' UTR sits at the low end and the 3' UTR at the high end.
-    * Minus strand: transcription runs high-to-low, so the 5' UTR sits at
-      the high end and the 3' UTR at the low end.
+      all 5' UTR segments sit below the CDS and all 3' UTR segments sit
+      above it. The CDS start is one past the highest (max) end among all
+      5' UTR segments; the CDS end is one before the lowest (min) start
+      among all 3' UTR segments.
+    * Minus strand: transcription runs high-to-low, so the roles invert --
+      5' UTR segments sit above the CDS, 3' UTR segments below it.
 
-    Either bound is ``None`` (no clipping on that end) when the
-    corresponding UTR isn't present in the payload.
+    Either bound is ``None`` (no clipping on that end) when no UTR segment
+    of the corresponding type is present in the payload.
     """
-    five_prime = next((u for u in utrs if u.utr_type == "five_prime_UTR"), None)
-    three_prime = next((u for u in utrs if u.utr_type == "three_prime_UTR"), None)
-    strand = (five_prime or three_prime).strand if (five_prime or three_prime) else None
+    five_prime_utrs = [u for u in utrs if u.utr_type == "five_prime_UTR"]
+    three_prime_utrs = [u for u in utrs if u.utr_type == "three_prime_UTR"]
+    any_utr = five_prime_utrs or three_prime_utrs
+    strand = any_utr[0].strand if any_utr else None
 
     cds_min_genomic: int | None = None
     cds_max_genomic: int | None = None
 
     if strand == 1:
-        if five_prime is not None:
-            cds_min_genomic = five_prime.end + 1
-        if three_prime is not None:
-            cds_max_genomic = three_prime.start - 1
+        if five_prime_utrs:
+            cds_min_genomic = max(u.end for u in five_prime_utrs) + 1
+        if three_prime_utrs:
+            cds_max_genomic = min(u.start for u in three_prime_utrs) - 1
     elif strand == -1:
-        if three_prime is not None:
-            cds_min_genomic = three_prime.end + 1
-        if five_prime is not None:
-            cds_max_genomic = five_prime.start - 1
+        if three_prime_utrs:
+            cds_min_genomic = max(u.end for u in three_prime_utrs) + 1
+        if five_prime_utrs:
+            cds_max_genomic = min(u.start for u in five_prime_utrs) - 1
 
     return cds_min_genomic, cds_max_genomic
 

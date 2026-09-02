@@ -188,7 +188,11 @@ def resolve_breakpoint_protein_position(
        returning an apparently-successful result with no computed position
        when only ``breakpoint_genomic`` is available would misrepresent
        "we don't have the data for this" as "we checked and found
-       nothing".
+       nothing". The Ensembl protein id for this fallback is
+       ``ensembl_protein_id`` if the caller supplied one, otherwise the
+       ``protein_id`` from the Genome Nexus canonical-transcript payload
+       (when one was found) -- no need for a caller to redundantly supply
+       an id that Genome Nexus already gave us.
     3. If neither can produce or attempt a mapping, raises
        :class:`EnsemblFallbackUnavailable` -- the genuinely unmappable
        case.
@@ -207,6 +211,7 @@ def resolve_breakpoint_protein_position(
     except GenomeNexusGeneNotFound:
         payload = None
 
+    canonical = None
     if payload is not None:
         canonical = parse_canonical_transcript(payload)
         if breakpoint_genomic is not None and canonical.exons:
@@ -231,19 +236,25 @@ def resolve_breakpoint_protein_position(
         # the Ensembl protein-feature check (if a protein coordinate is
         # available) rather than returning a hollow "success" here.
 
-    if ensembl_protein_id and breakpoint_aa is not None:
+    effective_ensembl_protein_id = ensembl_protein_id or (
+        canonical.protein_id if canonical is not None else None
+    )
+
+    if effective_ensembl_protein_id and breakpoint_aa is not None:
         return resolve_transcript_mapping(
             annotation,
             gene_config,
             breakpoint_aa=breakpoint_aa,
-            ensembl_protein_id=ensembl_protein_id,
+            ensembl_protein_id=effective_ensembl_protein_id,
             ensembl_client=ensembl_client,
         )
 
     raise EnsemblFallbackUnavailable(
         "could not compute a real breakpoint position: Genome Nexus either has no "
         "canonical-transcript mapping for this gene or returned no usable exon data, "
-        "and no protein-coordinate breakpoint_aa (with an ensembl_protein_id) was "
-        "supplied for the Ensembl protein-feature fallback -- a genomic breakpoint "
-        "coordinate alone cannot be mapped through that endpoint"
+        "and no protein-coordinate breakpoint_aa with a usable Ensembl protein id "
+        "(explicit ensembl_protein_id, or protein_id from a found Genome Nexus "
+        "canonical transcript) was available for the Ensembl protein-feature "
+        "fallback -- a genomic breakpoint coordinate alone cannot be mapped through "
+        "that endpoint"
     )

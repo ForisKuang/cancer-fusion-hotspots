@@ -154,6 +154,41 @@ def test_resolve_breakpoint_protein_position_falls_back_to_ensembl_with_protein_
     mock_ensembl_client.fetch_protein_features.assert_called_once_with("ENSP00000288602")
 
 
+def test_resolve_breakpoint_protein_position_uses_canonical_protein_id_without_redundant_arg(
+    genome_nexus_canonical_transcript_fixture_path,
+):
+    """Regression: when Genome Nexus finds the gene (so its canonical
+    payload's protein_id is already known) and a real breakpoint_aa is
+    supplied, the Ensembl fallback must use that protein_id automatically
+    -- the caller should not have to redundantly pass ensembl_protein_id
+    just to unlock a mapping the code already has enough information for.
+    """
+    gene_config = load_gene_config("braf")
+    payload = json.loads(genome_nexus_canonical_transcript_fixture_path.read_text())
+    mock_gn_client = MagicMock()
+    mock_gn_client.fetch_canonical_transcript.return_value = payload
+
+    mock_ensembl_client = MagicMock()
+    mock_ensembl_client.fetch_protein_features.return_value = [
+        {"id": "PF07714", "start": 457, "end": 717},
+    ]
+
+    result = transcript_source.resolve_breakpoint_protein_position(
+        None,
+        gene_config,
+        breakpoint_aa=500,
+        genome_nexus_client=mock_gn_client,
+        ensembl_client=mock_ensembl_client,
+        # Deliberately no ensembl_protein_id -- it must come from the
+        # canonical transcript Genome Nexus already returned.
+    )
+
+    assert result.source == "ensembl_fallback"
+    assert result.breakpoint_protein_features is not None
+    assert len(result.breakpoint_protein_features) == 1
+    mock_ensembl_client.fetch_protein_features.assert_called_once_with("ENSP00000288602")
+
+
 def test_resolve_breakpoint_protein_position_raises_rather_than_silent_empty_success():
     """A genomic-only breakpoint with no Genome Nexus mapping must raise --
     NOT return an apparently-successful ensembl_fallback with no computed

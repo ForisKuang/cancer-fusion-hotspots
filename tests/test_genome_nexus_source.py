@@ -6,8 +6,14 @@ Fixtures frozen from real responses:
     -> tests/fixtures/genome_nexus/canonical_transcript_braf.json
   GET https://www.genomenexus.org/ensembl/transcript/ENST00000288602
     -> tests/fixtures/genome_nexus/transcript_ENST00000288602.json
-(both fetched 2026-09-02; the two endpoints happen to return the same
-transcript record shape for this gene, including exon coordinates.)
+  GET https://www.genomenexus.org/ensembl/canonical-transcript/hgnc/PIK3CA?isoformOverrideSource=mskcc
+    -> tests/fixtures/genome_nexus/canonical_transcript_pik3ca.json
+(all fetched 2026-09-02; the BRAF endpoints happen to return the same
+transcript record shape for that gene, including exon coordinates. PIK3CA
+is plus-strand with two separate 5' UTR segments -- exon 1
+(178866311-178866391) is entirely 5' UTR, and exon 2 (178916538-178916965)
+starts with a second 5' UTR segment (178916538-178916613) before its
+coding portion begins -- used to test multi-segment UTR aggregation.)
 """
 
 import json
@@ -76,6 +82,40 @@ def test_cds_bounds_from_utrs_returns_none_when_utr_missing():
     cds_min, cds_max = gns.cds_bounds_from_utrs(utrs)
     assert cds_min == 201
     assert cds_max is None
+
+
+def test_cds_bounds_from_utrs_aggregates_all_segments_of_a_type_plus_strand(
+    genome_nexus_canonical_transcript_pik3ca_fixture_path,
+):
+    """Regression: PIK3CA (plus strand) has TWO separate 5' UTR segments
+    (exon 1 is entirely 5' UTR; exon 2 starts with a second 5' UTR segment
+    before its coding portion begins). Picking only the first segment
+    encountered would derive cds_min from the wrong (inner) segment and
+    miscount the second segment's 76nt as coding sequence.
+    """
+    payload = _load(genome_nexus_canonical_transcript_pik3ca_fixture_path)
+    canonical = gns.parse_canonical_transcript(payload)
+
+    five_prime_utrs = [u for u in payload["utrs"] if u["type"] == "five_prime_UTR"]
+    three_prime_utrs = [u for u in payload["utrs"] if u["type"] == "three_prime_UTR"]
+    assert len(five_prime_utrs) == 2  # confirms this fixture actually exercises the bug
+    assert canonical.exons[0].strand == 1
+
+    # Correct: adjacent to the OUTERMOST (highest-end) 5' UTR segment, and
+    # the single 3' UTR segment.
+    expected_cds_min = max(u["end"] for u in five_prime_utrs) + 1
+    expected_cds_max = min(u["start"] for u in three_prime_utrs) - 1
+
+    # The bug this guards against: deriving cds_min from only the FIRST
+    # 5' UTR segment encountered in the (unordered) payload list.
+    buggy_cds_min_from_first_segment_only = five_prime_utrs[0]["end"] + 1
+    assert expected_cds_min != buggy_cds_min_from_first_segment_only
+
+    cds_min, cds_max = gns.cds_bounds_from_utrs(canonical.utrs)
+
+    assert cds_min == expected_cds_min == 178916614
+    assert cds_max == expected_cds_max == 178952152
+    assert cds_min != buggy_cds_min_from_first_segment_only
 
 
 def test_pfam_domains_convert_to_protein_domain_shape(
