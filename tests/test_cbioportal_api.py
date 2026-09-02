@@ -1,3 +1,4 @@
+import inspect
 from unittest.mock import MagicMock
 
 import pytest
@@ -45,6 +46,19 @@ def test_fetch_structural_variants_supports_arbitrary_genes_without_real_network
     _, kwargs = mock_session.post.call_args
     assert kwargs["json"]["entrezGeneIds"] == [7157, 673, 5290]
     assert kwargs["json"]["molecularProfileIds"] == ["some_other_study_structural_variants"]
+
+
+def test_molecular_profile_ids_has_no_msk_specific_default():
+    """Regression: molecular_profile_ids must be required, not silently
+    defaulted to the MSK-IMPACT profile -- a caller supplying only gene IDs
+    must not end up silently querying MSK-IMPACT data.
+    """
+    signature = inspect.signature(cbioportal_api.fetch_structural_variants)
+    molecular_profile_ids_param = signature.parameters["molecular_profile_ids"]
+    assert molecular_profile_ids_param.default is inspect.Parameter.empty
+
+    with pytest.raises(TypeError):
+        cbioportal_api.fetch_structural_variants([673])
 
 
 @pytest.mark.network

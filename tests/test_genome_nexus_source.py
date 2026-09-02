@@ -39,6 +39,45 @@ def test_parse_canonical_transcript_from_real_fixture(
     assert kinase_domains[0].end_aa == 712
 
 
+def test_parse_canonical_transcript_retains_utrs_from_payload(
+    genome_nexus_canonical_transcript_fixture_path,
+):
+    """Regression: utrs must not be dropped -- they're required to derive
+    correct CDS bounds (see cds_bounds_from_utrs)."""
+    payload = _load(genome_nexus_canonical_transcript_fixture_path)
+    canonical = gns.parse_canonical_transcript(payload)
+
+    assert len(canonical.utrs) == len(payload["utrs"]) == 2
+    utr_types = {u.utr_type for u in canonical.utrs}
+    assert utr_types == {"five_prime_UTR", "three_prime_UTR"}
+
+
+def test_cds_bounds_from_utrs_matches_independently_derived_bounds(
+    genome_nexus_canonical_transcript_fixture_path,
+):
+    payload = _load(genome_nexus_canonical_transcript_fixture_path)
+    canonical = gns.parse_canonical_transcript(payload)
+
+    # Independently derive expected bounds straight from the raw fixture
+    # (minus-strand gene: 5' UTR at the high end, 3' UTR at the low end).
+    five_prime_utr = next(u for u in payload["utrs"] if u["type"] == "five_prime_UTR")
+    three_prime_utr = next(u for u in payload["utrs"] if u["type"] == "three_prime_UTR")
+    expected_cds_max = five_prime_utr["start"] - 1
+    expected_cds_min = three_prime_utr["end"] + 1
+
+    cds_min, cds_max = gns.cds_bounds_from_utrs(canonical.utrs)
+
+    assert cds_min == expected_cds_min
+    assert cds_max == expected_cds_max
+
+
+def test_cds_bounds_from_utrs_returns_none_when_utr_missing():
+    utrs = [gns.UtrRecord(utr_type="five_prime_UTR", start=100, end=200, strand=1)]
+    cds_min, cds_max = gns.cds_bounds_from_utrs(utrs)
+    assert cds_min == 201
+    assert cds_max is None
+
+
 def test_pfam_domains_convert_to_protein_domain_shape(
     genome_nexus_canonical_transcript_fixture_path,
 ):

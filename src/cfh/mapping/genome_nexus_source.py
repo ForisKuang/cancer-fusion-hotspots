@@ -56,6 +56,14 @@ class ExonRecord:
 
 
 @dataclass
+class UtrRecord:
+    utr_type: str  # "five_prime_UTR" | "three_prime_UTR"
+    start: int
+    end: int
+    strand: int
+
+
+@dataclass
 class CanonicalTranscript:
     transcript_id: str
     refseq_mrna_id: str | None
@@ -64,6 +72,7 @@ class CanonicalTranscript:
     uniprot_id: str | None
     pfam_domains: list[PfamDomain]
     exons: list[ExonRecord]
+    utrs: list[UtrRecord]
 
 
 @dataclass
@@ -162,6 +171,15 @@ def parse_canonical_transcript(payload: dict) -> CanonicalTranscript:
         )
         for exon in payload.get("exons", [])
     ]
+    utrs = [
+        UtrRecord(
+            utr_type=utr["type"],
+            start=utr["start"],
+            end=utr["end"],
+            strand=utr["strand"],
+        )
+        for utr in payload.get("utrs", [])
+    ]
     return CanonicalTranscript(
         transcript_id=payload["transcriptId"],
         refseq_mrna_id=payload.get("refseqMrnaId"),
@@ -170,6 +188,7 @@ def parse_canonical_transcript(payload: dict) -> CanonicalTranscript:
         uniprot_id=payload.get("uniprotId"),
         pfam_domains=pfam_domains,
         exons=exons,
+        utrs=utrs,
     )
 
 
@@ -220,6 +239,43 @@ def resolve_domains(
 
     source = uniprot_source or UniProtDomainSource()
     return source.fetch(uniprot_accession)
+
+
+def cds_bounds_from_utrs(utrs: list[UtrRecord]) -> tuple[int | None, int | None]:
+    """Derive ``(cds_min_genomic, cds_max_genomic)`` genomic bounds from a
+    transcript's annotated UTRs, so an exon that partly overlaps a UTR can
+    be clipped to its coding-only portion.
+
+    Strand-generic: which UTR sits at the genomic-low vs. genomic-high end
+    depends on strand, not on which gene this is.
+
+    * Plus strand: transcription runs low-to-high genomic coordinates, so
+      the 5' UTR sits at the low end and the 3' UTR at the high end.
+    * Minus strand: transcription runs high-to-low, so the 5' UTR sits at
+      the high end and the 3' UTR at the low end.
+
+    Either bound is ``None`` (no clipping on that end) when the
+    corresponding UTR isn't present in the payload.
+    """
+    five_prime = next((u for u in utrs if u.utr_type == "five_prime_UTR"), None)
+    three_prime = next((u for u in utrs if u.utr_type == "three_prime_UTR"), None)
+    strand = (five_prime or three_prime).strand if (five_prime or three_prime) else None
+
+    cds_min_genomic: int | None = None
+    cds_max_genomic: int | None = None
+
+    if strand == 1:
+        if five_prime is not None:
+            cds_min_genomic = five_prime.end + 1
+        if three_prime is not None:
+            cds_max_genomic = three_prime.start - 1
+    elif strand == -1:
+        if three_prime is not None:
+            cds_min_genomic = three_prime.end + 1
+        if five_prime is not None:
+            cds_max_genomic = five_prime.start - 1
+
+    return cds_min_genomic, cds_max_genomic
 
 
 def _coding_interval(

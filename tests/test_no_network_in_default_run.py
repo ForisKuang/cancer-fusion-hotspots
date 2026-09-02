@@ -13,6 +13,8 @@ from cfh.ingestion import cbioportal_api
 def test_cbioportal_client_mocked_call_makes_no_real_socket():
     mock_session = MagicMock()
     mock_session.post.return_value.json.return_value = []
-    cbioportal_api.fetch_structural_variants([673], session=mock_session)
+    cbioportal_api.fetch_structural_variants(
+        [673], ["some_study_structural_variants"], session=mock_session
+    )
     # No AssertionError raised above means no real socket was opened
     # (the autouse conftest fixture would have raised one otherwise).
