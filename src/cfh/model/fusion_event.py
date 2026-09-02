@@ -32,3 +32,5 @@ class FusionEvent(BaseModel):
     Annotation: Optional[str] = None
     Event_info: Optional[str] = None
     Source_row_number: Optional[int] = None
+    Tumor_type: Optional[str] = None
+    Oncotree_code: Optional[str] = None

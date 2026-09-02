@@ -52,6 +52,39 @@ def test_valid_rows_have_no_warnings(sv_fixture_file):
     assert isinstance(row["Site1_Position"], (int, np.integer))
 
 
+def test_non_sample_id_missing_fields_are_also_warned(sv_fixture_file):
+    # SAMPLE-007 is missing Site2_Effect_On_Frame, both read-support counts,
+    # Annotation, and Event_Info -- not just Sample_Id, so each must be
+    # individually flagged, not silently accepted as clean.
+    df = sv_parser.parse_sv_file(sv_fixture_file)
+    row = df[df["Sample_Id"] == "SAMPLE-007"].iloc[0]
+    warnings = row["Parse_warnings"]
+    assert warnings is not None
+    for field in (
+        "Site2_Effect_On_Frame",
+        "Tumor_Split_Read_Count",
+        "Tumor_Paired_End_Read_Count",
+        "Annotation",
+        "Event_Info",
+    ):
+        assert f"missing {field}" in warnings
+
+
+def test_surplus_fields_beyond_header_are_preserved_with_warning(
+    sv_surplus_fields_fixture_file,
+):
+    df = sv_parser.parse_sv_file(sv_surplus_fields_fixture_file)
+    row = df.iloc[0]
+
+    assert row["Sample_Id"] == "SAMPLE-901"
+    assert row["Parse_warnings"] is not None
+    assert "surplus field" in row["Parse_warnings"]
+
+    extra = row["Extra_fields"]
+    assert extra is not None
+    assert extra["_surplus_fields"] == ["unexpected_extra_column_value", "another_extra_value"]
+
+
 def test_output_is_a_dataframe_with_expected_columns(sv_fixture_file):
     df = sv_parser.parse_sv_file(sv_fixture_file)
     assert isinstance(df, pd.DataFrame)
