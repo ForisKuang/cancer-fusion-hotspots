@@ -3,8 +3,21 @@ from cfh.ingestion import clinical_parser
 
 def test_parse_clinical_sample_skips_comment_lines_and_renames_columns(clinical_sample_fixture):
     df = clinical_parser.parse_clinical_sample(clinical_sample_fixture)
-    assert list(df.columns) == ["Patient_id", "Sample_id", "Sequencing_panel_id"]
+    assert list(df.columns) == [
+        "Patient_id",
+        "Sample_id",
+        "Sequencing_panel_id",
+        "Tumor_type",
+        "Oncotree_code",
+    ]
     assert len(df) == 9
+
+
+def test_parse_clinical_sample_carries_tumor_type_and_oncotree_code(clinical_sample_fixture):
+    df = clinical_parser.parse_clinical_sample(clinical_sample_fixture)
+    row = df[df["Sample_id"] == "SAMPLE-001"].iloc[0]
+    assert row["Tumor_type"] == "Glioma"
+    assert row["Oncotree_code"] == "PA"
 
 
 def test_parse_clinical_sample_maps_shared_patient_across_samples(clinical_sample_fixture):

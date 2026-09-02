@@ -17,6 +17,8 @@ _COLUMN_RENAME = {
     "PATIENT_ID": "Patient_id",
     "SAMPLE_ID": "Sample_id",
     "SEQUENCING_PANEL_ID": "Sequencing_panel_id",
+    "CANCER_TYPE": "Tumor_type",
+    "ONCOTREE_CODE": "Oncotree_code",
 }
 
 

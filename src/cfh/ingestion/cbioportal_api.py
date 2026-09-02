@@ -21,13 +21,20 @@ DEFAULT_SV_MOLECULAR_PROFILE_ID = "msk_impact_50k_2026_structural_variants"
 
 def fetch_structural_variants(
     entrez_gene_ids: Iterable[int],
-    molecular_profile_ids: Iterable[str] = (DEFAULT_SV_MOLECULAR_PROFILE_ID,),
+    molecular_profile_ids: Iterable[str],
     *,
     base_url: str = DEFAULT_BASE_URL,
     session: "requests.Session | None" = None,
     timeout: float = 30,
 ) -> list[dict]:
-    """POST to ``/structural-variant/fetch`` and return the parsed JSON body."""
+    """POST to ``/structural-variant/fetch`` and return the parsed JSON body.
+
+    ``molecular_profile_ids`` is required and has no default: which cohort's
+    SV profile to query is always caller-supplied (e.g. from ingestion
+    config), never silently defaulted to a specific study like MSK-IMPACT.
+    ``DEFAULT_SV_MOLECULAR_PROFILE_ID`` remains available for callers that
+    do want the MSK-IMPACT 50k profile, but it's opt-in, not automatic.
+    """
     session = session or requests.Session()
     url = f"{base_url.rstrip('/')}/structural-variant/fetch"
     body = {

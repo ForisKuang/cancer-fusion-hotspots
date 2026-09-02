@@ -10,6 +10,13 @@ SV_SURPLUS_FIELDS_FIXTURE_FILE = SV_FIXTURE_DIR / "surplus_fields.txt"
 CLINICAL_SAMPLE_FIXTURE = FIXTURES_DIR / "clinical" / "data_clinical_sample.txt"
 CLINICAL_PATIENT_FIXTURE = FIXTURES_DIR / "clinical" / "data_clinical_patient.txt"
 UNIPROT_FIXTURE = FIXTURES_DIR / "uniprot" / "P15056.json"
+GENOME_NEXUS_CANONICAL_TRANSCRIPT_FIXTURE = (
+    FIXTURES_DIR / "genome_nexus" / "canonical_transcript_braf.json"
+)
+GENOME_NEXUS_TRANSCRIPT_FIXTURE = FIXTURES_DIR / "genome_nexus" / "transcript_ENST00000288602.json"
+GENOME_NEXUS_CANONICAL_TRANSCRIPT_PIK3CA_FIXTURE = (
+    FIXTURES_DIR / "genome_nexus" / "canonical_transcript_pik3ca.json"
+)
 
 
 @pytest.fixture
@@ -40,6 +47,21 @@ def clinical_patient_fixture() -> Path:
 @pytest.fixture
 def uniprot_fixture_path() -> Path:
     return UNIPROT_FIXTURE
+
+
+@pytest.fixture
+def genome_nexus_canonical_transcript_fixture_path() -> Path:
+    return GENOME_NEXUS_CANONICAL_TRANSCRIPT_FIXTURE
+
+
+@pytest.fixture
+def genome_nexus_transcript_fixture_path() -> Path:
+    return GENOME_NEXUS_TRANSCRIPT_FIXTURE
+
+
+@pytest.fixture
+def genome_nexus_canonical_transcript_pik3ca_fixture_path() -> Path:
+    return GENOME_NEXUS_CANONICAL_TRANSCRIPT_PIK3CA_FIXTURE
 
 
 @pytest.fixture(autouse=True)
