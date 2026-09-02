@@ -1,0 +1,2 @@
+Sample_Id	Site1_Hugo_Symbol	Site1_Chromosome	Site1_Position	Site2_Hugo_Symbol	Site2_Chromosome	Site2_Position	Site2_Effect_On_Frame	Tumor_Split_Read_Count	Tumor_Paired_End_Read_Count	SV_Status	NCBI_Build	Connection_Type	Breakpoint_Type	Annotation	Event_Info
+SAMPLE-901	BRAF	7	140453000	KIAA1549	7	138500000	in-frame	20	9	SOMATIC	GRCh37	5to3	PRECISE	KIAA1549-BRAF fusion, exon16:exon9, in-frame	KIAA1549-BRAF fusion	unexpected_extra_column_value	another_extra_value

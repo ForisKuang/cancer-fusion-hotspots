@@ -1,11 +1,11 @@
 from cfh.ingestion import clinical_parser, sv_parser
-from cfh.normalization.event_normalizer import normalize
+from cfh.normalization.event_normalizer import DEFAULT_COHORT, normalize
 
 
-def _events(sv_fixture_file, clinical_sample_fixture):
+def _events(sv_fixture_file, clinical_sample_fixture, cohort=DEFAULT_COHORT):
     raw = sv_parser.parse_sv_file(sv_fixture_file)
     clinical = clinical_parser.parse_clinical_sample(clinical_sample_fixture)
-    return normalize(raw, clinical)
+    return normalize(raw, clinical, cohort)
 
 
 def _by_sample(events, sample_id):
@@ -92,3 +92,28 @@ def test_missing_sample_id_row_is_kept_not_dropped(sv_fixture_file, clinical_sam
     events = _events(sv_fixture_file, clinical_sample_fixture)
     missing = [e for e in events if e.Sample_id is None]
     assert len(missing) == 1
+
+
+def test_float_valued_read_support_column_is_coerced_to_int_not_dropped(
+    sv_fixture_file, clinical_sample_fixture
+):
+    # Tumor_Paired_End_Read_Count has one missing value (SAMPLE-007) among
+    # otherwise-valid integers, so sv_parser's output column upcasts to
+    # float64 and every valid value arrives here as e.g. 10.0, not 10.
+    raw = sv_parser.parse_sv_file(sv_fixture_file)
+    assert raw["Tumor_Paired_End_Read_Count"].dtype.kind == "f"
+
+    events = _events(sv_fixture_file, clinical_sample_fixture)
+    event = _by_sample(events, "SAMPLE-001")
+    assert event.Paired_end_read_support == 10
+    assert isinstance(event.Paired_end_read_support, int)
+
+
+def test_cohort_is_caller_supplied_not_hardcoded(sv_fixture_file, clinical_sample_fixture):
+    msk_events = _events(sv_fixture_file, clinical_sample_fixture, cohort="msk_impact_50k_2026")
+    tcga_events = _events(
+        sv_fixture_file, clinical_sample_fixture, cohort="tcga_pan_can_atlas_2018"
+    )
+
+    assert {e.Cohort for e in msk_events} == {"msk_impact_50k_2026"}
+    assert {e.Cohort for e in tcga_events} == {"tcga_pan_can_atlas_2018"}

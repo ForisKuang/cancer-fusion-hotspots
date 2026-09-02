@@ -57,7 +57,7 @@ gene_config = load_gene_config("braf")
 raw_sv = load_sv_dataframe("path/to/msk_impact_50k_study")
 clinical = parse_clinical_sample("path/to/msk_impact_50k_study/data_clinical_sample.txt")
 
-events = normalize(raw_sv, clinical)
+events = normalize(raw_sv, clinical, cohort="msk_impact_50k_2026")
 print(f"Normalized {len(events)} fusion events for {gene_config.gene_symbol}")
 ```
 

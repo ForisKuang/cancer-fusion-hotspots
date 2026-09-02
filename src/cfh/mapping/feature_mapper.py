@@ -13,6 +13,28 @@ from cfh.mapping.domain_source import ProteinDomain, UniProtDomainSource
 from cfh.model.fusion_event import FusionEvent
 from cfh.model.fusion_feature import FusionFeature
 
+_default_domain_source: UniProtDomainSource | None = None
+
+
+def get_default_domain_source() -> UniProtDomainSource:
+    """Return the process-wide default :class:`UniProtDomainSource`.
+
+    ``map_event`` uses this whenever the caller doesn't pass an explicit
+    ``domain_source``, so a batch of events processed through the real
+    call path (no manually-shared instance required) still shares one
+    cache and therefore one HTTP call per accession, not one per event.
+    """
+    global _default_domain_source
+    if _default_domain_source is None:
+        _default_domain_source = UniProtDomainSource()
+    return _default_domain_source
+
+
+def reset_default_domain_source() -> None:
+    """Drop the cached default domain source (mainly for test isolation)."""
+    global _default_domain_source
+    _default_domain_source = None
+
 
 def _normalize_domain_name(name: str) -> str:
     normalized = name.lower().strip()
@@ -76,7 +98,7 @@ def map_event(
     breakpoint in protein-amino-acid coordinates (from transcript/exon
     mapping, out of scope here).
     """
-    domain_source = domain_source or UniProtDomainSource()
+    domain_source = domain_source or get_default_domain_source()
     domains = domain_source.fetch(gene_config.protein_id)
 
     retention_flags: dict[str, str] = {}

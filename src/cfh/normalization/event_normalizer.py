@@ -14,6 +14,12 @@ import pandas as pd
 from cfh.model.fusion_event import FusionEvent
 
 DEFAULT_COHORT = "msk_impact_50k_2026"
+"""Example cohort id for the MSK-IMPACT 50k ingestion path.
+
+Not applied automatically inside :func:`normalize` -- cohort provenance is
+caller-supplied so the same normalizer works for other cBioPortal cohorts
+(e.g. a future TCGA PanCancer Atlas ingestion) without mislabeling them.
+"""
 
 _FRAME_STATUS_MAP = {"in-frame": "in-frame", "out-of-frame": "out-of-frame"}
 _KNOWN_CONNECTION_TYPES = {"5to3", "3to5"}
@@ -118,7 +124,29 @@ def _confidence_class(row: dict[str, Any]) -> str:
 
 
 def _as_int(value: Any) -> int | None:
-    return value if isinstance(value, int) else None
+    """Coerce a numeric-valued scalar to ``int``.
+
+    ``sv_parser``'s output DataFrame upcasts an all-numeric column that also
+    contains missing values (``None``) to ``float64``, so a valid read-support
+    count like ``10`` can arrive here as ``10.0`` (or ``numpy.float64(10.0)``).
+    That must still become integer ``10``, not be dropped as "not an int".
+    Truly missing (``None``/``NaN``) or non-numeric values still become
+    ``None``.
+    """
+    if value is None:
+        return None
+    try:
+        if pd.isna(value):
+            return None
+    except (TypeError, ValueError):
+        pass
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not numeric.is_integer():
+        return None
+    return int(numeric)
 
 
 def _clinical_lookup(clinical_df: pd.DataFrame | None) -> dict[str, dict[str, Any]]:
@@ -132,8 +160,20 @@ def _clinical_lookup(clinical_df: pd.DataFrame | None) -> dict[str, dict[str, An
     return lookup
 
 
-def normalize(raw_rows_df: pd.DataFrame, clinical_df: pd.DataFrame | None) -> list[FusionEvent]:
+def normalize(
+    raw_rows_df: pd.DataFrame,
+    clinical_df: pd.DataFrame | None,
+    cohort: str,
+    *,
+    sequencing_panel_id: str | None = None,
+) -> list[FusionEvent]:
     """Normalize raw SV rows (see ``sv_parser``) into ``FusionEvent`` objects.
+
+    ``cohort`` identifies the source cBioPortal study (e.g. ``"msk_impact_50k_2026"``)
+    and is always caller-supplied -- never inferred or hardcoded -- so the same
+    normalizer works unmodified for other cohorts sharing this SV schema.
+    ``sequencing_panel_id`` is a fallback used only when the clinical data
+    doesn't already carry a per-sample panel id.
 
     Output length always equals input row count: normalization never
     drops or merges rows (deduplication, if any, happens downstream).
@@ -160,8 +200,8 @@ def normalize(raw_rows_df: pd.DataFrame, clinical_df: pd.DataFrame | None) -> li
         events.append(
             FusionEvent(
                 Event_id=event_id,
-                Cohort=DEFAULT_COHORT,
-                Sequencing_panel_id=clinical_row.get("Sequencing_panel_id"),
+                Cohort=cohort,
+                Sequencing_panel_id=clinical_row.get("Sequencing_panel_id") or sequencing_panel_id,
                 Sample_id=sample_id,
                 Patient_id=patient_id,
                 Site1_gene=gene1,
