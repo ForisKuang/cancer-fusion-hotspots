@@ -9,9 +9,12 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+import pandas as pd
+import requests
+
 from cfh.algorithms.domain_retention import DomainRetentionAlgorithm
 from cfh.algorithms.frequency import FrequencyAnalysis
-from cfh.genes.registry import load_gene_config
+from cfh.genes.registry import GeneConfig, load_gene_config
 from cfh.ingestion import cbioportal_api
 from cfh.mapping.domain_source import ProteinDomain
 from cfh.mapping.feature_mapper import map_event
@@ -21,6 +24,19 @@ from cfh.model.algorithm_result import AlgorithmResult
 from cfh.model.fusion_event import FusionEvent
 from cfh.model.fusion_feature import FusionFeature
 from cfh.normalization.event_normalizer import normalize
+from cfh.stats.breakpoint_tests import build_frame_domain_contingency_table
+
+
+class RealBenchmarkError(RuntimeError):
+    """Base class for expected, user-actionable benchmark failures."""
+
+
+class RealBenchmarkInputError(RealBenchmarkError):
+    """Raised when the requested gene/study cannot define a valid run."""
+
+
+class RealBenchmarkNetworkError(RealBenchmarkError):
+    """Raised when a required public data service cannot be reached."""
 
 
 @dataclass
@@ -35,6 +51,7 @@ class RealBenchmarkRun:
     rows: list[dict]
     results: list[AlgorithmResult]
     summary: dict
+    warnings: list[str]
 
 
 class _ResolvedDomainSource:
@@ -64,9 +81,12 @@ def _target_breakpoint(row: dict, target_gene: str) -> int:
         value = row.get("Site2_Position")
     else:  # pragma: no cover - guarded by _is_target_protein_fusion
         raise ValueError(f"row does not contain target gene {target_gene}")
-    if value is None:
+    if value is None or pd.isna(value):
         raise ValueError(f"{target_gene} fusion has no genomic breakpoint")
-    return int(value)
+    try:
+        return int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{target_gene} fusion has invalid genomic breakpoint {value!r}") from exc
 
 
 def _target_role(event: FusionEvent, target_gene: str) -> str:
@@ -90,6 +110,51 @@ def _partner(event: FusionEvent, target_gene: str) -> str:
     return "unknown"
 
 
+def _load_benchmark_config(gene_symbol: str) -> GeneConfig:
+    try:
+        config = load_gene_config(gene_symbol)
+    except FileNotFoundError as exc:
+        raise RealBenchmarkInputError(
+            f"Unknown gene {gene_symbol!r}. Run `cfh list-genes` to see configured genes."
+        ) from exc
+    if config.gene_symbol is None or config.entrez_gene_id is None:
+        raise RealBenchmarkInputError(
+            f"Gene {gene_symbol!r} needs gene_symbol and entrez_gene_id in its config."
+        )
+    if not config.key_domains:
+        raise RealBenchmarkInputError(
+            f"Gene {gene_symbol!r} has no key domain configured for domain-retention analysis."
+        )
+    return config
+
+
+def _unavailable_domain_result(
+    message: str,
+    events: list[FusionEvent],
+    features: list[FusionFeature],
+    config: GeneConfig,
+    n_permutations: int,
+) -> AlgorithmResult:
+    return AlgorithmResult(
+        Algorithm="domain_retention",
+        Algorithm_version="0.1.0",
+        Parameters={"seed": 42, "n_permutations": n_permutations},
+        Summary={
+            "fisher_odds_ratio": None,
+            "fisher_p_value": None,
+            "permutation_empirical_p_value": None,
+            "observed_in_frame_retention_rate": None,
+        },
+        Tables={
+            "frame_domain_contingency_table": build_frame_domain_contingency_table(
+                events, features, config
+            ),
+            "permutation_null_retention_rates": [],
+        },
+        Warnings=[message],
+    )
+
+
 def analyze_structural_variant_calls(
     calls: list[dict],
     gene_symbol: str,
@@ -100,9 +165,9 @@ def analyze_structural_variant_calls(
     n_permutations: int = 1_000,
 ) -> RealBenchmarkRun:
     """Normalize and analyze already-fetched cBioPortal SV API objects."""
-    config = load_gene_config(gene_symbol)
-    if config.gene_symbol is None or config.entrez_gene_id is None:
-        raise ValueError(f"{gene_symbol} config lacks gene_symbol or entrez_gene_id")
+    if n_permutations <= 0:
+        raise RealBenchmarkInputError("n_permutations must be positive")
+    config = _load_benchmark_config(gene_symbol)
     profile_id = molecular_profile_id or f"{study_id}_structural_variants"
     client = genome_nexus_client or GenomeNexusClient()
 
@@ -114,11 +179,25 @@ def analyze_structural_variant_calls(
         if _is_target_protein_fusion(event, config.gene_symbol)
     ]
 
-    domains = resolve_domains(
-        config.gene_symbol,
-        config.protein_id,
-        genome_nexus_client=client,
-    )
+    warnings: list[str] = []
+    if selected:
+        try:
+            domains = resolve_domains(
+                config.gene_symbol,
+                config.protein_id,
+                genome_nexus_client=client,
+            )
+        except requests.RequestException as exc:
+            raise RealBenchmarkNetworkError(
+                f"Genome Nexus/domain lookup failed for {config.gene_symbol}: {exc}. "
+                "Check network access and https://www.genomenexus.org availability, then retry."
+            ) from exc
+    else:
+        domains = []
+        warnings.append(
+            f"No Protein Fusion records for {config.gene_symbol} were returned by "
+            f"{profile_id}. Verify the gene and study ID, or try a study with SV data."
+        )
     domain_source = _ResolvedDomainSource(domains)
     events: list[FusionEvent] = []
     features: list[FusionFeature] = []
@@ -126,23 +205,35 @@ def analyze_structural_variant_calls(
     target_key = config.key_domains[0].key or config.key_domains[0].name
 
     for row, event in selected:
-        role = _target_role(event, config.gene_symbol)
-        breakpoint = _target_breakpoint(row, config.gene_symbol)
-        mapping = resolve_breakpoint_protein_position(
-            None,
-            config,
-            breakpoint_genomic=breakpoint,
-            genome_nexus_client=client,
-        )
-        if mapping.breakpoint_protein_position is None:
-            raise ValueError(f"Genome Nexus did not map a protein position for {event.Event_id}")
-        feature = map_event(
-            event,
-            config,
-            role=role,
-            junction_position_aa=mapping.breakpoint_protein_position,
-            domain_source=domain_source,
-        ).model_copy(update={"Breakpoint_exon": mapping.breakpoint_exon})
+        try:
+            role = _target_role(event, config.gene_symbol)
+            breakpoint = _target_breakpoint(row, config.gene_symbol)
+            mapping = resolve_breakpoint_protein_position(
+                None,
+                config,
+                breakpoint_genomic=breakpoint,
+                genome_nexus_client=client,
+            )
+            if mapping.breakpoint_protein_position is None:
+                raise ValueError("Genome Nexus returned no protein position")
+            feature = map_event(
+                event,
+                config,
+                role=role,
+                junction_position_aa=mapping.breakpoint_protein_position,
+                domain_source=domain_source,
+            ).model_copy(update={"Breakpoint_exon": mapping.breakpoint_exon})
+        except requests.RequestException as exc:
+            raise RealBenchmarkNetworkError(
+                f"Genome Nexus breakpoint mapping failed for {config.gene_symbol}: {exc}. "
+                "Check network access and https://www.genomenexus.org availability, then retry."
+            ) from exc
+        except Exception as exc:
+            warnings.append(
+                f"Skipped {event.Event_id} ({event.Fusion_name or 'unnamed fusion'}): "
+                f"{type(exc).__name__}: {exc}"
+            )
+            continue
         events.append(event)
         features.append(feature)
         rows.append(
@@ -162,22 +253,52 @@ def analyze_structural_variant_calls(
             }
         )
 
-    domain_result = DomainRetentionAlgorithm().run(
-        events,
-        features,
-        config,
-        {
-            "seed": 42,
-            "n_permutations": n_permutations,
-            "genome_nexus_client": client,
-        },
+    in_frame_mapped = any(
+        event.Frame_status == "in-frame"
+        and (feature.Domain_retention_flags or {}).get(target_key)
+        in {"retained", "lost", "disrupted"}
+        for event, feature in zip(events, features, strict=True)
     )
+    if not in_frame_mapped:
+        message = (
+            "Domain-retention statistics are unavailable because no mapped in-frame "
+            "protein-fusion record has a known domain state. Verify the gene/study IDs "
+            "and source frame annotations."
+        )
+        warnings.append(message)
+        domain_result = _unavailable_domain_result(
+            message, events, features, config, n_permutations
+        )
+    else:
+        try:
+            domain_result = DomainRetentionAlgorithm().run(
+                events,
+                features,
+                config,
+                {
+                    "seed": 42,
+                    "n_permutations": n_permutations,
+                    "genome_nexus_client": client,
+                },
+            )
+        except requests.RequestException as exc:
+            raise RealBenchmarkNetworkError(
+                f"Genome Nexus permutation mapping failed for {config.gene_symbol}: {exc}. "
+                "Check network access and https://www.genomenexus.org availability, then retry."
+            ) from exc
+        except ValueError as exc:
+            message = f"Domain-retention statistics are unavailable: {exc}"
+            warnings.append(message)
+            domain_result = _unavailable_domain_result(
+                message, events, features, config, n_permutations
+            )
+    selected_events = [event for _, event in selected]
     frequency_result = FrequencyAnalysis().run(
-        events, features, config, {"dedup_by_patient": False}
+        selected_events, features, config, {"dedup_by_patient": False}
     )
     results = [domain_result, frequency_result]
     partner_counts = frequency_result.Tables["Partner_gene_counts"]
-    in_frame_count = sum(event.Frame_status == "in-frame" for event in events)
+    in_frame_count = sum(event.Frame_status == "in-frame" for event in selected_events)
     retained_count = sum(row["domain_status"] == "retained" for row in rows)
     in_frame_retained_count = sum(
         row["frame_status"] == "in-frame" and row["domain_status"] == "retained"
@@ -192,11 +313,12 @@ def analyze_structural_variant_calls(
         ),
         None,
     )
-    total = len(events)
+    total = len(selected_events)
     summary = {
         "raw_structural_variant_count": len(calls),
         "total_fusions": total,
         "mapped_fusions": len(features),
+        "skipped_fusions": total - len(features),
         "in_frame_count": in_frame_count,
         "in_frame_percent": 100 * in_frame_count / total if total else 0.0,
         "kinase_retained_count": retained_count,
@@ -224,6 +346,7 @@ def analyze_structural_variant_calls(
         rows=rows,
         results=results,
         summary=summary,
+        warnings=warnings,
     )
 
 
@@ -234,14 +357,19 @@ def run_real_benchmark(
     n_permutations: int = 1_000,
 ) -> RealBenchmarkRun:
     """Fetch and analyze a gene's structural variants from cBioPortal."""
-    config = load_gene_config(gene_symbol)
-    if config.entrez_gene_id is None:
-        raise ValueError(f"{gene_symbol} config lacks entrez_gene_id")
+    config = _load_benchmark_config(gene_symbol)
     profile_id = f"{study_id}_structural_variants"
-    calls = cbioportal_api.fetch_structural_variants(
-        [config.entrez_gene_id],
-        [profile_id],
-    )
+    try:
+        calls = cbioportal_api.fetch_structural_variants(
+            [config.entrez_gene_id],
+            [profile_id],
+        )
+    except requests.RequestException as exc:
+        raise RealBenchmarkNetworkError(
+            f"cBioPortal request failed for gene {config.gene_symbol} and profile "
+            f"{profile_id}: {exc}. Check the study ID, network access, and "
+            "https://www.cbioportal.org availability, then retry."
+        ) from exc
     return analyze_structural_variant_calls(
         calls,
         gene_symbol,
@@ -259,6 +387,10 @@ def _json_safe(value: object) -> object:
     if isinstance(value, float) and not math.isfinite(value):
         return str(value)
     return value
+
+
+def _format_stat(value: float | int | None) -> str:
+    return "unavailable" if value is None else f"{value:.6g}"
 
 
 def markdown_summary(run: RealBenchmarkRun) -> str:
@@ -279,7 +411,9 @@ def markdown_summary(run: RealBenchmarkRun) -> str:
         "",
         f"- Structural variants returned for {run.gene_symbol}: "
         f"{summary['raw_structural_variant_count']}",
-        f"- Protein-fusion records analyzed: {summary['total_fusions']}",
+        f"- Protein-fusion records found: {summary['total_fusions']}",
+        f"- Protein-fusion records mapped: {summary['mapped_fusions']}",
+        f"- Malformed/unmappable fusion records skipped: {summary['skipped_fusions']}",
         f"- In-frame: {summary['in_frame_count']}/{summary['total_fusions']} "
         f"({summary['in_frame_percent']:.1f}%)",
         f"- {domain} ({summary['domain_start_aa']}-{summary['domain_end_aa']} aa) retained: "
@@ -288,8 +422,10 @@ def markdown_summary(run: RealBenchmarkRun) -> str:
         f"- In-frame and {domain}-retained: "
         f"{summary['in_frame_kinase_retained_count']}/{summary['in_frame_count']}",
         f"- Fisher exact test (one-sided): odds ratio "
-        f"{summary['fisher_odds_ratio']:.6g}, p={summary['fisher_p_value']:.6g}",
-        f"- Breakpoint-permutation empirical p-value: {summary['permutation_p_value']:.6g}",
+        f"{_format_stat(summary['fisher_odds_ratio'])}, "
+        f"p={_format_stat(summary['fisher_p_value'])}",
+        "- Breakpoint-permutation empirical p-value: "
+        f"{_format_stat(summary['permutation_p_value'])}",
         f"- Contingency table `[[retained/in-frame, retained/other], "
         f"[not-retained/in-frame, not-retained/other]]`: `{table}`",
         "",
@@ -311,10 +447,20 @@ def markdown_summary(run: RealBenchmarkRun) -> str:
         "",
         partners or "None",
         "",
-        "## Interpretation",
-        "",
     ]
-    if run.gene_symbol.upper() == "BRAF" and run.study_id == "msk_impact_50k_2026":
+    if run.warnings:
+        lines.extend(["## Warnings", ""])
+        lines.extend(f"- {warning}" for warning in run.warnings)
+        lines.append("")
+    lines.extend(
+        [
+            "## Interpretation",
+            "",
+        ]
+    )
+    if not summary["total_fusions"]:
+        lines.append("No fusion records were available, so comparison is not possible.")
+    elif run.gene_symbol.upper() == "BRAF" and run.study_id == "msk_impact_50k_2026":
         lines.extend(
             [
                 "This does **not** reproduce the Zehir et al. (PMC5461196) report of "
@@ -369,15 +515,18 @@ def write_outputs(
                 "omitted_from_artifact": True,
                 "count": len(null_rates),
             }
-    payload = _json_safe({
-        "gene_symbol": run.gene_symbol,
-        "study_id": run.study_id,
-        "molecular_profile_id": run.molecular_profile_id,
-        "retrieved_at": run.retrieved_at.isoformat(),
-        "summary": run.summary,
-        "events": run.rows,
-        "algorithm_results": algorithm_results,
-    })
+    payload = _json_safe(
+        {
+            "gene_symbol": run.gene_symbol,
+            "study_id": run.study_id,
+            "molecular_profile_id": run.molecular_profile_id,
+            "retrieved_at": run.retrieved_at.isoformat(),
+            "summary": run.summary,
+            "warnings": run.warnings,
+            "events": run.rows,
+            "algorithm_results": algorithm_results,
+        }
+    )
     json_path.write_text(json.dumps(payload, indent=2, allow_nan=False) + "\n")
     markdown_path.write_text(markdown_summary(run))
     return {"tsv": tsv_path, "json": json_path, "markdown": markdown_path}
