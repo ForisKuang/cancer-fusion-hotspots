@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Optional
 
 import yaml
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 
 CONFIGS_DIR = Path(__file__).parent / "configs"
 
@@ -29,15 +29,29 @@ class KeyDomain(BaseModel):
 class GeneConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    gene_symbol: str
-    canonical_transcript_id: str
-    protein_id: str
+    gene_symbol: Optional[str] = None
+    gene_pair: Optional[tuple[str, str]] = None
+    canonical_transcript_id: Optional[str] = None
+    protein_id: Optional[str] = None
     key_domains: list[KeyDomain] = []
     autoinhibitory_domains: list[str] = []
     expected_retained_exon_hint: Optional[str] = None
     analysis_modes: list[str] = []
     entrez_gene_id: Optional[int] = None
     """NCBI Entrez gene id, e.g. for cBioPortal structural-variant API queries."""
+
+    @model_validator(mode="after")
+    def _validate_config_target(self) -> "GeneConfig":
+        """Require either a single gene or an ordered fusion-gene pair."""
+        if self.gene_symbol is None and self.gene_pair is None:
+            raise ValueError("GeneConfig requires gene_symbol or gene_pair")
+        if self.gene_pair is None and (
+            self.canonical_transcript_id is None or self.protein_id is None
+        ):
+            raise ValueError(
+                "single-gene GeneConfig requires canonical_transcript_id and protein_id"
+            )
+        return self
 
 
 def _config_path(gene_symbol: str) -> Path:
