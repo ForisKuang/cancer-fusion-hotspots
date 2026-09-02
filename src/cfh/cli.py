@@ -7,7 +7,7 @@ from pathlib import Path
 import click
 
 from cfh.genes.registry import available_genes, load_gene_config
-from cfh.real_benchmark import run_real_benchmark, write_outputs
+from cfh.real_benchmark import RealBenchmarkError, run_real_benchmark, write_outputs
 
 
 @click.group()
@@ -49,14 +49,24 @@ def real_benchmark(
     output_stem: str | None,
 ) -> None:
     """Run the prototype live cBioPortal/Genome Nexus benchmark."""
-    run = run_real_benchmark(gene_symbol, study_id, n_permutations=n_permutations)
-    paths = write_outputs(run, output_dir, output_stem=output_stem)
+    try:
+        run = run_real_benchmark(gene_symbol, study_id, n_permutations=n_permutations)
+        paths = write_outputs(run, output_dir, output_stem=output_stem)
+    except RealBenchmarkError as exc:
+        raise click.ClickException(str(exc)) from None
+    except Exception as exc:
+        raise click.ClickException(f"Benchmark failed: {type(exc).__name__}: {exc}") from None
+    fisher_p_value = run.summary["fisher_p_value"]
+    fisher_display = "unavailable" if fisher_p_value is None else f"{fisher_p_value:.6g}"
     click.echo(
         f"Analyzed {run.summary['total_fusions']} {run.gene_symbol} fusions; "
+        f"mapped={run.summary['mapped_fusions']}, "
         f"in-frame={run.summary['in_frame_count']}, "
         f"domain-retained={run.summary['kinase_retained_count']}, "
-        f"Fisher p={run.summary['fisher_p_value']:.6g}"
+        f"Fisher p={fisher_display}"
     )
+    for warning in run.warnings:
+        click.echo(f"Warning: {warning}", err=True)
     for kind, path in paths.items():
         click.echo(f"{kind}: {path}")
 
