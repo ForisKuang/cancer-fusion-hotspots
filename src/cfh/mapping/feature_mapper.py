@@ -111,7 +111,7 @@ def map_event(
     lost_domains: list[str] = []
     disrupted_domains: list[str] = []
 
-    for key_domain in gene_config.key_domains:
+    for key_domain in [*gene_config.key_domains, *gene_config.disruption_required_domains]:
         matched = _find_matching_domain(domains, key_domain)
         flag_key = key_domain.key or _normalize_domain_name(key_domain.name)
         status = classify_domain_retention(

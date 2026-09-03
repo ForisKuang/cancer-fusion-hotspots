@@ -5,7 +5,7 @@ import pytest
 
 from cfh.genes.registry import load_gene_config
 from cfh.mapping import feature_mapper
-from cfh.mapping.domain_source import UniProtDomainSource
+from cfh.mapping.domain_source import ProteinDomain, UniProtDomainSource
 from cfh.model.fusion_event import FusionEvent
 
 
@@ -120,6 +120,43 @@ def test_breakpoint_exactly_at_domain_start_is_disrupted(uniprot_fixture_path):
     # Only the single boundary residue would be retained -- the rest of the
     # domain is cut, so this is a disruption, not a clean retain/lose split.
     assert feature.Domain_retention_flags["kinase"] == "disrupted"
+
+
+def test_disruption_required_domains_get_retention_flags_alongside_key_domains():
+    """BRAF's opt-in disruption_required_domains (RAS-binding, cysteine-rich)
+    are populated through the same map_event pass as key_domains, using real
+    Genome Nexus Pfam accessions/boundaries -- no separate mapping path."""
+    gene_config = load_gene_config("braf")
+    domain_source = MagicMock()
+    domain_source.fetch.return_value = [
+        ProteinDomain(
+            name="PF07714", start_aa=458, end_aa=712, source="genome_nexus", accession="PF07714"
+        ),
+        ProteinDomain(
+            name="PF02196", start_aa=156, end_aa=227, source="genome_nexus", accession="PF02196"
+        ),
+        ProteinDomain(
+            name="PF00130", start_aa=235, end_aa=280, source="genome_nexus", accession="PF00130"
+        ),
+    ]
+
+    # Breakpoint at aa 380, BRAF contributing its 3' (C-terminal) fragment:
+    # the kinase domain (458-712) is downstream and retained, while both
+    # N-terminal regulatory domains (156-227, 235-280) are excised.
+    feature = feature_mapper.map_event(
+        _event("SAMPLE-REAL"),
+        gene_config,
+        role="three_prime",
+        junction_position_aa=380,
+        domain_source=domain_source,
+    )
+
+    assert feature.Domain_retention_flags["kinase"] == "retained"
+    assert feature.Domain_retention_flags["ras_binding"] == "lost"
+    assert feature.Domain_retention_flags["cysteine_rich"] == "lost"
+    assert "Protein kinase domain" in feature.Retained_domains
+    assert "RAS-binding domain" in feature.Lost_domains
+    assert "Cysteine-rich domain" in feature.Lost_domains
 
 
 def test_default_domain_source_is_shared_across_calls_without_explicit_source(
