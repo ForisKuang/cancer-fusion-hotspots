@@ -33,7 +33,7 @@ pipeline that:
 
 Gene-specific biology (canonical transcript, protein accession, domain
 boundaries) lives in a per-gene YAML config (see
-`src/cfh/genes/configs/braf.yaml`), never hardcoded into the generic
+`src/cfh/genes/configs/`), never hardcoded into the generic
 ingestion/normalization/mapping code, so adding a new gene is a config
 change, not a code change.
 
@@ -91,6 +91,27 @@ study, use:
 ```bash
 cfh analyze BRAF msk_impact_50k_2026
 ```
+
+RET uses the same command and live ingestion/mapping path:
+
+```bash
+cfh analyze RET msk_impact_50k_2026
+```
+
+The TCGA PanCancer Atlas studies expose structural variants under the same
+`<study_id>_structural_variants` profile convention. The BRAF holdout uses the
+thyroid carcinoma study, which contains BRAF fusion calls:
+
+```bash
+cfh real-benchmark BRAF thca_tcga_pan_can_atlas_2018
+```
+
+All 32 PanCancer Atlas study IDs with `data_sv.txt`/`meta_sv.txt` in the public
+cBioPortal Datahub are: `acc`, `blca`, `brca`, `cesc`, `chol`, `coadread`,
+`dlbc`, `esca`, `gbm`, `hnsc`, `kich`, `kirc`, `kirp`, `laml`, `lgg`, `lihc`,
+`luad`, `lusc`, `meso`, `ov`, `paad`, `pcpg`, `prad`, `sarc`, `skcm`, `stad`,
+`tgct`, `thca`, `thym`, `ucec`, `ucs`, and `uvm`, each followed by
+`_tcga_pan_can_atlas_2018`.
 
 These commands make unauthenticated requests to both public services.
 

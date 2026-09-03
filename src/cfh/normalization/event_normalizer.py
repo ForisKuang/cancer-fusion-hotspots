@@ -55,11 +55,19 @@ def _fusion_order_from_event_info(row: dict[str, Any]) -> tuple[str | None, str 
     ``{FIVE_PRIME:THREE_PRIME}`` or ``(FIVE_PRIME-THREE_PRIME)``.
     """
     event_info = str(row.get("Event_Info") or "")
-    if "protein fusion" not in event_info.lower():
+    if "fusion" not in event_info.lower():
         return None, None
     match = re.search(r"\{\s*([^:{}\s]+)\s*:\s*([^{}:\s]+)\s*\}", event_info)
     if match is None:
         match = re.search(r"\(\s*([^()\s-]+)\s*-\s*([^()\s-]+)\s*\)", event_info)
+    if match is None:
+        # TCGA PanCancer Atlas SV profiles use ``GENE1-GENE2 Fusion`` while
+        # MSK profiles wrap the ordered genes in braces or parentheses.
+        match = re.search(
+            r"(?:^|\s)([A-Za-z0-9.]+)\s*-\s*([A-Za-z0-9.]+)\s+fusion\b",
+            event_info,
+            re.IGNORECASE,
+        )
     if match is None:
         return None, None
     return match.group(1), match.group(2)

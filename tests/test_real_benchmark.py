@@ -151,6 +151,38 @@ def test_malformed_fusion_rows_are_warned_and_skipped_without_losing_valid_rows(
     )
 
 
+def test_tcga_fusion_annotation_uses_shared_benchmark_pipeline(
+    genome_nexus_canonical_transcript_fixture_path,
+):
+    client = _genome_nexus_client(genome_nexus_canonical_transcript_fixture_path)
+    calls = [
+        {
+            "sampleId": "TCGA-DE-A0Y2-01",
+            "site1HugoSymbol": "MACF1",
+            "site1Chromosome": "1",
+            "site1Position": 39430908,
+            "site2HugoSymbol": "BRAF",
+            "site2Chromosome": "7",
+            "site2Position": 140787584,
+            "site2EffectOnFrame": "in-frame",
+            "eventInfo": "MACF1-BRAF Fusion",
+        }
+    ]
+
+    run = analyze_structural_variant_calls(
+        calls,
+        "BRAF",
+        "thca_tcga_pan_can_atlas_2018",
+        genome_nexus_client=client,
+        n_permutations=5,
+    )
+
+    assert run.summary["total_fusions"] == 1
+    assert run.summary["mapped_fusions"] == 1
+    assert run.events[0].Three_prime_gene == "BRAF"
+    assert run.events[0].Frame_status == "in-frame"
+
+
 def test_zero_in_frame_records_emit_outputs_with_unavailable_statistics(
     tmp_path,
     genome_nexus_canonical_transcript_fixture_path,
@@ -338,6 +370,36 @@ def test_run_analysis_requests_every_registered_algorithm(monkeypatch):
         "study",
         n_permutations=7,
         algorithm_names=["alpha", "beta"],
+    )
+
+
+def test_tcga_study_config_selects_profile_and_grch38_genome_nexus(monkeypatch):
+    fetched_calls = [{"sampleId": "TCGA-SAMPLE"}]
+    monkeypatch.setattr(
+        cbioportal_api,
+        "fetch_structural_variants",
+        MagicMock(return_value=fetched_calls),
+    )
+    client = MagicMock(spec=GenomeNexusClient)
+    client_factory = MagicMock(return_value=client)
+    analyze_mock = MagicMock(return_value=object())
+    monkeypatch.setattr(benchmark_module, "GenomeNexusClient", client_factory)
+    monkeypatch.setattr(benchmark_module, "analyze_structural_variant_calls", analyze_mock)
+
+    result = run_real_benchmark("BRAF", "thca_tcga_pan_can_atlas_2018", n_permutations=7)
+
+    assert result is analyze_mock.return_value
+    profile_id = "thca_tcga_pan_can_atlas_2018_structural_variants"
+    cbioportal_api.fetch_structural_variants.assert_called_once_with([673], [profile_id])
+    client_factory.assert_called_once_with(base_url="https://grch38.genomenexus.org")
+    analyze_mock.assert_called_once_with(
+        fetched_calls,
+        "BRAF",
+        "thca_tcga_pan_can_atlas_2018",
+        molecular_profile_id=profile_id,
+        genome_nexus_client=client,
+        n_permutations=7,
+        algorithm_names=None,
     )
 
 

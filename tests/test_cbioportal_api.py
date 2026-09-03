@@ -61,6 +61,26 @@ def test_molecular_profile_ids_has_no_msk_specific_default():
         cbioportal_api.fetch_structural_variants([673])
 
 
+def test_fetch_structural_variants_retries_transient_service_failure():
+    mock_session = MagicMock()
+    unavailable = MagicMock(status_code=503)
+    recovered = MagicMock(status_code=200)
+    recovered.json.return_value = [{"sampleId": "RECOVERED"}]
+    mock_session.post.side_effect = [unavailable, recovered]
+
+    result = cbioportal_api.fetch_structural_variants(
+        [5979],
+        ["study_structural_variants"],
+        session=mock_session,
+        max_retries=1,
+        backoff_seconds=0,
+    )
+
+    assert result == [{"sampleId": "RECOVERED"}]
+    assert mock_session.post.call_count == 2
+    recovered.raise_for_status.assert_called_once_with()
+
+
 def test_structural_variant_api_rows_are_adapted_to_production_normalizer_schema():
     rows = cbioportal_api.structural_variants_to_dataframe(
         [
