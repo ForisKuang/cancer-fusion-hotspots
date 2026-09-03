@@ -143,6 +143,51 @@ def test_requires_frequency_result():
         CompositeScoreAlgorithm().run([], [], _FAKE_GENE, {"algorithm_results": []})
 
 
+def test_negative_weight_override_is_rejected():
+    """A negative weight breaks the documented [0, 1] composite-score
+    guarantee (the weighted average is only bounded when every weight and
+    every sub-score is non-negative), so it must be rejected up front.
+    """
+    events, features = _events_and_features({"PARTNER_A": [500]})
+    algorithm_results = [_frequency_result({"PARTNER_A": 1})]
+
+    with pytest.raises(ValueError, match="recurrence"):
+        CompositeScoreAlgorithm().run(
+            events,
+            features,
+            _FAKE_GENE_NO_DISRUPTION,
+            {"algorithm_results": algorithm_results, "weights": {"recurrence": -5.0}},
+        )
+
+
+def test_non_finite_weight_override_is_rejected():
+    events, features = _events_and_features({"PARTNER_A": [500]})
+    algorithm_results = [_frequency_result({"PARTNER_A": 1})]
+
+    for bad_weight in (float("nan"), float("inf"), float("-inf")):
+        with pytest.raises(ValueError, match="recurrence"):
+            CompositeScoreAlgorithm().run(
+                events,
+                features,
+                _FAKE_GENE_NO_DISRUPTION,
+                {"algorithm_results": algorithm_results, "weights": {"recurrence": bad_weight}},
+            )
+
+
+def test_non_finite_or_non_positive_neg_log10_p_cap_is_rejected():
+    events, features = _events_and_features({"PARTNER_A": [500]})
+    algorithm_results = [_frequency_result({"PARTNER_A": 1})]
+
+    for bad_cap in (0.0, -1.0, float("nan"), float("inf")):
+        with pytest.raises(ValueError, match="neg_log10_p_cap"):
+            CompositeScoreAlgorithm().run(
+                events,
+                features,
+                _FAKE_GENE_NO_DISRUPTION,
+                {"algorithm_results": algorithm_results, "neg_log10_p_cap": bad_cap},
+            )
+
+
 def test_composite_score_matches_hand_computed_weighted_average():
     events, features = _events_and_features(
         {

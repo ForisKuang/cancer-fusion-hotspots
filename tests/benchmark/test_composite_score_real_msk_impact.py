@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -39,12 +40,15 @@ from cfh.algorithms.cutpoint_detection import CutpointDetectionAlgorithm
 from cfh.algorithms.domain_disruption import DomainDisruptionAlgorithm
 from cfh.algorithms.domain_retention import DomainRetentionAlgorithm
 from cfh.algorithms.frequency import FrequencyAnalysis
+from cfh.algorithms.registry import list_algorithms
 from cfh.genes.registry import load_gene_config
 from cfh.mapping.feature_mapper import classify_domain_retention
-from cfh.mapping.genome_nexus_source import parse_canonical_transcript
+from cfh.mapping.genome_nexus_source import GenomeNexusClient, parse_canonical_transcript
 from cfh.model.algorithm_result import AlgorithmResult
 from cfh.model.fusion_event import FusionEvent
 from cfh.model.fusion_feature import FusionFeature
+from cfh.orchestrator.run import run_algorithms
+from cfh.real_benchmark import analyze_structural_variant_calls
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _RUNS_DIR = _REPO_ROOT / "runs"
@@ -243,9 +247,13 @@ def test_composite_score_real_braf_msk_impact_all_five_subscores_applicable():
 
     # KIAA1549 is by far BRAF's most recurrent real partner in this cohort
     # (43/174 events, ~4x the next most frequent) -- with recurrence at 30%
-    # weight it should come out on top, an honest structural check rather
-    # than a hardcoded score.
+    # weight it should come out on top. Pinned to the exact real value (not
+    # just the ranking) with seed=42/n_permutations=2_000 fixed above, so a
+    # future regression in the aggregation math is actually caught rather
+    # than only a change in which partner sorts first.
     assert ranking[0]["Partner_gene"] == "KIAA1549"
+    assert ranking[0]["Event_count"] == 43
+    assert ranking[0]["Composite_score"] == pytest.approx(0.2972, abs=5e-5)
 
 
 def _ret_events_and_features(results_path: Path) -> tuple[list[FusionEvent], list[FusionFeature]]:
@@ -271,6 +279,7 @@ def _ret_events_and_features(results_path: Path) -> tuple[list[FusionEvent], lis
                 Gene="RET",
                 Role=row["target_role"],
                 Junction_position_aa=row["breakpoint_protein_position"],
+                Domain_retention_flags={"kinase": row["domain_status"]},
             )
         )
     return events, features
@@ -323,6 +332,15 @@ def test_composite_score_real_ret_msk_impact_gracefully_degrades():
     }
     ranking = result.Tables["composite_evidence_ranking"]
     assert ranking, "expected at least one ranked RET fusion partner"
+
+    # KIF5B is RET's dominant real partner in this cohort (87/194 events).
+    # Pinned to the exact real value, not just the ranking, since this
+    # reuses the committed run's own already-computed AlgorithmResult
+    # objects verbatim (no seed/n_permutations choice made here at all).
+    assert ranking[0]["Partner_gene"] == "KIF5B"
+    assert ranking[0]["Event_count"] == 87
+    assert ranking[0]["Composite_score"] == pytest.approx(0.4099, abs=5e-5)
+
     for row in ranking:
         assert row["Domain_disruption_score"] is None
         assert row["Confidence_certainty_score"] is None
@@ -335,3 +353,179 @@ def test_composite_score_real_ret_msk_impact_gracefully_degrades():
     warning_text = " ".join(result.Warnings)
     assert "domain_disruption" in warning_text
     assert "confidence_certainty" in warning_text
+
+
+# --- Real orchestrator-dispatch integration tests -------------------------
+#
+# The tests above call `CompositeScoreAlgorithm().run(...)` directly with a
+# hand-assembled `algorithm_results` list. That proves the aggregation math,
+# but it does not prove the *orchestrator* actually wires composite_score's
+# inputs together on the real dispatch path (`run_algorithms`, which both
+# `cfh analyze`/`run_analysis` and any other caller of the registered
+# algorithm set go through). The tests below call `run_algorithms` --
+# composite_score's `DEPENDS_ON` declaration and the dependency-aware wave
+# scheduling in `cfh.orchestrator.run` -- directly, never touching
+# `CompositeScoreAlgorithm` themselves, against the same real committed BRAF
+# and RET data used above.
+
+
+def test_composite_score_via_real_orchestrator_dispatch_braf():
+    """Runs the real orchestrator (`run_algorithms`, exactly what
+    `run_analysis`/`cfh analyze` calls) with the full registered algorithm
+    set for BRAF and confirms a populated composite_score ranking table
+    comes out, with domain_retention/domain_disruption/cutpoint_detection
+    auto-injected as dependencies rather than composite_score being called
+    directly or its inputs hand-assembled.
+    """
+    results_path = _real_run_results_path("braf_msk-impact-50k-2026")
+    events, features = _braf_events_and_features(results_path)
+    config = load_gene_config("braf")
+    boundaries = _braf_pfam_domain_boundaries()
+
+    results = run_algorithms(
+        list_algorithms(),
+        events,
+        features,
+        config,
+        {
+            "domain_retention": {"seed": 42, "n_permutations": 500},
+            "domain_disruption": {"seed": 42, "n_permutations": 500},
+            "cutpoint_detection": {
+                "seed": 42,
+                "n_permutations": 500,
+                "domain_boundaries": boundaries,
+            },
+            "confidence_stats": {
+                "group_field": "Frame_status",
+                "group_values": ["in-frame", "out-of-frame"],
+                "outcome_field": "Is_protein_fusion",
+            },
+        },
+    )
+    results_by_name = {result.Algorithm: result for result in results}
+    composite_result = results_by_name["composite_score"]
+    _print_ranking("BRAF (via real orchestrator dispatch)", composite_result)
+
+    assert not any(
+        str(warning).startswith("Algorithm failed") for warning in composite_result.Warnings
+    )
+    assert composite_result.Summary["components_applicable"] == {
+        "recurrence": True,
+        "domain_retention": True,
+        "domain_disruption": True,
+        "cutpoint_proximity": True,
+        "confidence_certainty": True,
+    }
+    ranking = composite_result.Tables["composite_evidence_ranking"]
+    assert ranking, "expected a populated composite_score ranking table"
+    assert ranking[0]["Partner_gene"] == "KIAA1549"
+    assert ranking[0]["Event_count"] == 43
+    assert all(0.0 <= row["Composite_score"] <= 1.0 for row in ranking)
+
+
+def test_composite_score_via_real_orchestrator_dispatch_ret_gracefully_degrades():
+    """Same real-orchestrator proof for RET: domain_disruption legitimately
+    runs (it is registered) but no-ops for RET (no
+    ``disruption_required_domains`` configured), and confidence_stats is
+    requested with no per-algorithm params (matching what `cfh analyze`
+    actually sends today) so it fails exactly as the committed real RET run
+    already shows -- composite_score must still produce a populated,
+    correctly-degraded ranking table, not fail or no-op itself.
+    """
+    results_path = _real_run_results_path("ret_msk-impact-50k-2026")
+    events, features = _ret_events_and_features(results_path)
+    config = load_gene_config("ret")
+
+    results = run_algorithms(
+        list_algorithms(),
+        events,
+        features,
+        config,
+        {
+            "domain_retention": {"seed": 42, "n_permutations": 500},
+            "domain_disruption": {"seed": 42, "n_permutations": 500},
+            "cutpoint_detection": {"seed": 42, "n_permutations": 500},
+        },
+    )
+    results_by_name = {result.Algorithm: result for result in results}
+    composite_result = results_by_name["composite_score"]
+    _print_ranking("RET (via real orchestrator dispatch)", composite_result)
+
+    assert not any(
+        str(warning).startswith("Algorithm failed") for warning in composite_result.Warnings
+    )
+    assert composite_result.Summary["components_applicable"] == {
+        "recurrence": True,
+        "domain_retention": True,
+        "domain_disruption": False,
+        "cutpoint_proximity": True,
+        "confidence_certainty": False,
+    }
+    ranking = composite_result.Tables["composite_evidence_ranking"]
+    assert ranking, "expected a populated composite_score ranking table"
+    assert ranking[0]["Partner_gene"] == "KIF5B"
+    assert ranking[0]["Event_count"] == 87
+    assert all(0.0 <= row["Composite_score"] <= 1.0 for row in ranking)
+
+
+def test_composite_score_via_real_analyze_pipeline_offline(
+    genome_nexus_canonical_transcript_fixture_path,
+):
+    """End-to-end proof through `cfh.real_benchmark.analyze_structural_variant_calls`
+    -- the exact function `run_analysis`/`cfh analyze <gene> <study>` calls
+    -- with the full registered algorithm set (`list_algorithms()`,
+    composite_score included), fully offline via a mocked Genome Nexus
+    client backed by the same committed canonical-transcript fixture the
+    existing offline BRAF pipeline test
+    (`test_braf_kinase_retention_msk_impact_50k.py`) already uses for real
+    production normalization/mapping. Confirms `run.results` -- the exact
+    list `write_outputs` serializes into a committed `runs/*/results.json`
+    -- actually carries a populated composite_score ranking table, closing
+    the loop the reviewer flagged: `cfh analyze` no longer no-ops or fails
+    on composite_score.
+    """
+    client = MagicMock(spec=GenomeNexusClient)
+    client.fetch_canonical_transcript.return_value = json.loads(
+        genome_nexus_canonical_transcript_fixture_path.read_text()
+    )
+
+    def _call(sample_id: str, partner: str) -> dict:
+        return {
+            "sampleId": sample_id,
+            "site1HugoSymbol": partner,
+            "site2HugoSymbol": "BRAF",
+            "connectionType": "3to3",
+            "site2Position": 140493152,
+            "site2EffectOnFrame": "NA",
+            "eventInfo": f"Protein Fusion: in frame  {{{partner}:BRAF}}",
+        }
+
+    calls = [_call(f"SAMPLE-{i}", "AGAP3") for i in range(5)] + [
+        _call(f"SAMPLE-{i}", "SND1") for i in range(5, 8)
+    ]
+
+    run = analyze_structural_variant_calls(
+        calls,
+        "BRAF",
+        "offline_composite_score_integration",
+        genome_nexus_client=client,
+        n_permutations=500,
+        algorithm_names=list_algorithms(),
+    )
+
+    composite_results = [result for result in run.results if result.Algorithm == "composite_score"]
+    assert composite_results, "composite_score result missing from analyze_structural_variant_calls"
+    composite_result = composite_results[0]
+    _print_ranking("BRAF (via analyze_structural_variant_calls)", composite_result)
+
+    assert not any(
+        str(warning).startswith("Algorithm failed") for warning in composite_result.Warnings
+    )
+    assert composite_result.Summary["components_applicable"]["recurrence"] is True
+    assert composite_result.Summary["components_applicable"]["domain_retention"] is True
+    ranking = composite_result.Tables["composite_evidence_ranking"]
+    assert ranking, "expected a populated composite_score ranking table"
+    assert {row["Partner_gene"] for row in ranking} == {"AGAP3", "SND1"}
+    assert ranking[0]["Partner_gene"] == "AGAP3"
+    assert ranking[0]["Event_count"] == 5
+    assert all(0.0 <= row["Composite_score"] <= 1.0 for row in ranking)

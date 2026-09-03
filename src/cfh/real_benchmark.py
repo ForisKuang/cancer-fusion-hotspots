@@ -335,6 +335,7 @@ def analyze_structural_variant_calls(
         features,
         config,
         {"frequency": {"dedup_by_patient": False}},
+        extra_results=[domain_result],
     )
     results_by_name = {result.Algorithm: result for result in [domain_result, *other_results]}
     results = [results_by_name[name] for name in requested_algorithms if name in results_by_name]

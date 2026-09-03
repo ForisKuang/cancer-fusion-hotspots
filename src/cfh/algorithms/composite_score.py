@@ -39,10 +39,10 @@ p-value is supplied)
 ``disruption_required_domains`` AND the algorithm produced a non-null
 p-value)
     Same ``[0, 1]`` transform as ``domain_retention``, applied to the
-    ``domain_disruption`` result. Genes that leave ``disruption_required_domains``
-    unset (e.g. RET) get a graceful no-op ``domain_disruption`` result with
-    ``None`` statistics; this sub-score is then simply excluded from the
-    weighted average for that gene -- never treated as zero evidence.
+    ``domain_disruption`` result. A gene that leaves ``disruption_required_domains``
+    unset gets a graceful no-op ``domain_disruption`` result with ``None``
+    statistics; this sub-score is then simply excluded from the weighted
+    average for that gene -- never treated as zero evidence.
 
 ``cutpoint_proximity`` (present only when ``cutpoint_detection`` produced a
 determinable cutpoint, and only for partners with at least one mapped
@@ -109,6 +109,26 @@ DEFAULT_WEIGHTS: dict[str, float] = {
 }
 
 DEFAULT_NEG_LOG10_P_CAP = 10.0
+
+
+def _validate_weights(weights: dict[str, float]) -> None:
+    """Every weight must be finite and non-negative.
+
+    A negative or non-finite weight would break the documented ``[0, 1]``
+    composite-score guarantee (the weighted average is only bounded when
+    every weight and every sub-score is non-negative), so it is rejected
+    up front rather than silently producing an out-of-range score.
+    """
+    for name, weight in weights.items():
+        if not math.isfinite(weight) or weight < 0:
+            raise ValueError(
+                f"weights[{name!r}] must be a finite, non-negative number; got {weight!r}"
+            )
+
+
+def _validate_cap(cap: float) -> None:
+    if not math.isfinite(cap) or cap <= 0:
+        raise ValueError(f"neg_log10_p_cap must be a finite, positive number; got {cap!r}")
 
 
 def _as_algorithm_result(item: Any) -> AlgorithmResult:
@@ -243,12 +263,25 @@ class CompositeScoreAlgorithm(Algorithm):
             one required entry -- everything else is optional and its
             corresponding sub-score is gracefully excluded when absent,
             failed, or a not-applicable no-op.
-        weights (dict, optional): override any of ``DEFAULT_WEIGHTS``.
+        weights (dict, optional): override any of ``DEFAULT_WEIGHTS``. Every
+            weight (default or overridden) must be finite and non-negative,
+            or ``run`` raises ``ValueError`` -- a negative or non-finite
+            weight would break the documented ``[0, 1]`` composite-score
+            guarantee.
         neg_log10_p_cap (float, optional): saturation cap used to scale
-            p-value-derived sub-scores onto ``[0, 1]``, default 10.0.
+            p-value-derived sub-scores onto ``[0, 1]``, default 10.0. Must
+            be finite and positive.
     """
 
     VERSION = ALGORITHM_VERSION
+
+    DEPENDS_ON = (
+        "frequency",
+        "domain_retention",
+        "domain_disruption",
+        "cutpoint_detection",
+        "confidence_stats",
+    )
 
     def run(
         self,
@@ -260,6 +293,8 @@ class CompositeScoreAlgorithm(Algorithm):
         params = params or {}
         weights = {**DEFAULT_WEIGHTS, **(params.get("weights") or {})}
         cap = params.get("neg_log10_p_cap", DEFAULT_NEG_LOG10_P_CAP)
+        _validate_weights(weights)
+        _validate_cap(cap)
 
         results_by_name = _results_by_name(params.get("algorithm_results"))
         frequency_result = results_by_name.get("frequency")
