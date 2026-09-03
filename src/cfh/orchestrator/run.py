@@ -60,7 +60,8 @@ def _dependencies_for(name: str) -> tuple[str, ...]:
 
 
 def _schedule_waves(algorithm_names: Sequence[str]) -> list[list[str]]:
-    """Group distinct algorithm names into dependency-respecting waves.
+    """Group distinct algorithm names into dependency-respecting waves via
+    Kahn's algorithm (topological sort).
 
     An algorithm with no declared ``DEPENDS_ON`` (the default for every
     existing plugin) always lands in the first wave it is eligible for,
@@ -70,6 +71,13 @@ def _schedule_waves(algorithm_names: Sequence[str]) -> list[list[str]]:
     results can be injected into its params before it runs. A dependency
     that was not itself requested never blocks scheduling -- it is simply
     unavailable to the dependent algorithm.
+
+    Raises ``ValueError`` naming the algorithms involved if a circular
+    ``DEPENDS_ON`` dependency is found among the requested algorithms
+    (e.g. A depends on B and B depends on A) -- a configuration error that
+    can never make scheduling progress, so it is reported explicitly
+    rather than silently degraded into one wave with unresolved,
+    empty-injected dependencies.
     """
     remaining = list(dict.fromkeys(algorithm_names))  # de-duplicated, order-preserving
     scheduled: set[str] = set()
@@ -83,9 +91,10 @@ def _schedule_waves(algorithm_names: Sequence[str]) -> list[list[str]]:
             )
         ]
         if not wave:
-            # Defensive cycle guard: never spin forever on a misconfigured
-            # dependency cycle -- just run whatever is left together.
-            wave = list(remaining)
+            raise ValueError(
+                "circular DEPENDS_ON dependency detected among algorithms: "
+                f"{', '.join(sorted(remaining))}"
+            )
         waves.append(wave)
         scheduled.update(wave)
         remaining = [name for name in remaining if name not in wave]

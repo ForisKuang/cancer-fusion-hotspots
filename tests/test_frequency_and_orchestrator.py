@@ -1,6 +1,8 @@
 import json
 import time
 
+import pytest
+
 from cfh.algorithms import ExonRetentionAnalysis, FrequencyAnalysis
 from cfh.algorithms.base import Algorithm
 from cfh.algorithms.registry import register, unregister
@@ -260,3 +262,33 @@ def test_orchestrator_respects_caller_supplied_algorithm_results_over_auto_injec
 
     by_name = {result.Algorithm: result for result in results}
     assert by_name["consumer"].Summary["algorithms_seen"] == ["custom_source"]
+
+
+def test_orchestrator_raises_on_circular_depends_on_instead_of_silently_degrading():
+    """A -> B -> A can never make scheduling progress. Silently running
+    both in one wave (as an earlier implementation did) would inject EMPTY
+    dependency results into each -- a silent DEPENDS_ON violation that
+    looks like a normal run. This must instead raise a clear, explicit
+    configuration error naming the algorithms involved.
+    """
+
+    @register("cycle-a")
+    class CycleA(Algorithm):
+        DEPENDS_ON = ("cycle-b",)
+
+        def run(self, events, features, gene_config, params) -> AlgorithmResult:
+            return AlgorithmResult(Algorithm="cycle-a")
+
+    @register("cycle-b")
+    class CycleB(Algorithm):
+        DEPENDS_ON = ("cycle-a",)
+
+        def run(self, events, features, gene_config, params) -> AlgorithmResult:
+            return AlgorithmResult(Algorithm="cycle-b")
+
+    try:
+        with pytest.raises(ValueError, match="circular"):
+            run_algorithms(["cycle-a", "cycle-b"], _events(), [], _gene_config())
+    finally:
+        unregister("cycle-a")
+        unregister("cycle-b")

@@ -188,6 +188,78 @@ def test_non_finite_or_non_positive_neg_log10_p_cap_is_rejected():
             )
 
 
+def test_all_zero_weights_are_rejected_outright():
+    """An all-zero weight override would otherwise make every row's weight
+    denominator zero, producing a fabricated 0.0 composite score
+    indistinguishable from a genuine "no evidence" score. Reject it as a
+    configuration error instead.
+    """
+    events, features = _events_and_features({"PARTNER_A": [500]})
+    algorithm_results = [_frequency_result({"PARTNER_A": 1})]
+
+    with pytest.raises(ValueError, match="zero"):
+        CompositeScoreAlgorithm().run(
+            events,
+            features,
+            _FAKE_GENE_NO_DISRUPTION,
+            {
+                "algorithm_results": algorithm_results,
+                "weights": {name: 0.0 for name in DEFAULT_WEIGHTS},
+            },
+        )
+
+
+def test_zero_weight_for_a_rows_only_applicable_subscore_yields_none_not_zero():
+    """A *valid* (not all-zero) weight set can still leave a specific row's
+    own applicable sub-scores all weighted 0.0 -- here, recurrence is the
+    row's only applicable component and its weight is overridden to 0.0
+    while other weights stay positive. That row's Composite_score must be
+    None (with a warning), not a fabricated 0.0, and must sort after every
+    row with a real score.
+    """
+    events, features = _events_and_features({"PARTNER_A": [500], "PARTNER_B": [500]})
+    algorithm_results = [_frequency_result({"PARTNER_A": 1, "PARTNER_B": 1})]
+
+    result = CompositeScoreAlgorithm().run(
+        events,
+        features,
+        _FAKE_GENE_NO_DISRUPTION,
+        {"algorithm_results": algorithm_results, "weights": {"recurrence": 0.0}},
+    )
+
+    ranking = result.Tables["composite_evidence_ranking"]
+    assert len(ranking) == 2
+    for row in ranking:
+        assert row["Composite_score"] is None
+    assert any("zero total weight" in warning for warning in result.Warnings)
+
+
+def test_unrecognized_weight_override_key_is_rejected():
+    events, features = _events_and_features({"PARTNER_A": [500]})
+    algorithm_results = [_frequency_result({"PARTNER_A": 1})]
+
+    with pytest.raises(ValueError, match="unrecognized"):
+        CompositeScoreAlgorithm().run(
+            events,
+            features,
+            _FAKE_GENE_NO_DISRUPTION,
+            {"algorithm_results": algorithm_results, "weights": {"recurence": 0.5}},
+        )
+
+
+def test_non_numeric_weight_value_raises_value_error_not_type_error():
+    events, features = _events_and_features({"PARTNER_A": [500]})
+    algorithm_results = [_frequency_result({"PARTNER_A": 1})]
+
+    with pytest.raises(ValueError, match="recurrence"):
+        CompositeScoreAlgorithm().run(
+            events,
+            features,
+            _FAKE_GENE_NO_DISRUPTION,
+            {"algorithm_results": algorithm_results, "weights": {"recurrence": "high"}},
+        )
+
+
 def test_composite_score_matches_hand_computed_weighted_average():
     events, features = _events_and_features(
         {

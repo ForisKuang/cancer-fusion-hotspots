@@ -74,7 +74,15 @@ Composite score
     nor negative evidence -- it is excluded, not scored as zero. Default
     weights (overridable via ``params["weights"]``, summing to 1.0):
     ``recurrence=0.30``, ``domain_retention=0.25``, ``domain_disruption=0.20``,
-    ``cutpoint_proximity=0.15``, ``confidence_certainty=0.10``.
+    ``cutpoint_proximity=0.15``, ``confidence_certainty=0.10``. Overridden
+    weights must be finite, non-negative, not all zero, and use only the
+    five names above -- ``run`` raises ``ValueError`` otherwise, since an
+    invalid weight set would silently break the ``[0, 1]`` guarantee or
+    produce a fabricated score. In the residual edge case where a row's own
+    applicable sub-scores happen to all carry zero weight even though the
+    overall weight set is valid, ``Composite_score`` is ``None`` for that
+    row (with a corresponding warning) rather than a fabricated ``0.0`` --
+    it sorts after every row with a real score.
 
 The output table is sorted by ``Composite_score`` descending (ties broken by
 event count, then partner-gene name, for determinism) and each row carries
@@ -111,23 +119,50 @@ DEFAULT_WEIGHTS: dict[str, float] = {
 DEFAULT_NEG_LOG10_P_CAP = 10.0
 
 
+def _validate_weight_keys(overrides: dict[str, Any]) -> None:
+    """Every override key must name a real sub-score.
+
+    A typo'd key (e.g. ``"recurence"``) would otherwise be silently
+    ignored -- the intended weight never applies and the default for the
+    correctly-spelled key stays in effect with no indication anything was
+    wrong -- so it is rejected up front instead.
+    """
+    unknown = sorted(set(overrides) - set(DEFAULT_WEIGHTS))
+    if unknown:
+        raise ValueError(
+            f"unrecognized weights override key(s) {unknown}; expected one of "
+            f"{sorted(DEFAULT_WEIGHTS)}"
+        )
+
+
 def _validate_weights(weights: dict[str, float]) -> None:
-    """Every weight must be finite and non-negative.
+    """Every weight must be a finite, non-negative number, and at least one
+    must be positive.
 
     A negative or non-finite weight would break the documented ``[0, 1]``
     composite-score guarantee (the weighted average is only bounded when
-    every weight and every sub-score is non-negative), so it is rejected
-    up front rather than silently producing an out-of-range score.
+    every weight and every sub-score is non-negative). A non-numeric value
+    is checked explicitly first so it raises the documented ``ValueError``
+    rather than a ``TypeError`` from the arithmetic below. All-zero weights
+    are rejected outright: every row would silently compute a fabricated
+    ``0.0`` composite score (0/0 guarded to 0.0) that is visually
+    indistinguishable from a genuine "no evidence" score.
     """
     for name, weight in weights.items():
-        if not math.isfinite(weight) or weight < 0:
+        is_numeric = isinstance(weight, (int, float)) and not isinstance(weight, bool)
+        if not is_numeric or not math.isfinite(weight) or weight < 0:
             raise ValueError(
                 f"weights[{name!r}] must be a finite, non-negative number; got {weight!r}"
             )
+    if all(weight == 0 for weight in weights.values()):
+        raise ValueError(
+            "all composite_score weights are zero; at least one weight must be positive"
+        )
 
 
 def _validate_cap(cap: float) -> None:
-    if not math.isfinite(cap) or cap <= 0:
+    is_numeric = isinstance(cap, (int, float)) and not isinstance(cap, bool)
+    if not is_numeric or not math.isfinite(cap) or cap <= 0:
         raise ValueError(f"neg_log10_p_cap must be a finite, positive number; got {cap!r}")
 
 
@@ -264,10 +299,13 @@ class CompositeScoreAlgorithm(Algorithm):
             corresponding sub-score is gracefully excluded when absent,
             failed, or a not-applicable no-op.
         weights (dict, optional): override any of ``DEFAULT_WEIGHTS``. Every
-            weight (default or overridden) must be finite and non-negative,
-            or ``run`` raises ``ValueError`` -- a negative or non-finite
-            weight would break the documented ``[0, 1]`` composite-score
-            guarantee.
+            key must be one of the five recognized sub-score names, every
+            value must be a finite, non-negative number, and at least one
+            weight must be positive, or ``run`` raises ``ValueError`` --
+            an unrecognized key, a negative/non-finite/non-numeric weight,
+            or an all-zero weight set would each break the documented
+            ``[0, 1]`` composite-score guarantee or silently produce a
+            fabricated score.
         neg_log10_p_cap (float, optional): saturation cap used to scale
             p-value-derived sub-scores onto ``[0, 1]``, default 10.0. Must
             be finite and positive.
@@ -291,7 +329,9 @@ class CompositeScoreAlgorithm(Algorithm):
         params: dict,
     ) -> AlgorithmResult:
         params = params or {}
-        weights = {**DEFAULT_WEIGHTS, **(params.get("weights") or {})}
+        weight_overrides = params.get("weights") or {}
+        _validate_weight_keys(weight_overrides)
+        weights = {**DEFAULT_WEIGHTS, **weight_overrides}
         cap = params.get("neg_log10_p_cap", DEFAULT_NEG_LOG10_P_CAP)
         _validate_weights(weights)
         _validate_cap(cap)
@@ -343,7 +383,7 @@ class CompositeScoreAlgorithm(Algorithm):
             composite = (
                 sum(weights[name] * value for name, value in components.items()) / weight_sum
                 if weight_sum > 0
-                else 0.0
+                else None
             )
             rows.append(
                 {
@@ -360,12 +400,23 @@ class CompositeScoreAlgorithm(Algorithm):
             )
 
         rows.sort(
-            key=lambda row: (-row["Composite_score"], -row["Event_count"], row["Partner_gene"])
+            key=lambda row: (
+                row["Composite_score"] is None,
+                -(row["Composite_score"] if row["Composite_score"] is not None else 0.0),
+                -row["Event_count"],
+                row["Partner_gene"],
+            )
         )
         for rank, row in enumerate(rows, start=1):
             row["Rank"] = rank
 
         warnings: list[str] = []
+        if any(row["Composite_score"] is None for row in rows):
+            warnings.append(
+                "One or more partner rows had zero total weight among their applicable "
+                "sub-scores; Composite_score is None for those rows rather than a "
+                "fabricated 0.0."
+            )
         if domain_retention_score is None:
             warnings.append(
                 "domain_retention sub-score excluded: no applicable domain_retention "
