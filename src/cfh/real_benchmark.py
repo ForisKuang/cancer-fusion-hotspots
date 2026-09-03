@@ -121,7 +121,7 @@ def _source_frame_status(text: object) -> str | None:
     if not value:
         return None
     if value in {"na", "n/a", "unknown"}:
-        return "unknown"
+        return None
     if "out-of-frame" in value or "out of frame" in value:
         return "out-of-frame"
     if "in-frame" in value or "in frame" in value:
@@ -617,7 +617,7 @@ def _discrepancies(run: RealBenchmarkRun) -> list[dict]:
                 _source_frame_status(row.get("source_site2_effect_on_frame")),
                 _source_frame_status(row.get("source_annotation_text")),
             )
-            if status is not None
+            if status in {"in-frame", "out-of-frame"}
         }
         if any(source_call != row.get("frame_status") for source_call in source_calls):
             discrepancies.append({"discrepancy_type": "source_vs_derived_qa_mismatch", **common})

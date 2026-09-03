@@ -2,7 +2,7 @@
   "gene_symbol": "BRAF",
   "study_id": "msk_impact_50k_2026",
   "molecular_profile_id": "msk_impact_50k_2026_structural_variants",
-  "retrieved_at": "2026-09-03T14:44:30.702691+00:00",
+  "retrieved_at": "2026-09-03T14:52:05.581748+00:00",
   "summary": {
     "raw_structural_variant_count": 251,
     "total_fusions": 174,
@@ -3595,6 +3595,20 @@
   ],
   "algorithm_results": [
     {
+      "Algorithm": "confidence_stats",
+      "Algorithm_version": null,
+      "Parameters": {},
+      "Summary": {
+        "Runtime_seconds": 3.749999450519681e-06
+      },
+      "Tables": {},
+      "Warnings": [
+        "Algorithm failed: ValueError: params['group_field'] is required"
+      ],
+      "Created_at": "2026-09-03T14:52:05.577691Z",
+      "Input_fingerprint": "5df187319ebb6d3c4e095294baf9dd269287bd73d4909323e774ec8f3763e48e"
+    },
+    {
       "Algorithm": "domain_retention",
       "Algorithm_version": "0.1.0",
       "Parameters": {
@@ -3606,7 +3620,7 @@
         "fisher_p_value": 0.0737799140314508,
         "permutation_empirical_p_value": 0.07192807192807193,
         "observed_in_frame_retention_rate": 0.9403973509933775,
-        "Runtime_seconds": 4.756919082996319
+        "Runtime_seconds": 0.9630460000043968
       },
       "Tables": {
         "frame_domain_contingency_table": [
@@ -3625,7 +3639,24 @@
         }
       },
       "Warnings": [],
-      "Created_at": "2026-09-03T14:44:30.674232Z",
+      "Created_at": "2026-09-03T14:52:05.574593Z",
+      "Input_fingerprint": "5df187319ebb6d3c4e095294baf9dd269287bd73d4909323e774ec8f3763e48e"
+    },
+    {
+      "Algorithm": "exon_retention",
+      "Algorithm_version": "1.0.0",
+      "Parameters": {},
+      "Summary": {
+        "retained_fraction": null,
+        "Runtime_seconds": 7.040987838990986e-06
+      },
+      "Tables": {
+        "Exon_retention": []
+      },
+      "Warnings": [
+        "No target exon was supplied in params or GeneConfig."
+      ],
+      "Created_at": "2026-09-03T14:52:05.580317Z",
       "Input_fingerprint": "5df187319ebb6d3c4e095294baf9dd269287bd73d4909323e774ec8f3763e48e"
     },
     {
@@ -3638,7 +3669,7 @@
         "input_event_count": 174,
         "analyzed_event_count": 174,
         "unique_partner_gene_count": 63,
-        "Runtime_seconds": 0.0015767080039950088
+        "Runtime_seconds": 6.408299668692052e-05
       },
       "Tables": {
         "Partner_gene_counts": [
@@ -3897,7 +3928,21 @@
         ]
       },
       "Warnings": [],
-      "Created_at": "2026-09-03T14:44:30.701165Z",
+      "Created_at": "2026-09-03T14:52:05.580297Z",
+      "Input_fingerprint": "5df187319ebb6d3c4e095294baf9dd269287bd73d4909323e774ec8f3763e48e"
+    },
+    {
+      "Algorithm": "joint_partner",
+      "Algorithm_version": null,
+      "Parameters": {},
+      "Summary": {
+        "Runtime_seconds": 2.2500025806948543e-06
+      },
+      "Tables": {},
+      "Warnings": [
+        "Algorithm failed: ValueError: joint_partner requires a GeneConfig with gene_pair"
+      ],
+      "Created_at": "2026-09-03T14:52:05.581602Z",
       "Input_fingerprint": "5df187319ebb6d3c4e095294baf9dd269287bd73d4909323e774ec8f3763e48e"
     }
   ]

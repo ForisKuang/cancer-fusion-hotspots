@@ -1,3 +1,4 @@
+import csv
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -102,6 +103,13 @@ def test_real_benchmark_pipeline_writes_tsv_json_and_markdown(
     assert "reference_discrepancy" in outliers
     assert "source_vs_derived_qa_mismatch" in outliers
     assert "Protein Fusion: in frame" in outliers
+    outlier_rows = list(csv.DictReader(paths["outliers"].open(), delimiter="\t"))
+    qa_event_ids = {
+        row["event_id"]
+        for row in outlier_rows
+        if row["discrepancy_type"] == "source_vs_derived_qa_mismatch"
+    }
+    assert qa_event_ids == {"EVT-SAMPLE-2-2"}
     report = paths["markdown"].read_text()
     assert "does **not** reproduce" in report
     assert "PF07714 (458-712 aa)" in report
