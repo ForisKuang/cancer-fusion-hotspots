@@ -97,7 +97,14 @@ def test_real_benchmark_pipeline_writes_tsv_json_and_markdown(
     assert manifest["study_id"] == "msk_impact_50k_2026"
     assert len(manifest["endpoints_used"]) == 2
     assert paths["domain_svg"].parent.name == "visualizations"
-    assert "#d62728" in paths["domain_svg"].read_text()
+    domain_svg = paths["domain_svg"].read_text()
+    assert "#d62728" in domain_svg
+    assert "#2878b5" in domain_svg
+    assert "#f2a93b" in domain_svg
+    assert "#777777" in domain_svg
+    assert "fully retained" in domain_svg
+    assert "truncated" in domain_svg
+    assert "fully lost" in domain_svg
     assert "reference 100.0%" in paths["comparison_svg"].read_text()
     outliers = paths["outliers"].read_text()
     assert "reference_discrepancy" in outliers

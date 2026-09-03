@@ -196,6 +196,61 @@ def gene_breakpoint_domain_status_records(
     return records
 
 
+def domain_retention_descriptive_table(
+    features: list[FusionFeature],
+    gene_config: GeneConfig,
+    *,
+    domains: list[KeyDomain] | None = None,
+) -> list[dict]:
+    """Summarize optional quantitative retention without changing test calls.
+
+    Only features carrying the additive ``Domain_retention_details`` data
+    contribute. This keeps pre-existing/externally constructed features valid
+    and leaves the contingency-table classification entirely flag-driven.
+    """
+    domains = gene_config.key_domains if domains is None else domains
+    rows: list[dict] = []
+    target_features = list(_target_features(features, gene_config))
+    for domain in domains:
+        domain_key = domain.key or domain.name.lower().replace(" ", "_")
+        fractions: list[float] = []
+        non_retained_fractions: list[float] = []
+        truncated_count = 0
+        fully_retained_count = 0
+        fully_lost_count = 0
+        for feature in target_features:
+            detail = (feature.Domain_retention_details or {}).get(domain_key)
+            if detail is None or detail.Retained_fraction is None:
+                continue
+            fraction = detail.Retained_fraction
+            fractions.append(fraction)
+            if detail.Is_truncated:
+                truncated_count += 1
+            elif fraction == 1.0:
+                fully_retained_count += 1
+            elif fraction == 0.0:
+                fully_lost_count += 1
+            status = (feature.Domain_retention_flags or {}).get(domain_key)
+            if status in _NON_RETAINED:
+                non_retained_fractions.append(fraction)
+        rows.append(
+            {
+                "Domain_key": domain_key,
+                "Domain_name": domain.name,
+                "Quantitative_call_count": len(fractions),
+                "Fully_retained_count": fully_retained_count,
+                "Truncated_count": truncated_count,
+                "Fully_lost_count": fully_lost_count,
+                "Mean_retained_fraction_among_non_retained_calls": (
+                    sum(non_retained_fractions) / len(non_retained_fractions)
+                    if non_retained_fractions
+                    else None
+                ),
+            }
+        )
+    return rows
+
+
 def _target_domain_key(domains: list[KeyDomain], gene_symbol: str | None) -> str:
     if not domains:
         raise ValueError(f"{gene_symbol} has no configured domains for this test")

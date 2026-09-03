@@ -11,7 +11,7 @@ from __future__ import annotations
 from cfh.genes.registry import GeneConfig, KeyDomain
 from cfh.mapping.domain_source import ProteinDomain, UniProtDomainSource
 from cfh.model.fusion_event import FusionEvent
-from cfh.model.fusion_feature import FusionFeature
+from cfh.model.fusion_feature import DomainRetentionDetail, FusionFeature
 
 _default_domain_source: UniProtDomainSource | None = None
 
@@ -106,6 +106,52 @@ def classify_domain_retention(
     return "disrupted"
 
 
+def calculate_domain_retention(
+    domain_start: int | None,
+    domain_end: int | None,
+    breakpoint_aa: int | None,
+    role: str | None,
+) -> DomainRetentionDetail:
+    """Return quantitative retention for an inclusive domain interval.
+
+    Protein/domain coordinates are one-based and inclusive. The breakpoint
+    residue belongs to the surviving fragment, matching the established
+    binary classifier's boundary behavior.
+    """
+    if (
+        breakpoint_aa is None
+        or domain_start is None
+        or domain_end is None
+        or role not in {"five_prime", "three_prime"}
+    ):
+        return DomainRetentionDetail(
+            Domain_start_aa=domain_start,
+            Domain_end_aa=domain_end,
+        )
+    if domain_end < domain_start:
+        raise ValueError("domain_end must be greater than or equal to domain_start")
+
+    if role == "five_prime":
+        retained_start = domain_start
+        retained_end = min(domain_end, breakpoint_aa)
+    else:
+        retained_start = max(domain_start, breakpoint_aa)
+        retained_end = domain_end
+
+    retained_length = max(0, retained_end - retained_start + 1)
+    domain_length = domain_end - domain_start + 1
+    retained_fraction = retained_length / domain_length
+    has_retained_interval = retained_length > 0
+    return DomainRetentionDetail(
+        Domain_start_aa=domain_start,
+        Domain_end_aa=domain_end,
+        Retained_start_aa=retained_start if has_retained_interval else None,
+        Retained_end_aa=retained_end if has_retained_interval else None,
+        Retained_fraction=retained_fraction,
+        Is_truncated=0.0 < retained_fraction < 1.0,
+    )
+
+
 def map_event(
     event: FusionEvent,
     gene_config: GeneConfig,
@@ -124,6 +170,7 @@ def map_event(
     domains = domain_source.fetch(gene_config.protein_id)
 
     retention_flags: dict[str, str] = {}
+    retention_details: dict[str, DomainRetentionDetail] = {}
     retained_domains: list[str] = []
     lost_domains: list[str] = []
     disrupted_domains: list[str] = []
@@ -138,6 +185,12 @@ def map_event(
             role,
         )
         retention_flags[flag_key] = status
+        retention_details[flag_key] = calculate_domain_retention(
+            matched.start_aa if matched else None,
+            matched.end_aa if matched else None,
+            junction_position_aa,
+            role,
+        )
         if status == "retained":
             retained_domains.append(key_domain.name)
         elif status == "lost":
@@ -155,4 +208,5 @@ def map_event(
         Lost_domains=lost_domains,
         Disrupted_domains=disrupted_domains,
         Domain_retention_flags=retention_flags,
+        Domain_retention_details=retention_details,
     )

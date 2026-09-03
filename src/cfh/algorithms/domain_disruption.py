@@ -27,11 +27,12 @@ from cfh.model.fusion_feature import FusionFeature
 from cfh.stats.breakpoint_tests import (
     DISRUPTED_STATUSES,
     build_frame_domain_contingency_table,
+    domain_retention_descriptive_table,
     fishers_frame_domain_test,
     permutation_null_test,
 )
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 
 
 @register("domain_disruption")
@@ -96,6 +97,9 @@ class DomainDisruptionAlgorithm(Algorithm):
             },
             Tables={
                 "frame_domain_contingency_table": table,
+                "domain_disruption_descriptives": domain_retention_descriptive_table(
+                    features, gene_config, domains=domains
+                ),
                 "permutation_null_disruption_rates": list(null_rates),
             },
         )

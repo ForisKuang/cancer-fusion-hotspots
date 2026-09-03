@@ -258,6 +258,7 @@ def analyze_structural_variant_calls(
             continue
         events.append(event)
         features.append(feature)
+        domain_detail = (feature.Domain_retention_details or {}).get(target_key)
         rows.append(
             {
                 "event_id": event.Event_id,
@@ -272,6 +273,10 @@ def analyze_structural_variant_calls(
                 "breakpoint_protein_position": mapping.breakpoint_protein_position,
                 "is_intronic_breakpoint": mapping.is_intronic_breakpoint,
                 "domain_status": (feature.Domain_retention_flags or {}).get(target_key, "unknown"),
+                "domain_retained_fraction": (
+                    domain_detail.Retained_fraction if domain_detail else None
+                ),
+                "domain_is_truncated": domain_detail.Is_truncated if domain_detail else None,
                 "retained_domains": "; ".join(feature.Retained_domains or []),
                 "lost_domains": "; ".join(feature.Lost_domains or []),
                 "disrupted_domains": "; ".join(feature.Disrupted_domains or []),
@@ -647,7 +652,7 @@ def _discrepancies(run: RealBenchmarkRun) -> list[dict]:
 
 
 def _domain_track_svg(run: RealBenchmarkRun, outlier_ids: set[str]) -> str:
-    """Render mapped breakpoints and configured-domain boundaries without gene literals."""
+    """Render breakpoints by quantitative domain-retention state."""
     start = run.summary.get("domain_start_aa") or 0
     end = run.summary.get("domain_end_aa") or 0
     positions = [
@@ -662,9 +667,23 @@ def _domain_track_svg(run: RealBenchmarkRun, outlier_ids: set[str]) -> str:
         position = row["breakpoint_protein_position"]
         if position is None:
             continue
-        color = "#d62728" if row["event_id"] in outlier_ids else "#2878b5"
+        fraction = row.get("domain_retained_fraction")
+        status = row.get("domain_status")
+        if row.get("domain_is_truncated") or status == "disrupted":
+            color = "#f2a93b"
+        elif fraction == 0.0 or status == "lost":
+            color = "#777777"
+        elif fraction == 1.0 or status == "retained":
+            color = "#2878b5"
+        else:
+            color = "#aaaaaa"
+        stroke = "#d62728" if row["event_id"] in outlier_ids else "none"
+        stroke_width = "1.5" if row["event_id"] in outlier_ids else "0"
         y = 100 + (index % 5) * 7
-        dots.append(f'<circle cx="{60 + position * scale:.1f}" cy="{y}" r="3" fill="{color}"/>')
+        dots.append(
+            f'<circle cx="{60 + position * scale:.1f}" cy="{y}" r="3" fill="{color}" '
+            f'stroke="{stroke}" stroke-width="{stroke_width}"/>'
+        )
     return "\n".join([
         '<svg xmlns="http://www.w3.org/2000/svg" width="920" height="180" viewBox="0 0 920 180">',
         '<rect width="920" height="180" fill="white"/>',
@@ -675,11 +694,14 @@ def _domain_track_svg(run: RealBenchmarkRun, outlier_ids: set[str]) -> str:
         f'width="{max(2, (end-start)*scale):.1f}" height="28" '
         'fill="#62b36f" opacity="0.55"/>',
         *dots,
-        '<circle cx="60" cy="157" r="4" fill="#2878b5"/>'
-        '<text x="70" y="162" font-family="sans-serif" font-size="12">'
-        'matches reference pattern</text>',
-        '<circle cx="270" cy="157" r="4" fill="#d62728"/>'
-        '<text x="280" y="162" font-family="sans-serif" font-size="12">'
+        '<circle cx="60" cy="150" r="4" fill="#2878b5"/>'
+        '<text x="70" y="155" font-family="sans-serif" font-size="12">fully retained</text>',
+        '<circle cx="180" cy="150" r="4" fill="#f2a93b"/>'
+        '<text x="190" y="155" font-family="sans-serif" font-size="12">truncated</text>',
+        '<circle cx="275" cy="150" r="4" fill="#777777"/>'
+        '<text x="285" y="155" font-family="sans-serif" font-size="12">fully lost</text>',
+        '<circle cx="365" cy="150" r="4" fill="white" stroke="#d62728" stroke-width="1.5"/>'
+        '<text x="375" y="155" font-family="sans-serif" font-size="12">'
         'reference discrepancy</text>',
         '</svg>',
     ])

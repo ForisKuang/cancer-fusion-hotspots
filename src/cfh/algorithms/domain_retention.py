@@ -10,6 +10,7 @@ from cfh.model.fusion_event import FusionEvent
 from cfh.model.fusion_feature import FusionFeature
 from cfh.stats.breakpoint_tests import (
     build_frame_domain_contingency_table,
+    domain_retention_descriptive_table,
     fishers_frame_domain_test,
     permutation_null_test,
 )
@@ -39,7 +40,7 @@ class DomainRetentionAlgorithm(Algorithm):
         )
         return AlgorithmResult(
             Algorithm="domain_retention",
-            Algorithm_version="0.1.0",
+            Algorithm_version="0.2.0",
             Parameters={
                 "seed": params.get("seed", 42),
                 "n_permutations": params.get("n_permutations", 10_000),
@@ -52,6 +53,9 @@ class DomainRetentionAlgorithm(Algorithm):
             },
             Tables={
                 "frame_domain_contingency_table": table,
+                "domain_retention_descriptives": domain_retention_descriptive_table(
+                    features, gene_config
+                ),
                 "permutation_null_retention_rates": list(null_rates),
             },
         )

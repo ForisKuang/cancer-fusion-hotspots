@@ -24,7 +24,8 @@ pipeline that:
    and exon-coordinate data as the primary generic fallback, and an
    Ensembl REST / UniProt+InterPro cross-check), producing a
    `FusionFeature` describing which domains are retained, disrupted, or
-   lost.
+   lost, plus each domain's retained amino-acid interval, retained fraction,
+   and truncation state when its boundaries are known.
 4. **Runs pluggable hotspot-detection algorithms** against the normalized
    events and features, each producing a structured `AlgorithmResult`.
 

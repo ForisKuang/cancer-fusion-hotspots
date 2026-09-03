@@ -1,9 +1,11 @@
+import pytest
+
 from cfh.algorithms import registry
 from cfh.algorithms.domain_disruption import DomainDisruptionAlgorithm
 from cfh.genes.registry import GeneConfig, KeyDomain, load_gene_config
 from cfh.model.algorithm_result import AlgorithmResult
 from cfh.model.fusion_event import FusionEvent
-from cfh.model.fusion_feature import FusionFeature
+from cfh.model.fusion_feature import DomainRetentionDetail, FusionFeature
 from cfh.stats.breakpoint_tests import (
     DISRUPTED_STATUSES,
     build_frame_domain_contingency_table,
@@ -112,6 +114,51 @@ def test_detects_enriched_disruption_in_synthetic_clean_separation():
     assert result.Summary["fisher_p_value"] == p_value
     assert result.Summary["fisher_p_value"] < 0.05
     assert result.Summary["observed_in_frame_disruption_rate"] == 1.0
+
+
+def test_disruption_result_reports_optional_truncation_descriptives():
+    events, features = _events_and_features(_clean_separation_records())
+    features[0] = features[0].model_copy(
+        update={
+            "Domain_retention_details": {
+                "made_up": DomainRetentionDetail(
+                    Domain_start_aa=100,
+                    Domain_end_aa=200,
+                    Retained_start_aa=100,
+                    Retained_end_aa=160,
+                    Retained_fraction=61 / 101,
+                    Is_truncated=True,
+                )
+            }
+        }
+    )
+    features[1] = features[1].model_copy(
+        update={
+            "Domain_retention_details": {
+                "made_up": DomainRetentionDetail(
+                    Domain_start_aa=100,
+                    Domain_end_aa=200,
+                    Retained_fraction=0.0,
+                    Is_truncated=False,
+                )
+            }
+        }
+    )
+
+    result = DomainDisruptionAlgorithm().run(
+        events,
+        features,
+        _FAKE_GENE_WITH_DISRUPTION_DOMAIN,
+        {"seed": 42, "n_permutations": 10},
+    )
+    row = result.Tables["domain_disruption_descriptives"][0]
+
+    assert row["Quantitative_call_count"] == 2
+    assert row["Truncated_count"] == 1
+    assert row["Fully_lost_count"] == 1
+    assert row["Mean_retained_fraction_among_non_retained_calls"] == pytest.approx(
+        (61 / 101) / 2
+    )
 
 
 def test_permutation_null_is_bit_identical_for_a_fixed_seed():

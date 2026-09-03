@@ -45,6 +45,7 @@ FUSION_FEATURE_FIELDS = {
     "Lost_domains",
     "Disrupted_domains",
     "Domain_retention_flags",
+    "Domain_retention_details",
 }
 
 ALGORITHM_RESULT_FIELDS = {
