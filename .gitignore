@@ -9,3 +9,7 @@ build/
 dist/
 *.egg
 .DS_Store
+
+# Local secrets (e.g. OncoKB API token) -- never commit
+.env
+.env.*
