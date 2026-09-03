@@ -28,6 +28,17 @@ class KeyDomain(BaseModel):
     """Source-native identifier, such as a Pfam accession from Genome Nexus."""
 
 
+class BenchmarkReference(BaseModel):
+    """Optional literature baseline used by reports and discrepancy artifacts."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    citation: str
+    fusion_count: int
+    in_frame_percent: float
+    domain_retained_percent: float
+
+
 class GeneConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -40,6 +51,7 @@ class GeneConfig(BaseModel):
     expected_retained_exon_hint: Optional[str] = None
     analysis_modes: list[str] = []
     entrez_gene_id: Optional[int] = None
+    benchmark_reference: Optional[BenchmarkReference] = None
     """NCBI Entrez gene id, e.g. for cBioPortal structural-variant API queries."""
 
     @model_validator(mode="after")

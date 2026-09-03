@@ -14,3 +14,8 @@ expected_retained_exon_hint: null
 analysis_modes:
   - breakpoint_hotspot
   - domain_retention
+benchmark_reference:
+  citation: "PMC5461196"
+  fusion_count: 33
+  in_frame_percent: 100.0
+  domain_retained_percent: 100.0

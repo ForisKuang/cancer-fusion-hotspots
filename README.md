@@ -70,21 +70,29 @@ Run the test suite (excluding tests that hit real external services):
 pytest -m "not network"
 ```
 
-Run the prototype live cBioPortal/Genome Nexus benchmark and write event-level
-TSV, structured JSON, and a Markdown summary:
+Run the live cBioPortal/Genome Nexus benchmark. Each invocation creates a
+timestamped directory under `runs/` with a manifest, event-level TSV, structured
+JSON, Markdown report, discrepancy table, and SVG visualizations:
 
 ```bash
-cfh real-benchmark BRAF msk_impact_50k_2026 --output-dir reports
+cfh real-benchmark BRAF msk_impact_50k_2026
 ```
 
 The study ID is an argument to the shared pipeline. For example, the original
 MSK-IMPACT publication cohort can be run with:
 
 ```bash
-cfh real-benchmark BRAF msk_impact_2017 --output-dir reports
+cfh real-benchmark BRAF msk_impact_2017
 ```
 
-This command makes unauthenticated requests to both public services.
+To run the complete registered-algorithm orchestrator for a configured gene and
+study, use:
+
+```bash
+cfh analyze BRAF msk_impact_50k_2026
+```
+
+These commands make unauthenticated requests to both public services.
 
 ## Repository layout
 
