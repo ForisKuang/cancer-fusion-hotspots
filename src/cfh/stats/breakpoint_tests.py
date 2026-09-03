@@ -1,9 +1,15 @@
-"""Tests for frame-specific retention of configured protein domains.
+"""Tests for frame-specific retention/disruption of configured protein domains.
 
 The inputs deliberately remain the pipeline's typed ``FusionEvent`` and
 ``FusionFeature`` objects.  This keeps the statistical layer independent of a
 particular cBioPortal row format while retaining the event/feature join that
 was established during normalization and mapping.
+
+The same machinery answers two symmetric questions, distinguished only by
+which domain list and which target statuses ("hit statuses") are supplied:
+whether a configured domain is reliably *retained* among in-frame fusions
+(the ``domain_retention`` algorithm), or reliably *lost/disrupted* among
+them (the ``domain_disruption`` algorithm).
 """
 
 from __future__ import annotations
@@ -13,7 +19,7 @@ from collections.abc import Iterable
 import numpy as np
 from scipy.stats import fisher_exact
 
-from cfh.genes.registry import GeneConfig
+from cfh.genes.registry import GeneConfig, KeyDomain
 from cfh.mapping.genome_nexus_source import (
     GenomeNexusClient,
     cds_bounds_from_utrs,
@@ -25,6 +31,13 @@ from cfh.model.fusion_feature import FusionFeature
 
 _RETAINED = "retained"
 _NON_RETAINED = {"lost", "disrupted"}
+_KNOWN_STATUSES = {_RETAINED, *_NON_RETAINED}
+
+RETAINED_STATUSES = frozenset({_RETAINED})
+"""Hit-status set for testing domain *retention* (the default)."""
+
+DISRUPTED_STATUSES = frozenset(_NON_RETAINED)
+"""Hit-status set for testing domain *loss/disruption* (the inverse test)."""
 
 
 def fishers_frame_domain_test(
@@ -32,11 +45,13 @@ def fishers_frame_domain_test(
 ) -> tuple[float, float]:
     """Run the pre-specified one-sided Fisher exact test.
 
-    Rows are ``(kinase retained, kinase lost/disrupted)`` and columns are
-    ``(in-frame protein fusion, other)``.  A zero off-diagonal cell produces
-    an infinite odds ratio in Fisher's exact test; this is expected for the
-    Zehir paper's reported 33/33 pattern, not a numerical bug.  SciPy still
-    calculates the exact finite p-value for that table.
+    Rows are ``(configured hit-status, everything else)`` -- e.g. ``(domain
+    retained, domain lost/disrupted)`` for the retention test, or ``(domain
+    lost/disrupted, domain retained)`` for the disruption test -- and
+    columns are ``(in-frame protein fusion, other)``.  A zero off-diagonal
+    cell produces an infinite odds ratio in Fisher's exact test; this is
+    expected for the Zehir paper's reported 33/33 pattern, not a numerical
+    bug.  SciPy still calculates the exact finite p-value for that table.
     """
     table = np.asarray(list(contingency_table), dtype=int)
     if table.shape != (2, 2):
@@ -49,16 +64,28 @@ def fishers_frame_domain_test(
 
 
 def build_frame_domain_contingency_table(
-    events: list[FusionEvent], features: list[FusionFeature], gene_config: GeneConfig
+    events: list[FusionEvent],
+    features: list[FusionFeature],
+    gene_config: GeneConfig,
+    *,
+    domains: list[KeyDomain] | None = None,
+    hit_statuses: frozenset[str] = RETAINED_STATUSES,
 ) -> list[list[int]]:
     """Build the Fisher table for a configured target-domain flag.
+
+    ``domains`` defaults to ``gene_config.key_domains`` (the retention
+    test); pass ``gene_config.disruption_required_domains`` with
+    ``hit_statuses=DISRUPTED_STATUSES`` for the inverse disruption test.
+    Row 0 is "domain status is in ``hit_statuses``", row 1 is everything
+    else with a known status.
 
     Features with an unknown domain state are excluded: they carry no
     retention/loss observation and assigning them to either cell would create
     artificial evidence.  Events not marked as an in-frame protein fusion
     form the comparison column.
     """
-    target_key = _target_domain_key(gene_config)
+    domains = gene_config.key_domains if domains is None else domains
+    target_key = _target_domain_key(domains, gene_config.gene_symbol)
     event_by_id = {event.Event_id: event for event in events}
     counts = [[0, 0], [0, 0]]
     for feature in _target_features(features, gene_config):
@@ -66,7 +93,7 @@ def build_frame_domain_contingency_table(
         status = _domain_status(feature, target_key)
         if event is None or status is None:
             continue
-        row = 0 if status == _RETAINED else 1
+        row = 0 if status in hit_statuses else 1
         column = 0 if _is_in_frame_protein_fusion(event) else 1
         counts[row][column] += 1
     return counts
@@ -79,12 +106,19 @@ def permutation_null_test(
     seed: int = 42,
     n_permutations: int = 10_000,
     *,
+    domains: list[KeyDomain] | None = None,
+    hit_statuses: frozenset[str] = RETAINED_STATUSES,
     genome_nexus_client: GenomeNexusClient | None = None,
 ) -> tuple[float, float, tuple[float, ...]]:
-    """Estimate a one-sided empirical retention p-value by breakpoint randomization.
+    """Estimate a one-sided empirical p-value by breakpoint randomization.
 
-    The returned tuple is ``(empirical_p_value, observed_retention_rate,
-    null_retention_rates)``.  If a ``genome_nexus_client`` is supplied, each
+    ``domains`` and ``hit_statuses`` select which test is run, matching
+    :func:`build_frame_domain_contingency_table` (retention by default;
+    pass ``gene_config.disruption_required_domains`` and
+    ``hit_statuses=DISRUPTED_STATUSES`` for the disruption test).
+
+    The returned tuple is ``(empirical_p_value, observed_hit_rate,
+    null_hit_rates)``.  If a ``genome_nexus_client`` is supplied, each
     random breakpoint is sampled across the target transcript's real genomic
     span (including its observed intron/exon structure) and mapped back to a
     CDS/protein position with the reviewed Genome Nexus arithmetic.  Offline
@@ -100,7 +134,8 @@ def permutation_null_test(
     if n_permutations <= 0:
         raise ValueError("n_permutations must be positive")
 
-    target_key = _target_domain_key(gene_config)
+    domains = gene_config.key_domains if domains is None else domains
+    target_key = _target_domain_key(domains, gene_config.gene_symbol)
     event_by_id = {event.Event_id: event for event in events}
     records = [
         (event_by_id[feature.Event_id], feature, _domain_status(feature, target_key))
@@ -111,8 +146,8 @@ def permutation_null_test(
     if not in_frame_records:
         raise ValueError("no in-frame protein-fusion events have a known domain-retention state")
 
-    observed_retained = sum(status == _RETAINED for _, _, status in in_frame_records)
-    observed_rate = observed_retained / len(in_frame_records)
+    observed_hits = sum(status in hit_statuses for _, _, status in in_frame_records)
+    observed_rate = observed_hits / len(in_frame_records)
     reference_positions, reference_statuses = _reference_positions(records)
     rng = np.random.default_rng(seed)
 
@@ -125,11 +160,11 @@ def permutation_null_test(
             )
         else:
             sampled_positions = genomic_mapper(rng, len(in_frame_records))
-        retained = sum(
-            _nearest_status(int(position), reference_positions, reference_statuses) == _RETAINED
+        hits = sum(
+            _nearest_status(int(position), reference_positions, reference_statuses) in hit_statuses
             for position in sampled_positions
         )
-        null_rates.append(retained / len(in_frame_records))
+        null_rates.append(hits / len(in_frame_records))
 
     empirical_p_value = (1 + sum(rate >= observed_rate for rate in null_rates)) / (
         n_permutations + 1
@@ -151,7 +186,7 @@ def gene_breakpoint_domain_status_records(
     cutpoint scanning) can reuse it without duplicating the domain-key/
     status-extraction logic.
     """
-    target_key = _target_domain_key(gene_config)
+    target_key = _target_domain_key(gene_config.key_domains, gene_config.gene_symbol)
     records: list[tuple[int, str]] = []
     for feature in _target_features(features, gene_config):
         status = _domain_status(feature, target_key)
@@ -161,10 +196,10 @@ def gene_breakpoint_domain_status_records(
     return records
 
 
-def _target_domain_key(gene_config: GeneConfig) -> str:
-    if not gene_config.key_domains:
-        raise ValueError(f"{gene_config.gene_symbol} has no configured key domains")
-    domain = gene_config.key_domains[0]
+def _target_domain_key(domains: list[KeyDomain], gene_symbol: str | None) -> str:
+    if not domains:
+        raise ValueError(f"{gene_symbol} has no configured domains for this test")
+    domain = domains[0]
     return domain.key or domain.name.lower().replace(" ", "_")
 
 
@@ -176,7 +211,7 @@ def _target_features(features: list[FusionFeature], gene_config: GeneConfig):
 
 def _domain_status(feature: FusionFeature, domain_key: str) -> str | None:
     status = (feature.Domain_retention_flags or {}).get(domain_key)
-    return status if status == _RETAINED or status in _NON_RETAINED else None
+    return status if status in _KNOWN_STATUSES else None
 
 
 def _is_in_frame_protein_fusion(event: FusionEvent) -> bool:

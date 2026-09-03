@@ -60,6 +60,23 @@ def _find_matching_domain(
     return None
 
 
+def _combined_domains(gene_config: GeneConfig) -> list[KeyDomain]:
+    """Merge ``key_domains`` and ``disruption_required_domains``, deduped by
+    flag key.
+
+    If a gene ever lists the same domain (by ``key``, or its normalized
+    name) in both lists, it must still be mapped/classified exactly once --
+    otherwise it would be double-counted in ``Retained_domains``/
+    ``Lost_domains``/``Disrupted_domains``. ``key_domains`` is iterated
+    first, so its entry wins any such collision.
+    """
+    combined: dict[str, KeyDomain] = {}
+    for key_domain in [*gene_config.key_domains, *gene_config.disruption_required_domains]:
+        flag_key = key_domain.key or _normalize_domain_name(key_domain.name)
+        combined.setdefault(flag_key, key_domain)
+    return list(combined.values())
+
+
 def classify_domain_retention(
     domain_start: int | None,
     domain_end: int | None,
@@ -111,7 +128,7 @@ def map_event(
     lost_domains: list[str] = []
     disrupted_domains: list[str] = []
 
-    for key_domain in gene_config.key_domains:
+    for key_domain in _combined_domains(gene_config):
         matched = _find_matching_domain(domains, key_domain)
         flag_key = key_domain.key or _normalize_domain_name(key_domain.name)
         status = classify_domain_retention(

@@ -47,6 +47,11 @@ class GeneConfig(BaseModel):
     canonical_transcript_id: Optional[str] = None
     protein_id: Optional[str] = None
     key_domains: list[KeyDomain] = []
+    disruption_required_domains: list[KeyDomain] = []
+    """Domains a fusion must LOSE/DISRUPT (not retain) to be functionally
+    oncogenic, e.g. an autoinhibitory N-terminal module. Opt-in per gene,
+    parallel to ``key_domains``; the domain-disruption algorithm no-ops
+    when this is left empty."""
     autoinhibitory_domains: list[str] = []
     expected_retained_exon_hint: Optional[str] = None
     analysis_modes: list[str] = []
