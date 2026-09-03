@@ -212,3 +212,28 @@ def test_parenthesized_event_info_supplies_explicit_fusion_order():
     assert event.Frame_status == "in-frame"
     assert event.Five_prime_gene == "KIAA1549"
     assert event.Three_prime_gene == "BRAF"
+
+
+def test_tcga_pan_cancer_event_info_supplies_explicit_fusion_order():
+    raw = pd.DataFrame.from_records(
+        [
+            {
+                "Sample_Id": "TCGA-DE-A0Y2-01",
+                "Site1_Hugo_Symbol": "MACF1",
+                "Site2_Hugo_Symbol": "BRAF",
+                "Site1_Chromosome": "1",
+                "Site2_Chromosome": "7",
+                "Site2_Effect_On_Frame": "in-frame",
+                "Connection_Type": None,
+                "Event_Info": "MACF1-BRAF Fusion",
+                "Source_row_number": 1,
+            }
+        ]
+    )
+
+    event = normalize(raw, None, "thca_tcga_pan_can_atlas_2018")[0]
+
+    assert event.Is_protein_fusion is True
+    assert event.Frame_status == "in-frame"
+    assert event.Five_prime_gene == "MACF1"
+    assert event.Three_prime_gene == "BRAF"

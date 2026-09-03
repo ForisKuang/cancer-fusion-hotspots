@@ -10,6 +10,7 @@ everything else in this module is plain, mockable request-building logic.
 
 from __future__ import annotations
 
+import time
 from typing import Iterable
 
 import pandas as pd
@@ -20,6 +21,7 @@ from cfh.ingestion.sv_parser import OUTPUT_COLUMNS
 DEFAULT_BASE_URL = "https://www.cbioportal.org/api"
 DEFAULT_STUDY_ID = "msk_impact_50k_2026"
 DEFAULT_SV_MOLECULAR_PROFILE_ID = "msk_impact_50k_2026_structural_variants"
+_RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 
 _API_TO_NORMALIZED_COLUMNS = {
     "sampleId": "Sample_Id",
@@ -48,6 +50,8 @@ def fetch_structural_variants(
     base_url: str = DEFAULT_BASE_URL,
     session: "requests.Session | None" = None,
     timeout: float = 30,
+    max_retries: int = 3,
+    backoff_seconds: float = 0.5,
 ) -> list[dict]:
     """POST to ``/structural-variant/fetch`` and return the parsed JSON body.
 
@@ -63,7 +67,13 @@ def fetch_structural_variants(
         "entrezGeneIds": list(entrez_gene_ids),
         "molecularProfileIds": list(molecular_profile_ids),
     }
-    response = session.post(url, json=body, timeout=timeout)
+    attempt = 0
+    while True:
+        response = session.post(url, json=body, timeout=timeout)
+        if response.status_code not in _RETRYABLE_STATUS_CODES or attempt >= max_retries:
+            break
+        time.sleep(backoff_seconds * (2**attempt))
+        attempt += 1
     response.raise_for_status()
     return response.json()
 

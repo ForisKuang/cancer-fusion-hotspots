@@ -28,6 +28,7 @@ from cfh.model.fusion_feature import FusionFeature
 from cfh.normalization.event_normalizer import normalize
 from cfh.orchestrator.run import run_algorithms
 from cfh.stats.breakpoint_tests import build_frame_domain_contingency_table
+from cfh.studies.registry import load_study_config
 
 
 class RealBenchmarkError(RuntimeError):
@@ -74,7 +75,7 @@ def _is_target_protein_fusion(event: FusionEvent, target_gene: str) -> bool:
     return (
         target_gene.upper() in genes
         and event.Is_protein_fusion is True
-        and "protein fusion" in str(event.Event_info or "").lower()
+        and "fusion" in str(event.Event_info or "").lower()
     )
 
 
@@ -215,7 +216,7 @@ def analyze_structural_variant_calls(
     else:
         domains = []
         warnings.append(
-            f"No Protein Fusion records for {config.gene_symbol} were returned by "
+            f"No protein-fusion records for {config.gene_symbol} were returned by "
             f"{profile_id}. Verify the gene and study ID, or try a study with SV data."
         )
     domain_source = _ResolvedDomainSource(domains)
@@ -394,8 +395,8 @@ def analyze_structural_variant_calls(
         warnings=warnings,
         endpoints=[
             "https://www.cbioportal.org/api/structural-variant/fetch",
-            "https://www.genomenexus.org/ensembl/canonical-transcript/hgnc/"
-            f"{config.gene_symbol}",
+            f"{getattr(client, 'base_url', 'https://www.genomenexus.org')}"
+            f"/ensembl/canonical-transcript/hgnc/{config.gene_symbol}",
         ],
         reference=(
             config.benchmark_reference.model_dump() if config.benchmark_reference else None
@@ -412,7 +413,19 @@ def run_real_benchmark(
 ) -> RealBenchmarkRun:
     """Fetch and analyze a gene's structural variants from cBioPortal."""
     config = _load_benchmark_config(gene_symbol)
-    profile_id = f"{study_id}_structural_variants"
+    study_config = load_study_config(study_id)
+    profile_id = (
+        study_config.molecular_profile_id(study_id)
+        if study_config
+        else f"{study_id}_structural_variants"
+    )
+    genome_nexus_client = GenomeNexusClient(
+        base_url=(
+            study_config.genome_nexus_base_url
+            if study_config
+            else "https://www.genomenexus.org"
+        )
+    )
     try:
         calls = cbioportal_api.fetch_structural_variants(
             [config.entrez_gene_id],
@@ -429,6 +442,7 @@ def run_real_benchmark(
         gene_symbol,
         study_id,
         molecular_profile_id=profile_id,
+        genome_nexus_client=genome_nexus_client,
         n_permutations=n_permutations,
         algorithm_names=algorithm_names,
     )
@@ -460,7 +474,7 @@ def _json_safe(value: object) -> object:
 
 
 def _format_stat(value: float | int | None) -> str:
-    return "unavailable" if value is None else f"{value:.6g}"
+    return "unavailable" if value is None or not math.isfinite(value) else f"{value:.6g}"
 
 
 def markdown_summary(run: RealBenchmarkRun) -> str:
@@ -502,10 +516,10 @@ def markdown_summary(run: RealBenchmarkRun) -> str:
         "## Method",
         "",
         f"The cBioPortal `{run.molecular_profile_id}` structural-variant profile was "
-        "queried by the configured Entrez gene ID. Records explicitly annotated as "
-        "`Protein Fusion` were adapted to the production SV schema and normalized; "
-        "the raw `site2EffectOnFrame=NA` values were therefore resolved from "
-        "`Event_Info`, not copied into `FusionEvent.Frame_status`.",
+        "queried by the configured Entrez gene ID. Fusion-annotated records were "
+        "adapted to the production SV schema and normalized; when "
+        "`site2EffectOnFrame=NA`, frame status was resolved from `Event_Info`, not "
+        "copied into `FusionEvent.Frame_status`.",
         "",
         f"{run.gene_symbol} genomic breakpoints were mapped against the Genome Nexus "
         f"canonical transcript, and retention was classified against its returned {domain} "
