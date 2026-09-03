@@ -53,6 +53,8 @@ The difference between the paper's 33 reported fusions and the 35 live cBioPorta
 protein-fusion records is reported as observed; no records were removed to force the
 published denominator.
 
+The reported infinite odds ratio is a small-sample zero-cell artifact, not a modeling error: the frame/domain contingency table (`[[31, 0], [2, 2]]`) has no observed out-of-frame-or-unknown-frame event that also retains the kinase domain, so the odds ratio's denominator is zero. Fisher's exact p-value remains well-defined and is reported directly from the hypergeometric distribution regardless of the odds-ratio degeneracy.
+
 ## Method and provenance
 
 The existing shared CLI was run without a study-specific code fork:
