@@ -115,6 +115,42 @@ def test_real_benchmark_pipeline_writes_tsv_json_and_markdown(
     assert "PF07714 (458-712 aa)" in report
 
 
+def test_write_outputs_renders_pdf_report_by_default_and_can_be_disabled(
+    tmp_path,
+    genome_nexus_canonical_transcript_fixture_path,
+):
+    from pypdf import PdfReader
+
+    client = _genome_nexus_client(genome_nexus_canonical_transcript_fixture_path)
+    calls = [
+        _call("SAMPLE-1"),
+        _call("SAMPLE-2", event_info="Protein Fusion: in frame  {BRAF:AGK}"),
+    ]
+    run = analyze_structural_variant_calls(
+        calls,
+        "BRAF",
+        "msk_impact_50k_2026",
+        genome_nexus_client=client,
+        n_permutations=5,
+    )
+
+    paths = write_outputs(run, tmp_path, run_id="with-pdf")
+
+    assert paths["pdf"].name == "report.pdf"
+    assert paths["pdf"].exists()
+    reader = PdfReader(str(paths["pdf"]))
+    assert len(reader.pages) >= 1
+    text = "".join(page.extract_text() or "" for page in reader.pages)
+    assert "BRAF" in text
+    assert "Abstract" in text
+    assert "Results summary" in text
+
+    paths_no_pdf = write_outputs(run, tmp_path, run_id="without-pdf", pdf=False)
+
+    assert "pdf" not in paths_no_pdf
+    assert not (paths_no_pdf["run_directory"] / "report.pdf").exists()
+
+
 def test_malformed_fusion_rows_are_warned_and_skipped_without_losing_valid_rows(
     genome_nexus_canonical_transcript_fixture_path,
 ):
@@ -304,6 +340,7 @@ def test_real_benchmark_click_command_wires_arguments_and_echoes_summary(
         fake_run,
         tmp_path,
         output_stem="custom",
+        pdf=True,
         cli_args=[
             "real-benchmark",
             "BRAF",
@@ -318,6 +355,32 @@ def test_real_benchmark_click_command_wires_arguments_and_echoes_summary(
     assert "Fisher p=0.012345" in result.output
     assert "Warning: Skipped one malformed row" in result.output
     assert "markdown: out.md" in result.output
+
+
+def test_real_benchmark_click_command_no_pdf_flag_disables_pdf_rendering(monkeypatch, tmp_path):
+    fake_run = SimpleNamespace(
+        gene_symbol="BRAF",
+        summary={
+            "total_fusions": 1,
+            "mapped_fusions": 1,
+            "in_frame_count": 1,
+            "kinase_retained_count": 1,
+            "fisher_p_value": 0.5,
+        },
+        warnings=[],
+    )
+    run_mock = MagicMock(return_value=fake_run)
+    write_mock = MagicMock(return_value={"markdown": Path("out.md")})
+    monkeypatch.setattr(cli, "run_real_benchmark", run_mock)
+    monkeypatch.setattr(cli, "write_outputs", write_mock)
+
+    result = CliRunner().invoke(
+        cli.main,
+        ["real-benchmark", "BRAF", "study-id", "--output-dir", str(tmp_path), "--no-pdf"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert write_mock.call_args.kwargs["pdf"] is False
 
 
 def test_real_benchmark_click_command_renders_network_error_without_traceback(monkeypatch):

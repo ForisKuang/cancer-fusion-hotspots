@@ -69,12 +69,19 @@ def compare_genes(run_artifacts: tuple[Path, ...], output_path: Path) -> None:
 )
 @click.option("--n-permutations", type=click.IntRange(min=1), default=1_000, show_default=True)
 @click.option("--output-stem", help="Override the output filename stem.")
+@click.option(
+    "--pdf/--no-pdf",
+    default=True,
+    show_default=True,
+    help="Also render a self-contained report.pdf for human reviewers.",
+)
 def real_benchmark(
     gene_symbol: str,
     study_id: str,
     output_dir: Path,
     n_permutations: int,
     output_stem: str | None,
+    pdf: bool,
 ) -> None:
     """Run the prototype live cBioPortal/Genome Nexus benchmark."""
     try:
@@ -83,6 +90,7 @@ def real_benchmark(
             run,
             output_dir,
             output_stem=output_stem,
+            pdf=pdf,
             cli_args=[
                 "real-benchmark",
                 gene_symbol,
@@ -122,13 +130,22 @@ def real_benchmark(
     show_default=True,
 )
 @click.option("--n-permutations", type=click.IntRange(min=1), default=1_000, show_default=True)
-def analyze(gene_symbol: str, study_id: str, output_dir: Path, n_permutations: int) -> None:
+@click.option(
+    "--pdf/--no-pdf",
+    default=True,
+    show_default=True,
+    help="Also render a self-contained report.pdf for human reviewers.",
+)
+def analyze(
+    gene_symbol: str, study_id: str, output_dir: Path, n_permutations: int, pdf: bool
+) -> None:
     """Run all registered algorithms for a configured gene and live study."""
     try:
         run = run_analysis(gene_symbol, study_id, n_permutations=n_permutations)
         paths = write_outputs(
             run,
             output_dir,
+            pdf=pdf,
             cli_args=[
                 "analyze",
                 gene_symbol,
