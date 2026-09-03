@@ -27,6 +27,7 @@ from cfh.model.fusion_event import FusionEvent
 from cfh.model.fusion_feature import FusionFeature
 from cfh.normalization.event_normalizer import normalize
 from cfh.orchestrator.run import run_algorithms
+from cfh.reporting.pdf import render_pdf_report
 from cfh.stats.breakpoint_tests import build_frame_domain_contingency_table
 from cfh.studies.registry import load_study_config
 
@@ -717,6 +718,7 @@ def write_outputs(
     output_stem: str | None = None,
     cli_args: list[str] | None = None,
     run_id: str | None = None,
+    pdf: bool = True,
 ) -> dict[str, Path]:
     """Write a complete, provenance-bearing run directory."""
     del output_stem  # retained as a compatibility-only keyword for older callers
@@ -747,6 +749,7 @@ def write_outputs(
             "warnings": run.warnings,
             "events": run.rows,
             "algorithm_results": algorithm_results,
+            "reference": run.reference,
         }
     )
     json_path.write_text(json.dumps(payload, indent=2, allow_nan=False) + "\n")
@@ -775,7 +778,7 @@ def write_outputs(
         "cli_args": cli_args or [],
         "timestamp": run.retrieved_at.isoformat(),
     }, indent=2) + "\n")
-    return {
+    paths = {
         "run_directory": destination,
         "manifest": manifest_path,
         "tsv": tsv_path,
@@ -785,3 +788,13 @@ def write_outputs(
         "domain_svg": domain_svg,
         "comparison_svg": comparison_svg,
     }
+    if pdf:
+        pdf_path = destination / "report.pdf"
+        render_pdf_report(
+            payload,
+            pdf_path,
+            results_tsv_path=tsv_path,
+            visualizations_dir=visualization_dir,
+        )
+        paths["pdf"] = pdf_path
+    return paths
