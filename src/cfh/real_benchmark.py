@@ -334,7 +334,13 @@ def analyze_structural_variant_calls(
         selected_events,
         features,
         config,
-        {"frequency": {"dedup_by_patient": False}},
+        {
+            "frequency": {"dedup_by_patient": False},
+            "cutpoint_detection": {
+                "n_permutations": n_permutations,
+                "genome_nexus_client": client,
+            },
+        },
     )
     results_by_name = {result.Algorithm: result for result in [domain_result, *other_results]}
     results = [results_by_name[name] for name in requested_algorithms if name in results_by_name]

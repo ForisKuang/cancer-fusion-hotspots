@@ -12,7 +12,7 @@ Retrieved from public cBioPortal and Genome Nexus on 2026-09-03.
 - PF07714 (458-712 aa) retained: 31/35 (88.6%)
 - In-frame and PF07714-retained: 31/33
 - Fisher exact test (one-sided): odds ratio inf, p=0.010084
-- Breakpoint-permutation empirical p-value: 0.328767
+- Breakpoint-permutation empirical p-value: 0.342657
 - Contingency table `[[retained/in-frame, retained/other], [not-retained/in-frame, not-retained/other]]`: `[[31, 0], [2, 2]]`
 
 ## Method

@@ -2,7 +2,7 @@
   "gene_symbol": "BRAF",
   "study_id": "msk_impact_50k_2026",
   "molecular_profile_id": "msk_impact_50k_2026_structural_variants",
-  "retrieved_at": "2026-09-03T14:52:05.581748+00:00",
+  "retrieved_at": "2026-09-03T15:11:40.768339+00:00",
   "summary": {
     "raw_structural_variant_count": 251,
     "total_fusions": 174,
@@ -3599,13 +3599,153 @@
       "Algorithm_version": null,
       "Parameters": {},
       "Summary": {
-        "Runtime_seconds": 3.749999450519681e-06
+        "Runtime_seconds": 3.1660019885748625e-06
       },
       "Tables": {},
       "Warnings": [
         "Algorithm failed: ValueError: params['group_field'] is required"
       ],
-      "Created_at": "2026-09-03T14:52:05.577691Z",
+      "Created_at": "2026-09-03T15:11:39.035828Z",
+      "Input_fingerprint": "5df187319ebb6d3c4e095294baf9dd269287bd73d4909323e774ec8f3763e48e"
+    },
+    {
+      "Algorithm": "cutpoint_detection",
+      "Algorithm_version": "0.1.0",
+      "Parameters": {
+        "seed": 42,
+        "n_permutations": 1000
+      },
+      "Summary": {
+        "determinable": true,
+        "reason": null,
+        "n_events_analyzed": 174,
+        "inferred_cutpoint_aa": 439,
+        "observed_statistic_neg_log10_p": 4.728653213634232,
+        "observed_p_value": 1.8678705997366823e-05,
+        "observed_odds_ratio": 26.742857142857144,
+        "corrected_p_value": 0.000999000999000999,
+        "known_domain_boundary_comparison": {
+          "nearest_known_domain_boundary_aa": 458,
+          "distance_aa": 19
+        },
+        "Runtime_seconds": 1.7272209170041606
+      },
+      "Tables": {
+        "cutpoint_scan": [
+          {
+            "cutpoint": 1,
+            "n_positive_at_or_below": 17,
+            "n_positive_above": 144,
+            "n_negative_at_or_below": 0,
+            "n_negative_above": 13,
+            "odds_ratio": null,
+            "p_value": 0.3692851357309106,
+            "neg_log10_p_value": 0.43263817298796625
+          },
+          {
+            "cutpoint": 238,
+            "n_positive_at_or_below": 18,
+            "n_positive_above": 143,
+            "n_negative_at_or_below": 0,
+            "n_negative_above": 13,
+            "odds_ratio": null,
+            "p_value": 0.36614278131393174,
+            "neg_log10_p_value": 0.4363495237732867
+          },
+          {
+            "cutpoint": 303,
+            "n_positive_at_or_below": 19,
+            "n_positive_above": 142,
+            "n_negative_at_or_below": 0,
+            "n_negative_above": 13,
+            "odds_ratio": null,
+            "p_value": 0.36551767557558246,
+            "neg_log10_p_value": 0.4370916167380483
+          },
+          {
+            "cutpoint": 327,
+            "n_positive_at_or_below": 32,
+            "n_positive_above": 129,
+            "n_negative_at_or_below": 4,
+            "n_negative_above": 9,
+            "odds_ratio": 0.5581395348837209,
+            "p_value": 0.4737399882143105,
+            "neg_log10_p_value": 0.3244599550908338
+          },
+          {
+            "cutpoint": 380,
+            "n_positive_at_or_below": 72,
+            "n_positive_above": 89,
+            "n_negative_at_or_below": 5,
+            "n_negative_above": 8,
+            "odds_ratio": 1.29438202247191,
+            "p_value": 0.7759439123753984,
+            "neg_log10_p_value": 0.11016966975495825
+          },
+          {
+            "cutpoint": 381,
+            "n_positive_at_or_below": 114,
+            "n_positive_above": 47,
+            "n_negative_at_or_below": 6,
+            "n_negative_above": 7,
+            "odds_ratio": 2.8297872340425534,
+            "p_value": 0.1142602104385251,
+            "neg_log10_p_value": 0.9421049804136977
+          },
+          {
+            "cutpoint": 393,
+            "n_positive_at_or_below": 136,
+            "n_positive_above": 25,
+            "n_negative_at_or_below": 6,
+            "n_negative_above": 7,
+            "odds_ratio": 6.346666666666667,
+            "p_value": 0.00291573594292397,
+            "neg_log10_p_value": 2.5352518094774075
+          },
+          {
+            "cutpoint": 400,
+            "n_positive_at_or_below": 137,
+            "n_positive_above": 24,
+            "n_negative_at_or_below": 6,
+            "n_negative_above": 7,
+            "odds_ratio": 6.659722222222222,
+            "p_value": 0.002361593298139617,
+            "neg_log10_p_value": 2.6267948923202606
+          },
+          {
+            "cutpoint": 438,
+            "n_positive_at_or_below": 150,
+            "n_positive_above": 11,
+            "n_negative_at_or_below": 7,
+            "n_negative_above": 6,
+            "odds_ratio": 11.688311688311689,
+            "p_value": 0.0003992436404476835,
+            "neg_log10_p_value": 3.398761993011585
+          },
+          {
+            "cutpoint": 439,
+            "n_positive_at_or_below": 156,
+            "n_positive_above": 5,
+            "n_negative_at_or_below": 7,
+            "n_negative_above": 6,
+            "odds_ratio": 26.742857142857144,
+            "p_value": 1.8678705997366823e-05,
+            "neg_log10_p_value": 4.728653213634232
+          },
+          {
+            "cutpoint": 744,
+            "n_positive_at_or_below": 156,
+            "n_positive_above": 5,
+            "n_negative_at_or_below": 8,
+            "n_negative_above": 5,
+            "odds_ratio": 19.5,
+            "p_value": 0.00021110636063280134,
+            "neg_log10_p_value": 3.675498681206265
+          }
+        ]
+      },
+      "Warnings": [],
+      "Created_at": "2026-09-03T15:11:40.767982Z",
       "Input_fingerprint": "5df187319ebb6d3c4e095294baf9dd269287bd73d4909323e774ec8f3763e48e"
     },
     {
@@ -3620,7 +3760,7 @@
         "fisher_p_value": 0.0737799140314508,
         "permutation_empirical_p_value": 0.07192807192807193,
         "observed_in_frame_retention_rate": 0.9403973509933775,
-        "Runtime_seconds": 0.9630460000043968
+        "Runtime_seconds": 1.0460172910097754
       },
       "Tables": {
         "frame_domain_contingency_table": [
@@ -3639,7 +3779,7 @@
         }
       },
       "Warnings": [],
-      "Created_at": "2026-09-03T14:52:05.574593Z",
+      "Created_at": "2026-09-03T15:11:39.031380Z",
       "Input_fingerprint": "5df187319ebb6d3c4e095294baf9dd269287bd73d4909323e774ec8f3763e48e"
     },
     {
@@ -3648,7 +3788,7 @@
       "Parameters": {},
       "Summary": {
         "retained_fraction": null,
-        "Runtime_seconds": 7.040987838990986e-06
+        "Runtime_seconds": 1.5582991181872785e-05
       },
       "Tables": {
         "Exon_retention": []
@@ -3656,7 +3796,7 @@
       "Warnings": [
         "No target exon was supplied in params or GeneConfig."
       ],
-      "Created_at": "2026-09-03T14:52:05.580317Z",
+      "Created_at": "2026-09-03T15:11:39.043977Z",
       "Input_fingerprint": "5df187319ebb6d3c4e095294baf9dd269287bd73d4909323e774ec8f3763e48e"
     },
     {
@@ -3669,7 +3809,7 @@
         "input_event_count": 174,
         "analyzed_event_count": 174,
         "unique_partner_gene_count": 63,
-        "Runtime_seconds": 6.408299668692052e-05
+        "Runtime_seconds": 0.00014174998796079308
       },
       "Tables": {
         "Partner_gene_counts": [
@@ -3928,7 +4068,7 @@
         ]
       },
       "Warnings": [],
-      "Created_at": "2026-09-03T14:52:05.580297Z",
+      "Created_at": "2026-09-03T15:11:39.128862Z",
       "Input_fingerprint": "5df187319ebb6d3c4e095294baf9dd269287bd73d4909323e774ec8f3763e48e"
     },
     {
@@ -3936,13 +4076,13 @@
       "Algorithm_version": null,
       "Parameters": {},
       "Summary": {
-        "Runtime_seconds": 2.2500025806948543e-06
+        "Runtime_seconds": 3.3329997677356005e-06
       },
       "Tables": {},
       "Warnings": [
         "Algorithm failed: ValueError: joint_partner requires a GeneConfig with gene_pair"
       ],
-      "Created_at": "2026-09-03T14:52:05.581602Z",
+      "Created_at": "2026-09-03T15:11:39.129000Z",
       "Input_fingerprint": "5df187319ebb6d3c4e095294baf9dd269287bd73d4909323e774ec8f3763e48e"
     }
   ]
