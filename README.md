@@ -77,6 +77,13 @@ TSV, structured JSON, and a Markdown summary:
 cfh real-benchmark BRAF msk_impact_50k_2026 --output-dir reports
 ```
 
+The study ID is an argument to the shared pipeline. For example, the original
+MSK-IMPACT publication cohort can be run with:
+
+```bash
+cfh real-benchmark BRAF msk_impact_2017 --output-dir reports
+```
+
 This command makes unauthenticated requests to both public services.
 
 ## Repository layout
