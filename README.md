@@ -92,6 +92,18 @@ study, use:
 cfh analyze BRAF msk_impact_50k_2026
 ```
 
+To apply Benjamini-Hochberg FDR correction to the inferential p-values in two
+or more existing run artifacts, pass their run directories (or `results.json`
+files) to the offline comparison command:
+
+```bash
+cfh compare-genes RUN_DIR [RUN_DIR ...] --output adjusted-p-values.tsv
+```
+
+The output records the gene, study, algorithm, test, raw p-value, BH-adjusted
+q-value, and whether the result is significant at `q < 0.05`. All p-values
+collected by one invocation form a single correction family.
+
 RET uses the same command and live ingestion/mapping path:
 
 ```bash
