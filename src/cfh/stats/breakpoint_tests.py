@@ -137,6 +137,30 @@ def permutation_null_test(
     return float(empirical_p_value), float(observed_rate), tuple(null_rates)
 
 
+def gene_breakpoint_domain_status_records(
+    events: list[FusionEvent], features: list[FusionFeature], gene_config: GeneConfig
+) -> list[tuple[int, str]]:
+    """Return ``(breakpoint_protein_position, domain_status)`` pairs for a gene.
+
+    One entry per feature belonging to ``gene_config.gene_symbol`` that has
+    both a mapped breakpoint protein position and a known status (retained
+    or lost/disrupted) for the gene's configured key domain. This is the
+    same underlying (breakpoint, domain-status) observation the
+    domain-retention algorithm consumes, exposed independent of frame
+    status or partner-gene identity so other gene-agnostic algorithms (e.g.
+    cutpoint scanning) can reuse it without duplicating the domain-key/
+    status-extraction logic.
+    """
+    target_key = _target_domain_key(gene_config)
+    records: list[tuple[int, str]] = []
+    for feature in _target_features(features, gene_config):
+        status = _domain_status(feature, target_key)
+        if status is None or feature.Junction_position_aa is None:
+            continue
+        records.append((feature.Junction_position_aa, status))
+    return records
+
+
 def _target_domain_key(gene_config: GeneConfig) -> str:
     if not gene_config.key_domains:
         raise ValueError(f"{gene_config.gene_symbol} has no configured key domains")
