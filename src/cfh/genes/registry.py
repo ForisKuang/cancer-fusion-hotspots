@@ -24,6 +24,8 @@ class KeyDomain(BaseModel):
     name: str
     source: str
     key: Optional[str] = None
+    accession: Optional[str] = None
+    """Source-native identifier, such as a Pfam accession from Genome Nexus."""
 
 
 class GeneConfig(BaseModel):

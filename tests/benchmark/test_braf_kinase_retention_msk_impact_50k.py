@@ -4,19 +4,19 @@ from __future__ import annotations
 
 import json
 import os
-import sys
 from pathlib import Path
-from types import SimpleNamespace
+from unittest.mock import MagicMock
 
 import pytest
 
 from cfh.algorithms.domain_retention import DomainRetentionAlgorithm
+from cfh.algorithms.frequency import FrequencyAnalysis
 from cfh.genes.registry import load_gene_config
 from cfh.ingestion import cbioportal_api
-from cfh.mapping.feature_mapper import map_event
-from cfh.mapping.transcript_source import resolve_breakpoint_protein_position
+from cfh.mapping.genome_nexus_source import GenomeNexusClient
 from cfh.model.fusion_event import FusionEvent
 from cfh.model.fusion_feature import FusionFeature
+from cfh.real_benchmark import analyze_structural_variant_calls
 from cfh.stats.breakpoint_tests import (
     build_frame_domain_contingency_table,
     fishers_frame_domain_test,
@@ -100,135 +100,84 @@ def test_permutation_null_is_bit_identical_for_a_fixed_seed():
     assert first == second
 
 
-def _call_value(call: dict, snake_name: str, camel_name: str):
-    return call.get(snake_name, call.get(camel_name))
+def _real_events_and_features(
+    calls: list[dict], genome_nexus_client: GenomeNexusClient | None = None
+) -> tuple[list[FusionEvent], list[FusionFeature]]:
+    """Use the production API adapter, normalizer, and Genome Nexus mapping path."""
+    run = analyze_structural_variant_calls(
+        calls,
+        "BRAF",
+        "msk_impact_50k_2026",
+        genome_nexus_client=genome_nexus_client,
+        n_permutations=25,
+    )
+    return run.events, run.features
 
 
-def _real_events_and_features(calls: list[dict]) -> tuple[list[FusionEvent], list[FusionFeature]]:
-    """Map real cBioPortal calls through the reviewed breakpoint/domain path."""
-    config = load_gene_config("braf")
-    events: list[FusionEvent] = []
-    features: list[FusionFeature] = []
-    for index, call in enumerate(calls):
-        site1 = _call_value(call, "site1_hugo_symbol", "site1HugoSymbol")
-        site2 = _call_value(call, "site2_hugo_symbol", "site2HugoSymbol")
-        connection = _call_value(call, "connection_type", "connectionType")
-        if site1 != "BRAF" and site2 != "BRAF":
-            continue
-        if connection == "5to3" and site2 == "BRAF":
-            role, breakpoint = "three_prime", _call_value(call, "site2_position", "site2Position")
-        elif connection == "3to5" and site1 == "BRAF":
-            role, breakpoint = "three_prime", _call_value(call, "site1_position", "site1Position")
-        elif connection == "5to3" and site1 == "BRAF":
-            role, breakpoint = "five_prime", _call_value(call, "site1_position", "site1Position")
-        elif connection == "3to5" and site2 == "BRAF":
-            role, breakpoint = "five_prime", _call_value(call, "site2_position", "site2Position")
-        else:
-            continue
-        if breakpoint is None:
-            continue
-        frame = _call_value(call, "site2_effect_on_frame", "site2EffectOnFrame")
-        event = FusionEvent(
-            Event_id=str(
-                _call_value(call, "structural_variant_id", "structuralVariantId") or index
-            ),
-            Cohort="msk_impact_50k_2026",
-            Site1_gene=site1,
-            Site2_gene=site2,
-            Frame_status=frame,
-            Is_protein_fusion=True,
-        )
-        try:
-            mapping = resolve_breakpoint_protein_position(
-                None, config, breakpoint_genomic=int(breakpoint)
-            )
-        except Exception:
-            continue
-        events.append(event)
-        features.append(
-            map_event(
-                event,
-                config,
-                role=role,
-                junction_position_aa=mapping.breakpoint_protein_position,
-            )
-        )
-    return events, features
-
-
-def test_real_call_field_mapping_covers_braf_connection_orientations(monkeypatch):
-    """Exercise the live-path field aliases and all BRAF orientation branches offline."""
-    resolved_breakpoints = []
-    mapped_features = []
-
-    def fake_resolve(_annotation, _config, *, breakpoint_genomic):
-        resolved_breakpoints.append(breakpoint_genomic)
-        return SimpleNamespace(breakpoint_protein_position=breakpoint_genomic + 10)
-
-    def fake_map(event, _config, *, role, junction_position_aa):
-        mapped_features.append((event.Event_id, role, junction_position_aa))
-        return FusionFeature(
-            Event_id=event.Event_id,
-            Gene="BRAF",
-            Role=role,
-            Junction_position_aa=junction_position_aa,
-            Domain_retention_flags={"kinase": "retained"},
-        )
-
-    module = sys.modules[__name__]
-    monkeypatch.setattr(module, "resolve_breakpoint_protein_position", fake_resolve)
-    monkeypatch.setattr(module, "map_event", fake_map)
+def test_real_call_field_mapping_uses_production_normalizer_and_genome_nexus(
+    genome_nexus_canonical_transcript_fixture_path,
+):
+    """Regression: raw ``NA`` frame values must not bypass production normalization."""
+    client = MagicMock(spec=GenomeNexusClient)
+    client.fetch_canonical_transcript.return_value = json.loads(
+        genome_nexus_canonical_transcript_fixture_path.read_text()
+    )
     calls = [
         {
-            "structuralVariantId": "SV-1",
+            "sampleId": "SAMPLE-1",
             "site1HugoSymbol": "PARTNER1",
             "site2HugoSymbol": "BRAF",
-            "connectionType": "5to3",
-            "site2Position": 100,
-            "site2EffectOnFrame": "in-frame",
+            "connectionType": "3to3",
+            "site2Position": 140493152,
+            "site2EffectOnFrame": "NA",
+            "eventInfo": "Protein Fusion: in frame  {PARTNER1:BRAF}",
         },
         {
-            "structural_variant_id": "SV-2",
-            "site1_hugo_symbol": "BRAF",
-            "site2_hugo_symbol": "PARTNER2",
-            "connection_type": "3to5",
-            "site1_position": 200,
-            "site2_effect_on_frame": "in-frame",
+            "sampleId": "SAMPLE-2",
+            "site1HugoSymbol": "BRAF",
+            "site2HugoSymbol": "PARTNER2",
+            "connectionType": "5to5",
+            "site1Position": 140493152,
+            "site2EffectOnFrame": "NA",
+            "eventInfo": "Protein Fusion: out of frame  {BRAF:PARTNER2}",
         },
         {
-            "structuralVariantId": "SV-3",
+            "sampleId": "SAMPLE-3",
             "site1HugoSymbol": "BRAF",
             "site2HugoSymbol": "PARTNER3",
             "connectionType": "5to3",
-            "site1Position": 300,
-            "site2EffectOnFrame": "out-of-frame",
+            "site1Position": 140493152,
+            "site2EffectOnFrame": "NA",
+            "eventInfo": "Protein Fusion: mid-exon  {PARTNER3:BRAF}",
         },
         {
-            "structural_variant_id": "SV-4",
-            "site1_hugo_symbol": "PARTNER4",
-            "site2_hugo_symbol": "BRAF",
-            "connection_type": "3to5",
-            "site2_position": 400,
-            "site2_effect_on_frame": "out-of-frame",
+            "sampleId": "SAMPLE-4",
+            "site1HugoSymbol": "PARTNER4",
+            "site2HugoSymbol": "BRAF",
+            "connectionType": "3to5",
+            "site2Position": 140493152,
+            "site2EffectOnFrame": "NA",
+            "eventInfo": "Protein Fusion: in frame  {PARTNER4:BRAF}",
         },
     ]
 
-    events, features = _real_events_and_features(calls)
+    events, features = _real_events_and_features(calls, client)
 
-    assert [event.Event_id for event in events] == ["SV-1", "SV-2", "SV-3", "SV-4"]
-    assert resolved_breakpoints == [100, 200, 300, 400]
-    assert [(feature.Role, feature.Junction_position_aa) for feature in features] == [
-        ("three_prime", 110),
-        ("three_prime", 210),
-        ("five_prime", 310),
-        ("five_prime", 410),
+    assert [event.Frame_status for event in events] == [
+        "in-frame",
+        "out-of-frame",
+        "unknown",
+        "in-frame",
     ]
-    assert mapped_features == [
-        ("SV-1", "three_prime", 110),
-        ("SV-2", "three_prime", 210),
-        ("SV-3", "five_prime", 310),
-        ("SV-4", "five_prime", 410),
+    assert [feature.Role for feature in features] == [
+        "three_prime",
+        "five_prime",
+        "three_prime",
+        "three_prime",
     ]
+    assert all(feature.Junction_position_aa is not None for feature in features)
+    assert all(feature.Domain_retention_flags["kinase"] != "unknown" for feature in features)
+    client.fetch_canonical_transcript.assert_called()
 
 
 @pytest.mark.network
@@ -241,4 +190,32 @@ def test_braf_kinase_retention_in_real_msk_impact_50k():
         entrez_gene_ids=[673], molecular_profile_ids=[_PROFILE_ID]
     )
     events, features = _real_events_and_features(calls)
-    _assert_benchmark(events, features)
+    config = load_gene_config("braf")
+    result = DomainRetentionAlgorithm().run(
+        events, features, config, {"seed": 42, "n_permutations": 1_000}
+    )
+    frequency = FrequencyAnalysis().run(events, features, config, {})
+
+    assert len(calls) > 0
+    assert len(events) == len(features) > 0
+    assert any(event.Frame_status == "in-frame" for event in events)
+    assert all(feature.Domain_retention_flags["kinase"] != "unknown" for feature in features)
+    assert 0 <= result.Summary["fisher_p_value"] <= 1
+    assert sum(row["Event_count"] for row in frequency.Tables["Partner_gene_counts"]) == len(
+        events
+    )
+    print(
+        json.dumps(
+            {
+                "raw_structural_variants": len(calls),
+                "protein_fusions": len(events),
+                "in_frame": sum(event.Frame_status == "in-frame" for event in events),
+                "kinase_retained": sum(
+                    feature.Domain_retention_flags["kinase"] == "retained"
+                    for feature in features
+                ),
+                "fisher_p_value": result.Summary["fisher_p_value"],
+            },
+            sort_keys=True,
+        )
+    )
