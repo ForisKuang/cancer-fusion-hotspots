@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from cfh.genes.registry import load_gene_config
+from cfh.genes.registry import GeneConfig, KeyDomain, load_gene_config
 from cfh.mapping import feature_mapper
 from cfh.mapping.domain_source import ProteinDomain, UniProtDomainSource
 from cfh.model.fusion_event import FusionEvent
@@ -157,6 +157,43 @@ def test_disruption_required_domains_get_retention_flags_alongside_key_domains()
     assert "Protein kinase domain" in feature.Retained_domains
     assert "RAS-binding domain" in feature.Lost_domains
     assert "Cysteine-rich domain" in feature.Lost_domains
+
+
+def test_domain_listed_in_both_key_and_disruption_domains_is_not_double_processed():
+    """Regression: a gene that (however unusually) lists the same domain
+    key in both key_domains and disruption_required_domains must have it
+    mapped/classified exactly once, not twice -- key_domains' entry wins,
+    since it's listed first."""
+    gene_config = GeneConfig(
+        gene_symbol="FAKE3",
+        canonical_transcript_id="NM_000003",
+        protein_id="P00003",
+        key_domains=[
+            KeyDomain(name="Shared domain (retention copy)", source="test", key="shared")
+        ],
+        disruption_required_domains=[
+            KeyDomain(name="Shared domain (disruption copy)", source="test", key="shared")
+        ],
+    )
+    domain_source = MagicMock()
+    domain_source.fetch.return_value = [
+        ProteinDomain(name="shared", start_aa=100, end_aa=200, source="test", accession=None)
+    ]
+
+    # Breakpoint downstream of the domain, five_prime role: the domain
+    # (100-200) falls fully inside the retained N-terminal fragment.
+    feature = feature_mapper.map_event(
+        _event("SAMPLE-DUP"),
+        gene_config,
+        role="five_prime",
+        junction_position_aa=300,
+        domain_source=domain_source,
+    )
+
+    assert feature.Domain_retention_flags == {"shared": "retained"}
+    assert feature.Retained_domains == ["Shared domain (retention copy)"]
+    assert feature.Lost_domains == []
+    assert feature.Disrupted_domains == []
 
 
 def test_default_domain_source_is_shared_across_calls_without_explicit_source(
