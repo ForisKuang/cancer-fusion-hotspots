@@ -1,6 +1,8 @@
 import json
 import time
 
+import pytest
+
 from cfh.algorithms import ExonRetentionAnalysis, FrequencyAnalysis
 from cfh.algorithms.base import Algorithm
 from cfh.algorithms.registry import register, unregister
@@ -130,3 +132,163 @@ def test_orchestrator_results_are_json_serializable():
 def test_params_are_isolated_without_breaking_flat_algorithm_params():
     assert _params_for("frequency", {"exon_retention": {"target_exon": 8}}) == {}
     assert _params_for("frequency", {"dedup_by_patient": True}) == {"dedup_by_patient": True}
+
+
+def test_orchestrator_defers_a_dependent_algorithm_and_injects_dependency_results():
+    """A DEPENDS_ON-declaring algorithm must run in a later wave than its
+    also-requested dependency, with that dependency's real AlgorithmResult
+    automatically merged into its own params -- the real orchestrator wiring
+    composite_score relies on, exercised here against a minimal synthetic
+    plugin instead of composite_score's own more complex logic.
+    """
+
+    @register("consumer")
+    class Consumer(Algorithm):
+        DEPENDS_ON = ("frequency",)
+
+        def run(self, events, features, gene_config, params) -> AlgorithmResult:
+            supplied = params.get("algorithm_results") or []
+            frequency_result = next((r for r in supplied if r.Algorithm == "frequency"), None)
+            total = None
+            if frequency_result is not None:
+                total = sum(
+                    row["Event_count"] for row in frequency_result.Tables["Partner_gene_counts"]
+                )
+            return AlgorithmResult(Algorithm="consumer", Summary={"total_from_frequency": total})
+
+    try:
+        results = run_algorithms(["consumer", "frequency"], _events(), [], _gene_config())
+    finally:
+        unregister("consumer")
+
+    by_name = {result.Algorithm: result for result in results}
+    assert by_name["consumer"].Summary["total_from_frequency"] == len(_events())
+    # Output stays in request order even though "consumer" was scheduled
+    # into a later dependency-respecting wave than "frequency".
+    assert [result.Algorithm for result in results] == ["consumer", "frequency"]
+
+
+def test_orchestrator_leaves_a_dependency_unavailable_when_not_requested():
+    """A declared dependency that was not itself requested must not block
+    scheduling or crash the dependent algorithm -- it is simply unavailable,
+    exactly like composite_score's own graceful-exclusion behavior.
+    """
+
+    @register("consumer")
+    class Consumer(Algorithm):
+        DEPENDS_ON = ("frequency",)
+
+        def run(self, events, features, gene_config, params) -> AlgorithmResult:
+            supplied = params.get("algorithm_results") or []
+            return AlgorithmResult(Algorithm="consumer", Summary={"n_supplied": len(supplied)})
+
+    try:
+        results = run_algorithms(["consumer"], _events(), [], _gene_config())
+    finally:
+        unregister("consumer")
+
+    assert results[0].Summary["n_supplied"] == 0
+    assert results[0].Warnings == []
+
+
+def test_orchestrator_extra_results_seed_dependency_injection_without_rerunning():
+    """``extra_results`` lets a caller that pre-computed one algorithm
+    separately (as real_benchmark.py does for domain_retention) make that
+    result available for dependency injection without it being re-run or
+    re-returned by this call.
+    """
+
+    @register("consumer")
+    class Consumer(Algorithm):
+        DEPENDS_ON = ("frequency",)
+
+        def run(self, events, features, gene_config, params) -> AlgorithmResult:
+            supplied = params.get("algorithm_results") or []
+            frequency_result = next((r for r in supplied if r.Algorithm == "frequency"), None)
+            return AlgorithmResult(
+                Algorithm="consumer",
+                Summary={"saw_frequency": frequency_result is not None},
+            )
+
+    precomputed_frequency = AlgorithmResult(
+        Algorithm="frequency",
+        Tables={"Partner_gene_counts": [{"Partner_gene": "X", "Event_count": 7}]},
+    )
+    try:
+        results = run_algorithms(
+            ["consumer"],
+            _events(),
+            [],
+            _gene_config(),
+            extra_results=[precomputed_frequency],
+        )
+    finally:
+        unregister("consumer")
+
+    assert results == [
+        result for result in results if result.Algorithm != "frequency"
+    ]  # frequency was not re-run
+    assert results[0].Summary["saw_frequency"] is True
+
+
+def test_orchestrator_respects_caller_supplied_algorithm_results_over_auto_injection():
+    """If the caller already set ``params[name]["algorithm_results"]``
+    explicitly, the orchestrator must not overwrite it with auto-injected
+    dependency results.
+    """
+
+    @register("consumer")
+    class Consumer(Algorithm):
+        DEPENDS_ON = ("frequency",)
+
+        def run(self, events, features, gene_config, params) -> AlgorithmResult:
+            supplied = params.get("algorithm_results") or []
+            return AlgorithmResult(
+                Algorithm="consumer",
+                Summary={"algorithms_seen": sorted(r.Algorithm for r in supplied)},
+            )
+
+    explicit_override = AlgorithmResult(Algorithm="custom_source", Summary={})
+    try:
+        results = run_algorithms(
+            ["consumer", "frequency"],
+            _events(),
+            [],
+            _gene_config(),
+            params={"consumer": {"algorithm_results": [explicit_override]}},
+        )
+    finally:
+        unregister("consumer")
+
+    by_name = {result.Algorithm: result for result in results}
+    assert by_name["consumer"].Summary["algorithms_seen"] == ["custom_source"]
+
+
+def test_orchestrator_raises_on_circular_depends_on_instead_of_silently_degrading():
+    """A -> B -> A can never make scheduling progress. Silently running
+    both in one wave (as an earlier implementation did) would inject EMPTY
+    dependency results into each -- a silent DEPENDS_ON violation that
+    looks like a normal run. This must instead raise a clear, explicit
+    configuration error naming the algorithms involved.
+    """
+
+    @register("cycle-a")
+    class CycleA(Algorithm):
+        DEPENDS_ON = ("cycle-b",)
+
+        def run(self, events, features, gene_config, params) -> AlgorithmResult:
+            return AlgorithmResult(Algorithm="cycle-a")
+
+    @register("cycle-b")
+    class CycleB(Algorithm):
+        DEPENDS_ON = ("cycle-a",)
+
+        def run(self, events, features, gene_config, params) -> AlgorithmResult:
+            return AlgorithmResult(Algorithm="cycle-b")
+
+    try:
+        with pytest.raises(ValueError, match="circular"):
+            run_algorithms(["cycle-a", "cycle-b"], _events(), [], _gene_config())
+    finally:
+        unregister("cycle-a")
+        unregister("cycle-b")
