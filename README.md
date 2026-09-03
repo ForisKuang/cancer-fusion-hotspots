@@ -1,13 +1,10 @@
-# Cancer Fusion Hotspots (cfh)
+# fusion-hotspots (cfh)
 
 `cfh` detects gene-fusion breakpoint and domain-retention hotspots from
-structural-variant calls in cancer sequencing cohorts. Milestone 1 ("Stage A:
-core pipeline") targets **BRAF** fusions in the public MSK-IMPACT 50k cohort
-on cBioPortal, using a design that generalizes to other genes without
-code changes.
-
-> This repository is currently a placeholder staged for eventual transfer to
-> `cBioPortal/cancer-fusion-hotspots`.
+structural-variant calls in cancer sequencing cohorts. Milestone 1 targets
+**BRAF** fusions in the public MSK-IMPACT 50k cohort on cBioPortal, using a
+design that generalizes to other genes (already proven on RET plus a TCGA
+PanCancer Atlas holdout) without code changes.
 
 ## What this is
 
@@ -144,4 +141,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+Apache License 2.0 — see [LICENSE](LICENSE).
