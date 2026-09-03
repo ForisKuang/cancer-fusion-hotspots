@@ -1,0 +1,19 @@
+{
+  "gene": "BRAF",
+  "study_id": "msk_impact_2017",
+  "endpoints_used": [
+    "https://www.cbioportal.org/api/structural-variant/fetch",
+    "https://www.genomenexus.org/ensembl/canonical-transcript/hgnc/BRAF"
+  ],
+  "git_sha": "61a4bef9e7a876efb31a873702d4395e3cd345f1",
+  "cli_args": [
+    "real-benchmark",
+    "BRAF",
+    "msk_impact_2017",
+    "--output-dir",
+    "runs",
+    "--n-permutations",
+    "10000"
+  ],
+  "timestamp": "2026-09-03T14:44:39.461375+00:00"
+}

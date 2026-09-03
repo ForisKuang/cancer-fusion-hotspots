@@ -7,7 +7,7 @@ from pathlib import Path
 import click
 
 from cfh.genes.registry import available_genes, load_gene_config
-from cfh.real_benchmark import RealBenchmarkError, run_real_benchmark, write_outputs
+from cfh.real_benchmark import RealBenchmarkError, run_analysis, run_real_benchmark, write_outputs
 
 
 @click.group()
@@ -36,7 +36,7 @@ def show_gene(gene_symbol: str) -> None:
 @click.option(
     "--output-dir",
     type=click.Path(path_type=Path, file_okay=False),
-    default=Path("reports"),
+    default=Path("runs"),
     show_default=True,
 )
 @click.option("--n-permutations", type=click.IntRange(min=1), default=1_000, show_default=True)
@@ -51,7 +51,20 @@ def real_benchmark(
     """Run the prototype live cBioPortal/Genome Nexus benchmark."""
     try:
         run = run_real_benchmark(gene_symbol, study_id, n_permutations=n_permutations)
-        paths = write_outputs(run, output_dir, output_stem=output_stem)
+        paths = write_outputs(
+            run,
+            output_dir,
+            output_stem=output_stem,
+            cli_args=[
+                "real-benchmark",
+                gene_symbol,
+                study_id,
+                "--output-dir",
+                str(output_dir),
+                "--n-permutations",
+                str(n_permutations),
+            ],
+        )
     except RealBenchmarkError as exc:
         raise click.ClickException(str(exc)) from None
     except Exception as exc:
@@ -64,6 +77,47 @@ def real_benchmark(
         f"in-frame={run.summary['in_frame_count']}, "
         f"domain-retained={run.summary['kinase_retained_count']}, "
         f"Fisher p={fisher_display}"
+    )
+    for warning in run.warnings:
+        click.echo(f"Warning: {warning}", err=True)
+    for kind, path in paths.items():
+        click.echo(f"{kind}: {path}")
+
+
+@main.command("analyze")
+@click.argument("gene_symbol")
+@click.argument("study_id")
+@click.option(
+    "--output-dir",
+    type=click.Path(path_type=Path, file_okay=False),
+    default=Path("runs"),
+    show_default=True,
+)
+@click.option("--n-permutations", type=click.IntRange(min=1), default=1_000, show_default=True)
+def analyze(gene_symbol: str, study_id: str, output_dir: Path, n_permutations: int) -> None:
+    """Run all registered algorithms for a configured gene and live study."""
+    try:
+        run = run_analysis(gene_symbol, study_id, n_permutations=n_permutations)
+        paths = write_outputs(
+            run,
+            output_dir,
+            cli_args=[
+                "analyze",
+                gene_symbol,
+                study_id,
+                "--output-dir",
+                str(output_dir),
+                "--n-permutations",
+                str(n_permutations),
+            ],
+        )
+    except RealBenchmarkError as exc:
+        raise click.ClickException(str(exc)) from None
+    except Exception as exc:
+        raise click.ClickException(f"Analysis failed: {type(exc).__name__}: {exc}") from None
+    click.echo(
+        f"Analyzed {run.summary['total_fusions']} {run.gene_symbol} fusions with "
+        f"{len(run.results)} registered algorithms"
     )
     for warning in run.warnings:
         click.echo(f"Warning: {warning}", err=True)

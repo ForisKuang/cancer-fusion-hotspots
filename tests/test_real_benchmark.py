@@ -1,3 +1,4 @@
+import csv
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -8,6 +9,7 @@ import requests
 from click.testing import CliRunner
 
 from cfh import cli
+from cfh import real_benchmark as benchmark_module
 from cfh.ingestion import cbioportal_api
 from cfh.mapping.genome_nexus_source import GenomeNexusClient
 from cfh.real_benchmark import (
@@ -62,9 +64,9 @@ def test_real_benchmark_pipeline_writes_tsv_json_and_markdown(
             "site1HugoSymbol": "BRAF",
             "site2HugoSymbol": "AGK",
             "site1Position": 140493152,
-            "site2EffectOnFrame": "NA",
+            "site2EffectOnFrame": "out-of-frame",
             "connectionType": "5to5",
-            "eventInfo": "Protein Fusion: out of frame  {BRAF:AGK}",
+            "eventInfo": "Protein Fusion: in frame  {BRAF:AGK}",
         },
     ]
 
@@ -85,6 +87,29 @@ def test_real_benchmark_pipeline_writes_tsv_json_and_markdown(
     payload = json.loads(paths["json"].read_text())
     assert payload["summary"]["domain_accession"] == "PF07714"
     assert len(payload["events"]) == 2
+    assert paths["tsv"].name == "results.tsv"
+    assert paths["json"].name == "results.json"
+    assert paths["markdown"].name == "report.md"
+    assert paths["manifest"].name == "manifest.json"
+    assert paths["tsv"].parent.name.startswith("braf_msk-impact-50k-2026_")
+    manifest = json.loads(paths["manifest"].read_text())
+    assert manifest["gene"] == "BRAF"
+    assert manifest["study_id"] == "msk_impact_50k_2026"
+    assert len(manifest["endpoints_used"]) == 2
+    assert paths["domain_svg"].parent.name == "visualizations"
+    assert "#d62728" in paths["domain_svg"].read_text()
+    assert "reference 100.0%" in paths["comparison_svg"].read_text()
+    outliers = paths["outliers"].read_text()
+    assert "reference_discrepancy" in outliers
+    assert "source_vs_derived_qa_mismatch" in outliers
+    assert "Protein Fusion: in frame" in outliers
+    outlier_rows = list(csv.DictReader(paths["outliers"].open(), delimiter="\t"))
+    qa_event_ids = {
+        row["event_id"]
+        for row in outlier_rows
+        if row["discrepancy_type"] == "source_vs_derived_qa_mismatch"
+    }
+    assert qa_event_ids == {"EVT-SAMPLE-2-2"}
     report = paths["markdown"].read_text()
     assert "does **not** reproduce" in report
     assert "PF07714 (458-712 aa)" in report
@@ -243,7 +268,20 @@ def test_real_benchmark_click_command_wires_arguments_and_echoes_summary(
 
     assert result.exit_code == 0, result.output
     run_mock.assert_called_once_with("BRAF", "study-id", n_permutations=25)
-    write_mock.assert_called_once_with(fake_run, tmp_path, output_stem="custom")
+    write_mock.assert_called_once_with(
+        fake_run,
+        tmp_path,
+        output_stem="custom",
+        cli_args=[
+            "real-benchmark",
+            "BRAF",
+            "study-id",
+            "--output-dir",
+            str(tmp_path),
+            "--n-permutations",
+            "25",
+        ],
+    )
     assert "Analyzed 7 BRAF fusions; mapped=6, in-frame=5" in result.output
     assert "Fisher p=0.012345" in result.output
     assert "Warning: Skipped one malformed row" in result.output
@@ -262,6 +300,45 @@ def test_real_benchmark_click_command_renders_network_error_without_traceback(mo
     assert result.exit_code == 1
     assert "Error: cBioPortal timed out; retry later" in result.output
     assert "Traceback" not in result.output
+
+
+def test_analyze_click_command_runs_registered_orchestrator_path(monkeypatch, tmp_path):
+    fake_run = SimpleNamespace(
+        gene_symbol="BRAF",
+        summary={"total_fusions": 3},
+        results=[object(), object(), object()],
+        warnings=[],
+    )
+    analyze_mock = MagicMock(return_value=fake_run)
+    write_mock = MagicMock(return_value={"run_directory": Path("runs/example")})
+    monkeypatch.setattr(cli, "run_analysis", analyze_mock)
+    monkeypatch.setattr(cli, "write_outputs", write_mock)
+
+    result = CliRunner().invoke(
+        cli.main,
+        ["analyze", "BRAF", "study-id", "--output-dir", str(tmp_path), "--n-permutations", "9"],
+    )
+
+    assert result.exit_code == 0, result.output
+    analyze_mock.assert_called_once_with("BRAF", "study-id", n_permutations=9)
+    assert "with 3 registered algorithms" in result.output
+    assert write_mock.call_args.kwargs["cli_args"][0] == "analyze"
+
+
+def test_run_analysis_requests_every_registered_algorithm(monkeypatch):
+    run_mock = MagicMock(return_value=object())
+    monkeypatch.setattr(benchmark_module, "list_algorithms", lambda: ["alpha", "beta"])
+    monkeypatch.setattr(benchmark_module, "run_real_benchmark", run_mock)
+
+    result = benchmark_module.run_analysis("GENE", "study", n_permutations=7)
+
+    assert result is run_mock.return_value
+    run_mock.assert_called_once_with(
+        "GENE",
+        "study",
+        n_permutations=7,
+        algorithm_names=["alpha", "beta"],
+    )
 
 
 def test_real_benchmark_click_command_explains_unknown_gene_without_traceback():

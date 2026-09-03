@@ -5,15 +5,17 @@ from __future__ import annotations
 import csv
 import json
 import math
-from dataclasses import dataclass
+import re
+import subprocess
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
 import requests
 
-from cfh.algorithms.domain_retention import DomainRetentionAlgorithm
 from cfh.algorithms.frequency import FrequencyAnalysis
+from cfh.algorithms.registry import list_algorithms
 from cfh.genes.registry import GeneConfig, load_gene_config
 from cfh.ingestion import cbioportal_api
 from cfh.mapping.domain_source import ProteinDomain
@@ -24,6 +26,7 @@ from cfh.model.algorithm_result import AlgorithmResult
 from cfh.model.fusion_event import FusionEvent
 from cfh.model.fusion_feature import FusionFeature
 from cfh.normalization.event_normalizer import normalize
+from cfh.orchestrator.run import run_algorithms
 from cfh.stats.breakpoint_tests import build_frame_domain_contingency_table
 
 
@@ -52,6 +55,8 @@ class RealBenchmarkRun:
     results: list[AlgorithmResult]
     summary: dict
     warnings: list[str]
+    endpoints: list[str] = field(default_factory=list)
+    reference: dict | None = None
 
 
 class _ResolvedDomainSource:
@@ -110,6 +115,20 @@ def _partner(event: FusionEvent, target_gene: str) -> str:
     return "unknown"
 
 
+def _source_frame_status(text: object) -> str | None:
+    """Read an explicit frame call without applying production normalization rules."""
+    value = str(text or "").strip().lower()
+    if not value:
+        return None
+    if value in {"na", "n/a", "unknown"}:
+        return None
+    if "out-of-frame" in value or "out of frame" in value:
+        return "out-of-frame"
+    if "in-frame" in value or "in frame" in value:
+        return "in-frame"
+    return None
+
+
 def _load_benchmark_config(gene_symbol: str) -> GeneConfig:
     try:
         config = load_gene_config(gene_symbol)
@@ -163,6 +182,7 @@ def analyze_structural_variant_calls(
     molecular_profile_id: str | None = None,
     genome_nexus_client: GenomeNexusClient | None = None,
     n_permutations: int = 1_000,
+    algorithm_names: list[str] | None = None,
 ) -> RealBenchmarkRun:
     """Normalize and analyze already-fetched cBioPortal SV API objects."""
     if n_permutations <= 0:
@@ -250,6 +270,18 @@ def analyze_structural_variant_calls(
                 "breakpoint_protein_position": mapping.breakpoint_protein_position,
                 "is_intronic_breakpoint": mapping.is_intronic_breakpoint,
                 "domain_status": (feature.Domain_retention_flags or {}).get(target_key, "unknown"),
+                "retained_domains": "; ".join(feature.Retained_domains or []),
+                "lost_domains": "; ".join(feature.Lost_domains or []),
+                "disrupted_domains": "; ".join(feature.Disrupted_domains or []),
+                "source_annotation_text": " | ".join(
+                    value
+                    for value in (
+                        str(row.get("Annotation") or ""),
+                        str(row.get("Event_Info") or ""),
+                    )
+                    if value
+                ),
+                "source_site2_effect_on_frame": row.get("Site2_Effect_On_Frame"),
             }
         )
 
@@ -271,16 +303,17 @@ def analyze_structural_variant_calls(
         )
     else:
         try:
-            domain_result = DomainRetentionAlgorithm().run(
+            domain_result = run_algorithms(
+                ["domain_retention"],
                 events,
                 features,
                 config,
-                {
+                {"domain_retention": {
                     "seed": 42,
                     "n_permutations": n_permutations,
                     "genome_nexus_client": client,
-                },
-            )
+                }},
+            )[0]
         except requests.RequestException as exc:
             raise RealBenchmarkNetworkError(
                 f"Genome Nexus permutation mapping failed for {config.gene_symbol}: {exc}. "
@@ -293,10 +326,22 @@ def analyze_structural_variant_calls(
                 message, events, features, config, n_permutations
             )
     selected_events = [event for _, event in selected]
-    frequency_result = FrequencyAnalysis().run(
-        selected_events, features, config, {"dedup_by_patient": False}
+    requested_algorithms = algorithm_names or ["domain_retention", "frequency"]
+    other_algorithms = [name for name in requested_algorithms if name != "domain_retention"]
+    other_results = run_algorithms(
+        other_algorithms,
+        selected_events,
+        features,
+        config,
+        {"frequency": {"dedup_by_patient": False}},
     )
-    results = [domain_result, frequency_result]
+    results_by_name = {result.Algorithm: result for result in [domain_result, *other_results]}
+    results = [results_by_name[name] for name in requested_algorithms if name in results_by_name]
+    frequency_result = results_by_name.get("frequency")
+    if frequency_result is None:
+        frequency_result = FrequencyAnalysis().run(
+            selected_events, features, config, {"dedup_by_patient": False}
+        )
     partner_counts = frequency_result.Tables["Partner_gene_counts"]
     in_frame_count = sum(event.Frame_status == "in-frame" for event in selected_events)
     retained_count = sum(row["domain_status"] == "retained" for row in rows)
@@ -347,6 +392,14 @@ def analyze_structural_variant_calls(
         results=results,
         summary=summary,
         warnings=warnings,
+        endpoints=[
+            "https://www.cbioportal.org/api/structural-variant/fetch",
+            "https://www.genomenexus.org/ensembl/canonical-transcript/hgnc/"
+            f"{config.gene_symbol}",
+        ],
+        reference=(
+            config.benchmark_reference.model_dump() if config.benchmark_reference else None
+        ),
     )
 
 
@@ -355,6 +408,7 @@ def run_real_benchmark(
     study_id: str,
     *,
     n_permutations: int = 1_000,
+    algorithm_names: list[str] | None = None,
 ) -> RealBenchmarkRun:
     """Fetch and analyze a gene's structural variants from cBioPortal."""
     config = _load_benchmark_config(gene_symbol)
@@ -376,6 +430,22 @@ def run_real_benchmark(
         study_id,
         molecular_profile_id=profile_id,
         n_permutations=n_permutations,
+        algorithm_names=algorithm_names,
+    )
+
+
+def run_analysis(
+    gene_symbol: str,
+    study_id: str,
+    *,
+    n_permutations: int = 1_000,
+) -> RealBenchmarkRun:
+    """Run every registered plugin against the shared live mapped input snapshot."""
+    return run_real_benchmark(
+        gene_symbol,
+        study_id,
+        n_permutations=n_permutations,
+        algorithm_names=list_algorithms(),
     )
 
 
@@ -452,6 +522,21 @@ def markdown_summary(run: RealBenchmarkRun) -> str:
         lines.extend(["## Warnings", ""])
         lines.extend(f"- {warning}" for warning in run.warnings)
         lines.append("")
+    if run.reference:
+        citation = run.reference["citation"]
+        lines.extend(
+            [
+                "## Reference comparison",
+                "",
+                f"| Metric | {citation} | This run |",
+                "|---|---:|---:|",
+                f"| In-frame | {run.reference['in_frame_percent']:.1f}% | "
+                f"{summary['in_frame_percent']:.1f}% |",
+                f"| Domain retained | {run.reference['domain_retained_percent']:.1f}% | "
+                f"{summary['kinase_retained_percent']:.1f}% |",
+                "",
+            ]
+        )
     lines.extend(
         [
             "## Interpretation",
@@ -481,31 +566,154 @@ def markdown_summary(run: RealBenchmarkRun) -> str:
     return "\n".join(lines)
 
 
+def _git_sha() -> str | None:
+    try:
+        return subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
+def _run_id(run: RealBenchmarkRun) -> str:
+    gene = re.sub(r"[^a-z0-9]+", "-", run.gene_symbol.lower()).strip("-")
+    study = re.sub(r"[^a-z0-9]+", "-", run.study_id.lower()).strip("-")
+    timestamp = run.retrieved_at.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    return f"{gene}_{study}_{timestamp}"
+
+
+def _write_tsv(path: Path, rows: list[dict], fieldnames: list[str] | None = None) -> None:
+    names = fieldnames or (list(rows[0]) if rows else [])
+    with path.open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=names, delimiter="\t", lineterminator="\n")
+        if names:
+            writer.writeheader()
+            writer.writerows(rows)
+
+
+def _discrepancies(run: RealBenchmarkRun) -> list[dict]:
+    discrepancies = []
+    for row in run.rows:
+        common = {
+            "event_id": row.get("event_id"),
+            "partner_gene": row.get("partner_gene"),
+            "frame_status": row.get("frame_status"),
+            "retained_domains": row.get("retained_domains", ""),
+            "lost_domains": row.get("lost_domains", ""),
+            "disrupted_domains": row.get("disrupted_domains", ""),
+            "source_annotation_text": row.get("source_annotation_text", ""),
+            "source_site2_effect_on_frame": row.get("source_site2_effect_on_frame"),
+        }
+        if run.reference and (
+            row.get("frame_status") != "in-frame" or row.get("domain_status") != "retained"
+        ):
+            discrepancies.append({"discrepancy_type": "reference_discrepancy", **common})
+        source_calls = {
+            status
+            for status in (
+                _source_frame_status(row.get("source_site2_effect_on_frame")),
+                _source_frame_status(row.get("source_annotation_text")),
+            )
+            if status in {"in-frame", "out-of-frame"}
+        }
+        if any(source_call != row.get("frame_status") for source_call in source_calls):
+            discrepancies.append({"discrepancy_type": "source_vs_derived_qa_mismatch", **common})
+    return discrepancies
+
+
+def _domain_track_svg(run: RealBenchmarkRun, outlier_ids: set[str]) -> str:
+    """Render mapped breakpoints and configured-domain boundaries without gene literals."""
+    start = run.summary.get("domain_start_aa") or 0
+    end = run.summary.get("domain_end_aa") or 0
+    positions = [
+        row["breakpoint_protein_position"]
+        for row in run.rows
+        if row["breakpoint_protein_position"]
+    ]
+    maximum = max([end, *positions, 1])
+    scale = 800 / maximum
+    dots = []
+    for index, row in enumerate(run.rows):
+        position = row["breakpoint_protein_position"]
+        if position is None:
+            continue
+        color = "#d62728" if row["event_id"] in outlier_ids else "#2878b5"
+        y = 100 + (index % 5) * 7
+        dots.append(f'<circle cx="{60 + position * scale:.1f}" cy="{y}" r="3" fill="{color}"/>')
+    return "\n".join([
+        '<svg xmlns="http://www.w3.org/2000/svg" width="920" height="180" viewBox="0 0 920 180">',
+        '<rect width="920" height="180" fill="white"/>',
+        f'<text x="60" y="28" font-family="sans-serif" font-size="16">'
+        f'{run.gene_symbol} domain-retention track</text>',
+        '<line x1="60" y1="90" x2="860" y2="90" stroke="#444" stroke-width="4"/>',
+        f'<rect x="{60 + start * scale:.1f}" y="76" '
+        f'width="{max(2, (end-start)*scale):.1f}" height="28" '
+        'fill="#62b36f" opacity="0.55"/>',
+        *dots,
+        '<circle cx="60" cy="157" r="4" fill="#2878b5"/>'
+        '<text x="70" y="162" font-family="sans-serif" font-size="12">'
+        'matches reference pattern</text>',
+        '<circle cx="270" cy="157" r="4" fill="#d62728"/>'
+        '<text x="280" y="162" font-family="sans-serif" font-size="12">'
+        'reference discrepancy</text>',
+        '</svg>',
+    ])
+
+
+def _comparison_svg(run: RealBenchmarkRun) -> str:
+    reference = run.reference or {}
+    metrics = [
+        ("In-frame", reference.get("in_frame_percent", 0), run.summary["in_frame_percent"]),
+        (
+            "Domain retained",
+            reference.get("domain_retained_percent", 0),
+            run.summary["kinase_retained_percent"],
+        ),
+    ]
+    elements = [
+        '<svg xmlns="http://www.w3.org/2000/svg" width="620" height="210" '
+        'viewBox="0 0 620 210">',
+        '<rect width="620" height="210" fill="white"/>',
+        f'<text x="20" y="25" font-family="sans-serif" font-size="16">'
+        f'Reference vs {run.study_id}</text>',
+    ]
+    for index, (label, ref_value, run_value) in enumerate(metrics):
+        y = 55 + index * 70
+        elements.extend([
+            f'<text x="20" y="{y}" font-family="sans-serif" font-size="12">{label}</text>',
+            f'<rect x="140" y="{y-14}" width="{ref_value*3.8:.1f}" height="16" fill="#999"/>',
+            f'<text x="530" y="{y}" font-family="sans-serif" font-size="12">'
+            f'reference {ref_value:.1f}%</text>',
+            f'<rect x="140" y="{y+10}" width="{run_value*3.8:.1f}" height="16" fill="#2878b5"/>',
+            f'<text x="530" y="{y+24}" font-family="sans-serif" font-size="12">'
+            f'run {run_value:.1f}%</text>',
+        ]
+        )
+    elements.append("</svg>")
+    return "\n".join(elements)
+
+
 def write_outputs(
     run: RealBenchmarkRun,
     output_dir: str | Path,
     *,
     output_stem: str | None = None,
+    cli_args: list[str] | None = None,
+    run_id: str | None = None,
 ) -> dict[str, Path]:
-    """Write event-level TSV, structured JSON, and a Markdown summary."""
-    destination = Path(output_dir)
-    destination.mkdir(parents=True, exist_ok=True)
-    stem = output_stem or f"{run.gene_symbol.lower()}_{run.study_id}_benchmark"
-    tsv_path = destination / f"{stem}.tsv"
-    json_path = destination / f"{stem}.json"
-    markdown_path = destination / f"{stem}.md"
+    """Write a complete, provenance-bearing run directory."""
+    del output_stem  # retained as a compatibility-only keyword for older callers
+    destination = Path(output_dir) / (run_id or _run_id(run))
+    visualization_dir = destination / "visualizations"
+    visualization_dir.mkdir(parents=True, exist_ok=True)
+    tsv_path = destination / "results.tsv"
+    json_path = destination / "results.json"
+    markdown_path = destination / "report.md"
 
-    fieldnames = list(run.rows[0]) if run.rows else []
-    with tsv_path.open("w", newline="") as handle:
-        writer = csv.DictWriter(
-            handle,
-            fieldnames=fieldnames,
-            delimiter="\t",
-            lineterminator="\n",
-        )
-        if fieldnames:
-            writer.writeheader()
-            writer.writerows(run.rows)
+    _write_tsv(tsv_path, run.rows)
 
     algorithm_results = [result.model_dump(mode="json") for result in run.results]
     for result in algorithm_results:
@@ -529,4 +737,37 @@ def write_outputs(
     )
     json_path.write_text(json.dumps(payload, indent=2, allow_nan=False) + "\n")
     markdown_path.write_text(markdown_summary(run))
-    return {"tsv": tsv_path, "json": json_path, "markdown": markdown_path}
+    discrepancies = _discrepancies(run)
+    outliers_path = destination / "outliers.tsv"
+    _write_tsv(outliers_path, discrepancies, [
+        "discrepancy_type", "event_id", "partner_gene", "frame_status",
+        "retained_domains", "lost_domains", "disrupted_domains",
+        "source_annotation_text", "source_site2_effect_on_frame",
+    ])
+    reference_ids = {
+        row["event_id"] for row in discrepancies
+        if row["discrepancy_type"] == "reference_discrepancy"
+    }
+    domain_svg = visualization_dir / "domain_retention_outliers.svg"
+    comparison_svg = visualization_dir / "reference_comparison.svg"
+    domain_svg.write_text(_domain_track_svg(run, reference_ids) + "\n")
+    comparison_svg.write_text(_comparison_svg(run) + "\n")
+    manifest_path = destination / "manifest.json"
+    manifest_path.write_text(json.dumps({
+        "gene": run.gene_symbol,
+        "study_id": run.study_id,
+        "endpoints_used": run.endpoints,
+        "git_sha": _git_sha(),
+        "cli_args": cli_args or [],
+        "timestamp": run.retrieved_at.isoformat(),
+    }, indent=2) + "\n")
+    return {
+        "run_directory": destination,
+        "manifest": manifest_path,
+        "tsv": tsv_path,
+        "json": json_path,
+        "markdown": markdown_path,
+        "outliers": outliers_path,
+        "domain_svg": domain_svg,
+        "comparison_svg": comparison_svg,
+    }
