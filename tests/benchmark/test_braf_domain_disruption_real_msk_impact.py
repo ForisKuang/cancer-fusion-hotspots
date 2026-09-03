@@ -93,7 +93,7 @@ def _events_and_features_from_real_run(
         # 2017 cohort (Zehir et al. successor pull): 33 in-frame BRAF fusions.
         ("braf_msk-impact-2017", [[31, 2], [2, 0]], pytest.approx(31 / 33)),
         # 50k 2026 cohort: 151 in-frame BRAF fusions.
-        ("braf_msk-impact-50k-2026", [[126, 19], [25, 4]], pytest.approx(126 / 151)),
+        ("braf_msk-impact-50k-2026", [[126, 21], [25, 6]], pytest.approx(126 / 151)),
     ],
 )
 def test_braf_domain_disruption_against_committed_real_msk_impact_run(

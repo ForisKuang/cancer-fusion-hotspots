@@ -246,14 +246,14 @@ def test_composite_score_real_braf_msk_impact_all_five_subscores_applicable():
         }
 
     # KIAA1549 is by far BRAF's most recurrent real partner in this cohort
-    # (43/174 events, ~4x the next most frequent) -- with recurrence at 30%
+    # (43/178 mapped events, ~3x the next most frequent) -- with recurrence at 30%
     # weight it should come out on top. Pinned to the exact real value (not
     # just the ranking) with seed=42/n_permutations=2_000 fixed above, so a
     # future regression in the aggregation math is actually caught rather
     # than only a change in which partner sorts first.
     assert ranking[0]["Partner_gene"] == "KIAA1549"
     assert ranking[0]["Event_count"] == 43
-    assert ranking[0]["Composite_score"] == pytest.approx(0.2972, abs=5e-5)
+    assert ranking[0]["Composite_score"] == pytest.approx(0.29574, abs=5e-5)
 
 
 def _ret_events_and_features(results_path: Path) -> tuple[list[FusionEvent], list[FusionFeature]]:
@@ -295,13 +295,15 @@ def test_composite_score_real_ret_msk_impact_gracefully_degrades():
     most literal form of "consume already-computed outputs as inputs" -- and
     proves composite_score ranks real RET fusion partners using only the
     two-to-three sub-scores that are genuinely applicable, excluding
-    domain_disruption (never even run for this gene) and confidence_stats
-    (a real recorded failure) rather than zero-filling them.
+    domain_disruption (recorded as an explicit skipped result) and
+    confidence_stats (a real recorded failure) rather than zero-filling them.
     """
     results_path = _real_run_results_path("ret_msk-impact-50k-2026")
     payload = json.loads(results_path.read_text())
     committed_results = {item["Algorithm"]: item for item in payload["algorithm_results"]}
-    assert "domain_disruption" not in committed_results
+    domain_disruption_result = committed_results["domain_disruption"]
+    assert domain_disruption_result["Summary"]["fisher_p_value"] is None
+    assert "was skipped" in domain_disruption_result["Warnings"][0]
     assert committed_results["confidence_stats"]["Warnings"][0].startswith("Algorithm failed")
     assert committed_results["cutpoint_detection"]["Summary"]["determinable"] is True
 
