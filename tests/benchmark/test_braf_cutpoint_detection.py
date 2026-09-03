@@ -1,11 +1,19 @@
-"""CI-gating BRAF cutpoint-detection benchmark.
+"""CI-gating BRAF cutpoint-detection sanity check.
 
 Reuses the domain-retention benchmark's committed fixture and field-mapping
-helper (rather than duplicating any cBioPortal ingestion code) to validate
-the gene-agnostic cutpoint-detection algorithm against real, named BRAF
-fusion breakpoints, and checks the inferred cutpoint against the known
-kinase-domain boundary (Pfam PF07714, aa 458) parsed from the committed
-Genome Nexus canonical-transcript fixture.
+helper (rather than duplicating any cBioPortal ingestion code) to run the
+gene-agnostic cutpoint-detection algorithm against a synthetic-but-realistic
+fixture -- modeled on the named BRAF-fusion examples in Zehir et al.
+(PMC5461196), per that fixture's own source comment -- and checks the
+inferred cutpoint against the known kinase-domain boundary (Pfam PF07714, aa
+458) parsed from the committed Genome Nexus canonical-transcript fixture.
+
+This is a CI-gating sanity check against synthetic data, not a validation
+against real fusion calls: a genuine live-data validation, pulling real
+BRAF structural variants through the same cBioPortal + Genome Nexus path the
+domain-retention benchmark's `test_braf_kinase_retention_in_real_msk_impact_50k`
+(network-marked, opt-in via ``CFH_RUN_NETWORK_TESTS=1``) already exercises,
+is a follow-up and has not been done here.
 """
 
 from __future__ import annotations
@@ -51,12 +59,13 @@ def test_braf_cutpoint_lands_near_known_kinase_domain_boundary():
     assert result.Summary["determinable"] is True
     assert result.Summary["corrected_p_value"] < 0.05
 
-    # Validation check (reported honestly regardless of outcome): the
-    # fixture's kinase-retained events all sit at or below aa 455 and every
-    # kinase-lost/disrupted event sits at aa 500 or above, so the recurrence-
-    # only, label-free scan should independently land within a few residues
-    # of the known kinase-domain start (aa 458) -- with no BRAF-specific
-    # logic anywhere in the algorithm itself.
+    # Sanity check (reported honestly regardless of outcome), against the
+    # synthetic fixture described above: its kinase-retained events all sit
+    # at or below aa 455 and every kinase-lost/disrupted event sits at aa
+    # 500 or above, so the recurrence-only, label-free scan should
+    # independently land within a few residues of the known kinase-domain
+    # start (aa 458) -- with no BRAF-specific logic anywhere in the
+    # algorithm itself.
     comparison = result.Summary["known_domain_boundary_comparison"]
     assert comparison is not None
     assert comparison["nearest_known_domain_boundary_aa"] == _KNOWN_KINASE_DOMAIN_START_AA
