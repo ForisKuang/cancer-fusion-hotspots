@@ -101,6 +101,32 @@ def _schedule_waves(algorithm_names: Sequence[str]) -> list[list[str]]:
     return waves
 
 
+def _json_safe_params(params: dict[str, Any]) -> dict[str, Any]:
+    """Coerce a params dict to something ``AlgorithmResult.model_dump(mode="json")``
+    can always serialize.
+
+    A failed algorithm's synthetic result (below) echoes back its raw input
+    ``params`` verbatim as ``Parameters`` for debuggability -- but a caller
+    may have passed a live object in there (e.g. a shared
+    ``GenomeNexusClient``, as ``cutpoint_detection``/``domain_retention``
+    already accept) purely for the algorithm's own internal use, never
+    intended to be serialized. Any value that is not JSON-safe is replaced
+    with its ``repr()`` so serialization never breaks on a legitimately
+    failed algorithm result.
+    """
+
+    def _safe(value: Any) -> Any:
+        if value is None or isinstance(value, (str, int, float, bool)):
+            return value
+        if isinstance(value, dict):
+            return {str(key): _safe(item) for key, item in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [_safe(item) for item in value]
+        return repr(value)
+
+    return _safe(params)
+
+
 def _run_one(
     name: str,
     events: list[FusionEvent],
@@ -127,7 +153,7 @@ def _run_one(
     except Exception as exc:
         return AlgorithmResult(
             Algorithm=name,
-            Parameters=params,
+            Parameters=_json_safe_params(params),
             Summary={"Runtime_seconds": perf_counter() - started_at},
             Tables={},
             Warnings=[f"Algorithm failed: {type(exc).__name__}: {exc}"],

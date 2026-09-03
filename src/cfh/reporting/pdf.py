@@ -259,6 +259,68 @@ def render_pdf_report(
     return output_path
 
 
+def render_cohort_summary_pdf(
+    output_path: str | Path,
+    *,
+    title: str,
+    subtitle: str,
+    notes: list[str],
+    rows: list[list],
+) -> Path:
+    """Render a simple, landscape, one-table PDF summarizing every gene in a
+    cohort scan, reusing the same table-flowable styling as the per-gene
+    ``report.pdf`` (see :func:`_generic_table_flowable`). ``rows`` is a
+    header row followed by one row per scanned gene, already
+    string-formatted by the caller (no numbers are computed here).
+    """
+    output_path = Path(output_path)
+    styles = _styles()
+    landscape_size = landscape(LETTER)
+
+    doc = BaseDocTemplate(
+        str(output_path),
+        pagesize=landscape_size,
+        leftMargin=0.5 * inch,
+        rightMargin=0.5 * inch,
+        topMargin=0.6 * inch,
+        bottomMargin=0.6 * inch,
+    )
+    frame = Frame(
+        doc.leftMargin,
+        doc.bottomMargin,
+        landscape_size[0] - doc.leftMargin - doc.rightMargin,
+        landscape_size[1] - doc.topMargin - doc.bottomMargin,
+        id="landscape",
+    )
+    doc.addPageTemplates(
+        [PageTemplate(id=_LANDSCAPE_TEMPLATE, frames=[frame], pagesize=landscape_size)]
+    )
+
+    story: list = [
+        Paragraph(title, styles["Title"]),
+        Paragraph(subtitle, styles["Body"]),
+        Spacer(1, 0.15 * inch),
+    ]
+    for note in notes:
+        story.append(Paragraph(note, styles["Caption"]))
+    story.append(Spacer(1, 0.2 * inch))
+
+    truncated = len(rows) - 1 > _MAX_TABLE_ROWS
+    display_rows = [rows[0]] + rows[1 : _MAX_TABLE_ROWS + 1] if rows else rows
+    if display_rows:
+        story.append(_generic_table_flowable(display_rows, styles))
+    if truncated:
+        story.append(
+            Paragraph(
+                f"Showing the first {_MAX_TABLE_ROWS} of {len(rows) - 1} scanned genes.",
+                styles["Caption"],
+            )
+        )
+
+    doc.build(story)
+    return output_path
+
+
 def render_pdf_report_for_run_dir(run_dir: str | Path) -> Path:
     """Convenience wrapper: render ``report.pdf`` for an on-disk run directory
     that already has ``results.json`` (and, if present, ``results.tsv`` /

@@ -25,11 +25,13 @@ from cfh.mapping.genome_nexus_source import GenomeNexusClient, parse_canonical_t
 from cfh.model.algorithm_result import AlgorithmResult
 from cfh.model.fusion_event import FusionEvent
 from cfh.model.fusion_feature import FusionFeature
+from cfh.stats.adaptive_permutation import is_borderline, resolve_permutation_budget
 from cfh.stats.breakpoint_tests import gene_breakpoint_domain_status_records
 from cfh.stats.cutpoint_scan import detect_cutpoint
 
 ALGORITHM_NAME = "cutpoint_detection"
 ALGORITHM_VERSION = "0.1.0"
+_DEFAULT_FULL_N_PERMUTATIONS = 10_000
 
 
 def _nearest_boundary_comparison(cutpoint: int, boundaries: list[int]) -> Optional[dict]:
@@ -83,6 +85,11 @@ class CutpointDetectionAlgorithm(Algorithm):
             compare the inferred cutpoint against.
         genome_nexus_client (GenomeNexusClient): used only as a fallback
             source for ``domain_boundaries`` when that param is omitted.
+
+    See :mod:`cfh.stats.adaptive_permutation` for the optional adaptive
+    permutation-budget params (``adaptive``, ``n_permutations_small``,
+    ``significance_threshold``, ``borderline_factor``); every one of them
+    defaults to the existing non-adaptive behavior.
     """
 
     def run(
@@ -94,18 +101,37 @@ class CutpointDetectionAlgorithm(Algorithm):
     ) -> AlgorithmResult:
         params = params or {}
         seed = params.get("seed", 42)
-        n_permutations = params.get("n_permutations", 10_000)
+        budget = resolve_permutation_budget(params, default_full_n=10_000)
 
         records = gene_breakpoint_domain_status_records(events, features, gene_config)
         positions = [position for position, _ in records]
         statuses = [status for _, status in records]
 
+        n_permutations = budget["full_n"] if not budget["adaptive"] else budget["small_n"]
         scan_result = detect_cutpoint(
             positions,
             statuses,
             seed=seed,
             n_permutations=n_permutations,
         )
+        escalated = False
+        if (
+            budget["adaptive"]
+            and scan_result["determinable"]
+            and is_borderline(
+                scan_result["corrected_p_value"],
+                threshold=budget["threshold"],
+                factor=budget["factor"],
+            )
+        ):
+            escalated = True
+            n_permutations = budget["full_n"]
+            scan_result = detect_cutpoint(
+                positions,
+                statuses,
+                seed=seed,
+                n_permutations=n_permutations,
+            )
 
         boundary_comparison = None
         warnings: list[str] = []
@@ -117,21 +143,35 @@ class CutpointDetectionAlgorithm(Algorithm):
         else:
             warnings.append(scan_result["reason"])
 
+        summary = {
+            "determinable": scan_result["determinable"],
+            "reason": scan_result["reason"],
+            "n_events_analyzed": len(records),
+            "inferred_cutpoint_aa": scan_result["best_cutpoint"],
+            "observed_statistic_neg_log10_p": scan_result["observed_statistic"],
+            "observed_p_value": scan_result["observed_p_value"],
+            "observed_odds_ratio": scan_result["observed_odds_ratio"],
+            "corrected_p_value": scan_result["corrected_p_value"],
+            "known_domain_boundary_comparison": boundary_comparison,
+        }
+        if budget["adaptive"]:
+            summary["adaptive_permutations"] = {
+                "enabled": True,
+                "n_permutations_small": budget["small_n"],
+                "n_permutations_full": budget["full_n"],
+                "n_permutations_used": n_permutations,
+                "escalated_to_full": escalated,
+            }
+
         return AlgorithmResult(
             Algorithm=ALGORITHM_NAME,
             Algorithm_version=ALGORITHM_VERSION,
-            Parameters={"seed": seed, "n_permutations": n_permutations},
-            Summary={
-                "determinable": scan_result["determinable"],
-                "reason": scan_result["reason"],
-                "n_events_analyzed": len(records),
-                "inferred_cutpoint_aa": scan_result["best_cutpoint"],
-                "observed_statistic_neg_log10_p": scan_result["observed_statistic"],
-                "observed_p_value": scan_result["observed_p_value"],
-                "observed_odds_ratio": scan_result["observed_odds_ratio"],
-                "corrected_p_value": scan_result["corrected_p_value"],
-                "known_domain_boundary_comparison": boundary_comparison,
+            Parameters={
+                "seed": seed,
+                "n_permutations": n_permutations,
+                "adaptive": budget["adaptive"],
             },
+            Summary=summary,
             Tables={"cutpoint_scan": scan_result["scan"]},
             Warnings=warnings,
             Created_at=datetime.now(timezone.utc),
