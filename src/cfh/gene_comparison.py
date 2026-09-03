@@ -43,6 +43,59 @@ def _results_path(run_artifact: Path) -> Path:
     return run_artifact / "results.json" if run_artifact.is_dir() else run_artifact
 
 
+def collect_p_values_from_algorithm_results(
+    gene: str,
+    study: str,
+    algorithm_results: list[Any],
+    *,
+    source: str,
+) -> list[dict[str, Any]]:
+    """Collect final scalar p-values straight from already-computed results.
+
+    Shared by :func:`collect_p_values` (which reads them back from an
+    on-disk ``results.json``) and any in-memory caller -- e.g. a
+    genome-wide scan that runs many genes through the same orchestrator
+    without necessarily writing each one's own ``results.json`` first.
+    ``algorithm_results`` entries may be plain dicts (as read from JSON) or
+    objects exposing ``model_dump()`` (an :class:`~cfh.model.algorithm_result.AlgorithmResult`).
+    """
+    rows: list[dict[str, Any]] = []
+    for result in algorithm_results:
+        if not isinstance(result, dict):
+            if hasattr(result, "model_dump"):
+                result = result.model_dump(mode="json")
+            else:
+                continue
+        algorithm = result.get("Algorithm")
+        summary = result.get("Summary") or {}
+        for test, value_path in _SUMMARY_P_VALUES.get(algorithm, ()):
+            raw_p = _nested_value(summary, value_path)
+            if raw_p is None:
+                continue
+            if isinstance(raw_p, bool) or not isinstance(raw_p, (int, float)):
+                raise ValueError(
+                    f"P-value {'.'.join(value_path)} for {algorithm} in {source} "
+                    "must be numeric or null"
+                )
+            raw_p = float(raw_p)
+            if not math.isfinite(raw_p) or not 0.0 <= raw_p <= 1.0:
+                raise ValueError(
+                    f"P-value {'.'.join(value_path)} for {algorithm} in {source} "
+                    f"must be finite and between 0 and 1; got {raw_p!r}"
+                )
+            rows.append(
+                {
+                    "gene": gene,
+                    "study": study,
+                    "algorithm": algorithm,
+                    "test": test,
+                    "raw_p": raw_p,
+                    "source": source,
+                }
+            )
+    return rows
+
+
 def collect_p_values(run_artifacts: list[Path]) -> list[dict[str, Any]]:
     """Collect final scalar p-values from existing ``results.json`` artifacts."""
     rows: list[dict[str, Any]] = []
@@ -61,36 +114,11 @@ def collect_p_values(run_artifacts: list[Path]) -> list[dict[str, Any]]:
         if not isinstance(algorithm_results, list):
             raise ValueError(f"Run artifact {path} must contain an algorithm_results list")
 
-        for result in algorithm_results:
-            if not isinstance(result, dict):
-                continue
-            algorithm = result.get("Algorithm")
-            summary = result.get("Summary") or {}
-            for test, value_path in _SUMMARY_P_VALUES.get(algorithm, ()):
-                raw_p = _nested_value(summary, value_path)
-                if raw_p is None:
-                    continue
-                if isinstance(raw_p, bool) or not isinstance(raw_p, (int, float)):
-                    raise ValueError(
-                        f"P-value {'.'.join(value_path)} for {algorithm} in {path} "
-                        "must be numeric or null"
-                    )
-                raw_p = float(raw_p)
-                if not math.isfinite(raw_p) or not 0.0 <= raw_p <= 1.0:
-                    raise ValueError(
-                        f"P-value {'.'.join(value_path)} for {algorithm} in {path} "
-                        f"must be finite and between 0 and 1; got {raw_p!r}"
-                    )
-                rows.append(
-                    {
-                        "gene": gene,
-                        "study": study,
-                        "algorithm": algorithm,
-                        "test": test,
-                        "raw_p": raw_p,
-                        "source": str(path),
-                    }
-                )
+        rows.extend(
+            collect_p_values_from_algorithm_results(
+                gene, study, algorithm_results, source=str(path)
+            )
+        )
     return rows
 
 

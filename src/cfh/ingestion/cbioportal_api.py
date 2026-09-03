@@ -78,6 +78,40 @@ def fetch_structural_variants(
     return response.json()
 
 
+def fetch_structural_variant_genes(
+    study_ids: Iterable[str],
+    *,
+    base_url: str = DEFAULT_BASE_URL,
+    session: "requests.Session | None" = None,
+    timeout: float = 30,
+    max_retries: int = 3,
+    backoff_seconds: float = 0.5,
+) -> list[dict]:
+    """POST to ``/structuralvariant-genes/fetch`` for cohort-wide SV gene recurrence.
+
+    Returns one ``AlterationCountByGene``-shaped dict per gene that has at
+    least one structural-variant record anywhere in the requested
+    studies -- every such gene in one call, each carrying its own
+    ``numberOfAlteredCases`` (distinct-patient count) and ``totalCount``
+    (raw SV record count). This is the whole-cohort recurrence signal used
+    to gate a genome-wide scan down to recurrently-altered genes, as
+    opposed to :func:`fetch_structural_variants`, which fetches per-event
+    SV records for an already-selected set of Entrez gene ids.
+    """
+    session = session or requests.Session()
+    url = f"{base_url.rstrip('/')}/structuralvariant-genes/fetch"
+    body = {"studyIds": list(study_ids)}
+    attempt = 0
+    while True:
+        response = session.post(url, json=body, timeout=timeout)
+        if response.status_code not in _RETRYABLE_STATUS_CODES or attempt >= max_retries:
+            break
+        time.sleep(backoff_seconds * (2**attempt))
+        attempt += 1
+    response.raise_for_status()
+    return response.json()
+
+
 def structural_variants_to_dataframe(calls: Iterable[dict]) -> pd.DataFrame:
     """Adapt cBioPortal camelCase API objects to the production SV schema."""
     records = []

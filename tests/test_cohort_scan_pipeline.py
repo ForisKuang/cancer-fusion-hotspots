@@ -1,0 +1,359 @@
+"""Offline/mocked multi-gene end-to-end cohort-scan test.
+
+Runs :func:`cfh.cohort.scan.run_cohort_scan` against a single injected mock
+``requests.Session`` (no real network) covering: cohort-wide recurrence
+gating, curated-vs-auto-generated ``GeneConfig`` resolution, the REAL
+8-algorithm orchestrator (:mod:`cfh.orchestrator.run`, not bypassed or
+stubbed), and cross-gene Benjamini-Hochberg FDR correction across more than
+two genes (BRAF, RET, and two auto-configured genes -- one with a kinase
+Pfam domain, one with none at all).
+"""
+
+from __future__ import annotations
+
+import json
+from unittest.mock import MagicMock
+
+import pytest
+
+from cfh.cohort.outputs import build_summary_rows, write_cohort_scan_outputs
+from cfh.cohort.scan import genes_needing_full_report, run_cohort_scan
+from cfh.ingestion import cbioportal_api
+from cfh.mapping.genome_nexus_source import GenomeNexusClient
+
+_STUDY_ID = "test_cohort_study"
+_EXON_GENOMIC_START = 1_000
+
+_GENE_SPECS = {
+    # gene_symbol: (entrez_gene_id, distinct_patient_count, protein_id, pfam_domains)
+    "BRAF": (673, 20, "P15056_CURATED", None),  # curated: genes/configs/braf.yaml wins
+    "RET": (5979, 19, "P07949_CURATED", None),  # curated: genes/configs/ret.yaml wins
+    "FAKE1": (
+        9001,
+        10,
+        "ENSP00009001",
+        [{"pfamDomainId": "PF07714", "pfamDomainStart": 40, "pfamDomainEnd": 90}],
+    ),
+    "FAKE2": (9002, 6, "ENSP00009002", []),  # no Pfam domains at all
+    "SINGLETON": (9003, 1, "ENSP00009003", []),  # filtered out by the recurrence gate
+}
+
+
+def _canonical_payload(gene_symbol: str, protein_id: str, pfam_domains: list[dict]) -> dict:
+    return {
+        "transcriptId": f"ENST_{gene_symbol}",
+        "transcriptIdVersion": "1",
+        "geneId": f"ENSG_{gene_symbol}",
+        "refseqMrnaId": f"NM_{gene_symbol}",
+        "proteinId": protein_id,
+        "proteinLength": 500,
+        "pfamDomains": pfam_domains,
+        "exons": [
+            {
+                "exonId": f"ENSE_{gene_symbol}_1",
+                "exonStart": _EXON_GENOMIC_START,
+                "exonEnd": _EXON_GENOMIC_START + 3 * 1000 - 1,
+                "rank": 1,
+                "strand": 1,
+            }
+        ],
+        "utrs": [],
+        "uniprotId": None,
+        "hugoSymbols": [gene_symbol],
+    }
+
+
+def _breakpoint_genomic_for_protein_position(position: int) -> int:
+    """Inverse of the plus-strand CDS-offset arithmetic (no UTRs, single
+    exon starting at ``_EXON_GENOMIC_START``): choose a genomic breakpoint
+    that maps to exactly ``position``."""
+    offset = 3 * (position - 1)
+    return _EXON_GENOMIC_START + offset
+
+
+def _sv_call(
+    sample_id: str, partner: str, gene_symbol: str, *, position: int, in_frame: bool
+) -> dict:
+    frame_text = "in frame" if in_frame else "out of frame"
+    return {
+        "sampleId": sample_id,
+        "patientId": sample_id,
+        "site1HugoSymbol": partner,
+        "site2HugoSymbol": gene_symbol,
+        "connectionType": "3to3",
+        "site2Position": _breakpoint_genomic_for_protein_position(position),
+        "site2EffectOnFrame": "NA",
+        "eventInfo": f"Protein Fusion: {frame_text}  {{{partner}:{gene_symbol}}}",
+    }
+
+
+def _sv_calls_for_gene(gene_symbol: str) -> list[dict]:
+    """3 in-frame domain-retained-position events + 2 in-frame
+    domain-lost-position events + 2 out-of-frame events, against two
+    distinct partner genes so frequency/composite_score have something to
+    rank."""
+    calls = []
+    for i in range(3):
+        calls.append(
+            _sv_call(f"{gene_symbol}-IN-{i}", "PARTNERA", gene_symbol, position=60, in_frame=True)
+        )
+    for i in range(2):
+        calls.append(
+            _sv_call(
+                f"{gene_symbol}-INLOST-{i}", "PARTNERB", gene_symbol, position=400, in_frame=True
+            )
+        )
+    for i in range(2):
+        calls.append(
+            _sv_call(
+                f"{gene_symbol}-OUT-{i}", "PARTNERA", gene_symbol, position=400, in_frame=False
+            )
+        )
+    return calls
+
+
+def _recurrence_records() -> list[dict]:
+    return [
+        {
+            "hugoGeneSymbol": symbol,
+            "entrezGeneId": entrez_id,
+            "numberOfAlteredCases": patients,
+            "totalCount": patients,
+        }
+        for symbol, (entrez_id, patients, _protein_id, _domains) in _GENE_SPECS.items()
+    ]
+
+
+@pytest.fixture
+def mock_session() -> MagicMock:
+    session = MagicMock()
+
+    def _post(url, json=None, **kwargs):
+        response = MagicMock(status_code=200)
+        if url.endswith("/structuralvariant-genes/fetch"):
+            response.json.return_value = _recurrence_records()
+        elif url.endswith("/structural-variant/fetch"):
+            entrez_ids = json["entrezGeneIds"]
+            gene_symbol = next(
+                symbol
+                for symbol, (entrez_id, *_rest) in _GENE_SPECS.items()
+                if entrez_id in entrez_ids
+            )
+            response.json.return_value = _sv_calls_for_gene(gene_symbol)
+        elif url.endswith("/ensembl/canonical-transcript/hgnc"):
+            requested = json
+            payloads = []
+            for symbol in requested:
+                _entrez_id, _patients, protein_id, domains = _GENE_SPECS[symbol]
+                payloads.append(_canonical_payload(symbol, protein_id, domains or []))
+            response.json.return_value = payloads
+        else:
+            raise AssertionError(f"unexpected POST url in cohort-scan pipeline test: {url}")
+        return response
+
+    def _get(url, params=None, **kwargs):
+        response = MagicMock(status_code=200)
+        for symbol, (_entrez_id, _patients, protein_id, domains) in _GENE_SPECS.items():
+            if url.endswith(f"/ensembl/canonical-transcript/hgnc/{symbol}"):
+                response.json.return_value = _canonical_payload(symbol, protein_id, domains or [])
+                return response
+        if "/interpro/wwwapi/entry/pfam/" in url:
+            accession = url.rsplit("/", 1)[-1]
+            response.json.return_value = {
+                "metadata": {"name": {"name": f"Description of {accession}"}}
+            }
+            return response
+        raise AssertionError(f"unexpected GET url in cohort-scan pipeline test: {url}")
+
+    session.post.side_effect = _post
+    session.get.side_effect = _get
+    return session
+
+
+def test_cohort_scan_end_to_end_offline(mock_session, tmp_path):
+    result = run_cohort_scan(
+        _STUDY_ID,
+        min_distinct_patients=5,
+        n_permutations=200,
+        adaptive=True,
+        n_permutations_small=20,
+        cache_dir=tmp_path / "cache",
+        session=mock_session,
+    )
+
+    # Recurrence gating: the full pre-gate universe is reported, and the
+    # singleton gene is genuinely filtered out, not silently disappeared.
+    assert result.total_genes_before_gating == len(_GENE_SPECS)
+    assert result.genes_after_gating == len(_GENE_SPECS) - 1
+    scanned_symbols = {outcome.gene_symbol for outcome in result.gene_outcomes}
+    assert scanned_symbols == {"BRAF", "RET", "FAKE1", "FAKE2"}
+    assert "SINGLETON" not in scanned_symbols
+
+    # Curated configs win for BRAF/RET; FAKE1/FAKE2 are auto-generated.
+    outcomes_by_gene = {outcome.gene_symbol: outcome for outcome in result.gene_outcomes}
+    assert outcomes_by_gene["BRAF"].config_source == "curated"
+    assert outcomes_by_gene["RET"].config_source == "curated"
+    assert outcomes_by_gene["FAKE1"].config_source == "auto"
+    assert outcomes_by_gene["FAKE2"].config_source == "auto"
+    assert result.curated_gene_count == 2
+    assert result.auto_config_gene_count == 2
+
+    # No gene crashes the whole scan; every gene produced a real orchestrator run.
+    for outcome in result.gene_outcomes:
+        assert outcome.status == "ok", outcome.error
+        assert outcome.run is not None
+        algorithm_names = {r.Algorithm for r in outcome.run.results}
+        assert "composite_score" in algorithm_names
+        assert "frequency" in algorithm_names
+
+    # FAKE2 (no Pfam domains) must gracefully no-op domain_retention rather
+    # than crash the gene -- the same opt-in/no-op pattern proven elsewhere.
+    fake2_domain_retention = next(
+        r for r in outcomes_by_gene["FAKE2"].run.results if r.Algorithm == "domain_retention"
+    )
+    assert fake2_domain_retention.Summary["fisher_p_value"] is None
+    assert fake2_domain_retention.Warnings
+
+    # Cross-gene FDR correction spans every scanned gene that produced an
+    # applicable p-value -- more than just two genes -- via the real
+    # cfh.stats.multiple_testing.benjamini_hochberg, not a stub. FAKE2 has
+    # no Pfam domain at all, so every domain-dependent algorithm gracefully
+    # no-ops/fails for it and it legitimately contributes zero hypotheses.
+    fdr_genes = {row["gene"] for row in result.fdr_rows}
+    assert fdr_genes == {"BRAF", "RET", "FAKE1"}
+    assert len(fdr_genes) > 2
+    assert all(0.0 <= row["bh_adjusted_q"] <= 1.0 for row in result.fdr_rows)
+
+    # Adaptive permutations actually ran (small budget requested).
+    braf_domain_retention = next(
+        r for r in outcomes_by_gene["BRAF"].run.results if r.Algorithm == "domain_retention"
+    )
+    assert braf_domain_retention.Summary["adaptive_permutations"]["enabled"] is True
+
+    # Summary-building and output writing must not crash either.
+    rows = build_summary_rows(result)
+    assert {row["gene_symbol"] for row in rows} == {"BRAF", "RET", "FAKE1", "FAKE2"}
+    # Sorted by significance: no row with a real q-value sorts after one with none.
+    q_values = [row["min_fdr_adjusted_q_value"] for row in rows]
+    real_positions = [i for i, q in enumerate(q_values) if q is not None]
+    none_positions = [i for i, q in enumerate(q_values) if q is None]
+    assert all(r < n for r in real_positions for n in none_positions)
+
+    paths = write_cohort_scan_outputs(result, tmp_path / "runs", pdf=False)
+    assert paths["summary_tsv"].exists()
+    assert paths["summary_json"].exists()
+    assert paths["summary_markdown"].exists()
+    summary_payload = json.loads(paths["summary_json"].read_text())
+    assert summary_payload["genes_after_gating"] == 4
+    assert len(summary_payload["genes"]) == 4
+
+    # Full per-gene reports only for BRAF/RET (+ any FDR-significant gene);
+    # never for every scanned gene.
+    full_report_genes = genes_needing_full_report(result)
+    assert {"BRAF", "RET"} <= set(full_report_genes)
+    assert set(full_report_genes) <= scanned_symbols
+    for gene_symbol in full_report_genes:
+        assert (paths["gene_reports"][gene_symbol]["run_directory"] / "results.json").exists()
+
+
+def test_cohort_scan_never_crashes_on_one_malformed_gene(mock_session, tmp_path):
+    """A gene whose per-gene SV fetch raises must be recorded as a failed
+    outcome, not abort the whole scan."""
+    original_side_effect = mock_session.post.side_effect
+
+    def _flaky_post(url, json=None, **kwargs):
+        if url.endswith("/structural-variant/fetch") and 9001 in json["entrezGeneIds"]:
+            raise ConnectionError("simulated transient failure for FAKE1")
+        return original_side_effect(url, json=json, **kwargs)
+
+    mock_session.post.side_effect = _flaky_post
+
+    result = run_cohort_scan(
+        _STUDY_ID,
+        min_distinct_patients=5,
+        n_permutations=50,
+        adaptive=True,
+        n_permutations_small=10,
+        cache_dir=tmp_path / "cache",
+        session=mock_session,
+    )
+
+    outcomes_by_gene = {outcome.gene_symbol: outcome for outcome in result.gene_outcomes}
+    assert outcomes_by_gene["FAKE1"].status == "failed"
+    assert "ConnectionError" in outcomes_by_gene["FAKE1"].error
+    # The other three genes still completed successfully.
+    assert outcomes_by_gene["BRAF"].status == "ok"
+    assert outcomes_by_gene["RET"].status == "ok"
+    assert outcomes_by_gene["FAKE2"].status == "ok"
+
+
+def test_cohort_scan_gracefully_skips_gene_genome_nexus_cannot_resolve(mock_session):
+    """A gated gene whose canonical transcript Genome Nexus has no mapping
+    for at all must be recorded as unresolved, not crash the scan."""
+
+    def _post_missing_fake1(url, json=None, **kwargs):
+        response = MagicMock(status_code=200)
+        if url.endswith("/structuralvariant-genes/fetch"):
+            response.json.return_value = _recurrence_records()
+        elif url.endswith("/structural-variant/fetch"):
+            entrez_ids = json["entrezGeneIds"]
+            gene_symbol = next(
+                symbol for symbol, (eid, *_r) in _GENE_SPECS.items() if eid in entrez_ids
+            )
+            response.json.return_value = _sv_calls_for_gene(gene_symbol)
+        elif url.endswith("/ensembl/canonical-transcript/hgnc"):
+            payloads = []
+            for symbol in json:
+                if symbol == "FAKE1":
+                    continue  # Genome Nexus has no mapping for this gene
+                _eid, _patients, protein_id, domains = _GENE_SPECS[symbol]
+                payloads.append(_canonical_payload(symbol, protein_id, domains or []))
+            response.json.return_value = payloads
+        else:
+            raise AssertionError(f"unexpected POST url: {url}")
+        return response
+
+    mock_session.post.side_effect = _post_missing_fake1
+
+    result = run_cohort_scan(
+        _STUDY_ID,
+        min_distinct_patients=5,
+        n_permutations=50,
+        adaptive=True,
+        n_permutations_small=10,
+        session=mock_session,
+    )
+
+    outcomes_by_gene = {outcome.gene_symbol: outcome for outcome in result.gene_outcomes}
+    assert outcomes_by_gene["FAKE1"].config_source == "unresolved"
+    assert outcomes_by_gene["FAKE1"].status == "failed"
+    assert result.unresolved_gene_count == 1
+    assert any("FAKE1" in warning for warning in result.warnings)
+    # Everything else still ran fine.
+    assert outcomes_by_gene["BRAF"].status == "ok"
+    assert outcomes_by_gene["FAKE2"].status == "ok"
+
+
+@pytest.mark.parametrize("gene_symbol", ["BRAF", "RET"])
+def test_cohort_scan_never_overrides_curated_config(mock_session, gene_symbol):
+    """Curated genes must always resolve to the checked-in YAML config, not
+    an auto-generated one, even though Genome Nexus is queried for both."""
+    result = run_cohort_scan(
+        _STUDY_ID,
+        min_distinct_patients=5,
+        n_permutations=50,
+        adaptive=True,
+        n_permutations_small=10,
+        session=mock_session,
+    )
+    outcome = next(o for o in result.gene_outcomes if o.gene_symbol == gene_symbol)
+    assert outcome.config_source == "curated"
+
+
+def test_genome_nexus_client_accepts_injected_session_for_testing():
+    """Sanity check the test's own mocking assumption: GenomeNexusClient
+    accepts a session so cohort-scan's single shared client can be mocked."""
+    client = GenomeNexusClient(session=MagicMock())
+    assert client.session is not None
+    _fetch = cbioportal_api.fetch_structural_variants  # exercised via run_cohort_scan above
+    assert callable(_fetch)

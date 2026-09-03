@@ -6,6 +6,9 @@ from pathlib import Path
 
 import click
 
+from cfh.cohort.outputs import write_cohort_scan_outputs
+from cfh.cohort.recurrence import DEFAULT_MIN_DISTINCT_PATIENTS
+from cfh.cohort.scan import DEFAULT_N_PERMUTATIONS_SMALL, run_cohort_scan
 from cfh.gene_comparison import compare_gene_runs, write_comparison_tsv
 from cfh.genes.registry import available_genes, load_gene_config
 from cfh.real_benchmark import RealBenchmarkError, run_analysis, run_real_benchmark, write_outputs
@@ -168,6 +171,103 @@ def analyze(
         click.echo(f"Warning: {warning}", err=True)
     for kind, path in paths.items():
         click.echo(f"{kind}: {path}")
+
+
+@main.command("cohort-scan")
+@click.argument("study_id")
+@click.option(
+    "--output-dir",
+    type=click.Path(path_type=Path, file_okay=False),
+    default=Path("runs"),
+    show_default=True,
+)
+@click.option(
+    "--min-patients",
+    "min_distinct_patients",
+    type=click.IntRange(min=0),
+    default=DEFAULT_MIN_DISTINCT_PATIENTS,
+    show_default=True,
+    help="Recurrence gate: minimum distinct patients with an SV record in a gene.",
+)
+@click.option("--n-permutations", type=click.IntRange(min=1), default=1_000, show_default=True)
+@click.option(
+    "--adaptive/--no-adaptive",
+    default=True,
+    show_default=True,
+    help="Start permutation tests at a small budget and only escalate to "
+    "--n-permutations when the small-N result is borderline.",
+)
+@click.option(
+    "--n-permutations-small",
+    type=click.IntRange(min=1),
+    default=DEFAULT_N_PERMUTATIONS_SMALL,
+    show_default=True,
+)
+@click.option(
+    "--max-genes",
+    type=click.IntRange(min=1),
+    default=None,
+    help="Cap the number of gated candidate genes actually analyzed (for a bounded run); "
+    "reported before/after-gating counts are unaffected.",
+)
+@click.option(
+    "--cache-dir",
+    type=click.Path(path_type=Path, file_okay=False),
+    default=None,
+    help="Directory to cache batch Genome Nexus/Pfam-description lookups on disk. "
+    "Defaults to <output-dir>/.cohort_scan_cache.",
+)
+@click.option(
+    "--pdf/--no-pdf",
+    default=True,
+    show_default=True,
+    help="Also render summary.pdf and full per-gene report.pdf files.",
+)
+def cohort_scan(
+    study_id: str,
+    output_dir: Path,
+    min_distinct_patients: int,
+    n_permutations: int,
+    adaptive: bool,
+    n_permutations_small: int,
+    max_genes: int | None,
+    cache_dir: Path | None,
+    pdf: bool,
+) -> None:
+    """Genome-wide fusion-hotspot scan: gate cohort-wide SV recurrence, run
+    the full algorithm suite for every gated gene (auto-configuring genes
+    with no curated config), and FDR-correct across every scanned gene."""
+    try:
+        result = run_cohort_scan(
+            study_id,
+            min_distinct_patients=min_distinct_patients,
+            n_permutations=n_permutations,
+            adaptive=adaptive,
+            n_permutations_small=n_permutations_small,
+            max_genes=max_genes,
+            cache_dir=cache_dir or (output_dir / ".cohort_scan_cache"),
+        )
+        paths = write_cohort_scan_outputs(result, output_dir, pdf=pdf)
+    except Exception as exc:
+        raise click.ClickException(f"Cohort scan failed: {type(exc).__name__}: {exc}") from None
+
+    ok_count = sum(1 for outcome in result.gene_outcomes if outcome.status == "ok")
+    failed_count = len(result.gene_outcomes) - ok_count
+    click.echo(
+        f"{result.total_genes_before_gating} genes had SV records in {study_id}; "
+        f"{result.genes_after_gating} passed the >= {min_distinct_patients}-patient gate "
+        f"({result.curated_gene_count} curated, {result.auto_config_gene_count} auto-configured, "
+        f"{result.unresolved_gene_count} unresolved)."
+    )
+    click.echo(f"Analyzed {ok_count} genes successfully, {failed_count} failed/skipped.")
+    click.echo(f"FDR-significant genes (q<0.05): {len(result.significant_genes)}")
+    for warning in result.warnings:
+        click.echo(f"Warning: {warning}", err=True)
+    for kind in ("run_directory", "summary_tsv", "summary_json", "summary_markdown", "summary_pdf"):
+        if kind in paths:
+            click.echo(f"{kind}: {paths[kind]}")
+    for gene_symbol, gene_paths in paths.get("gene_reports", {}).items():
+        click.echo(f"gene_report[{gene_symbol}]: {gene_paths['run_directory']}")
 
 
 if __name__ == "__main__":

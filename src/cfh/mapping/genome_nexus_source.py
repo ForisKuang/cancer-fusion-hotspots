@@ -153,6 +153,10 @@ class GenomeNexusClient:
 
 def parse_canonical_transcript(payload: dict) -> CanonicalTranscript:
     """Parse a canonical-transcript (or transcript-by-id) Genome Nexus payload."""
+    # Some real Genome Nexus canonical-transcript payloads (observed live on
+    # a genome-wide gene set, e.g. PALB2/BBC3/INPP4B) include an empty {}
+    # entry in pfamDomains alongside otherwise well-formed ones; skip any
+    # entry missing a required field rather than crash the whole parse.
     pfam_domains = [
         PfamDomain(
             pfam_id=domain["pfamDomainId"],
@@ -160,6 +164,9 @@ def parse_canonical_transcript(payload: dict) -> CanonicalTranscript:
             end_aa=domain["pfamDomainEnd"],
         )
         for domain in payload.get("pfamDomains", [])
+        if domain.get("pfamDomainId") is not None
+        and domain.get("pfamDomainStart") is not None
+        and domain.get("pfamDomainEnd") is not None
     ]
     exons = [
         ExonRecord(

@@ -45,6 +45,31 @@ def test_parse_canonical_transcript_from_real_fixture(
     assert kinase_domains[0].end_aa == 712
 
 
+def test_parse_canonical_transcript_skips_malformed_pfam_domain_entries():
+    """Regression: real Genome Nexus canonical-transcript payloads for some
+    genes (observed live on a genome-wide gene set, e.g. PALB2/BBC3/INPP4B)
+    include an empty {} entry in pfamDomains alongside otherwise well-formed
+    ones. Parsing must skip that entry, not raise KeyError and crash the
+    whole gene."""
+    payload = {
+        "transcriptId": "ENST00000TEST",
+        "refseqMrnaId": "NM_TEST",
+        "proteinId": "ENSP00000TEST",
+        "proteinLength": 100,
+        "pfamDomains": [
+            {},
+            {"pfamDomainId": "PF00001", "pfamDomainStart": 10, "pfamDomainEnd": 50},
+        ],
+        "exons": [],
+        "utrs": [],
+    }
+
+    canonical = gns.parse_canonical_transcript(payload)
+
+    assert len(canonical.pfam_domains) == 1
+    assert canonical.pfam_domains[0].pfam_id == "PF00001"
+
+
 def test_parse_canonical_transcript_retains_utrs_from_payload(
     genome_nexus_canonical_transcript_fixture_path,
 ):

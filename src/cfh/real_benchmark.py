@@ -176,20 +176,76 @@ def _unavailable_domain_result(
     )
 
 
-def analyze_structural_variant_calls(
+def _no_key_domain_result(gene_config: GeneConfig) -> AlgorithmResult:
+    """No-op ``domain_retention`` result for a gene with no configured key
+    domain at all (e.g. an auto-generated config for a gene whose canonical
+    transcript carries no annotated Pfam domain). Distinct from
+    :func:`_unavailable_domain_result` (which still has a target domain,
+    just no in-frame mapped observation of it): here there is no target
+    domain to build a contingency table against in the first place, so
+    ``build_frame_domain_contingency_table`` is never called (it would
+    raise for an empty ``key_domains``). This is the same graceful-skip
+    shape ``domain_disruption`` already returns when
+    ``disruption_required_domains`` is unset.
+    """
+    return AlgorithmResult(
+        Algorithm="domain_retention",
+        Algorithm_version="0.1.0",
+        Parameters={},
+        Summary={
+            "fisher_odds_ratio": None,
+            "fisher_p_value": None,
+            "permutation_empirical_p_value": None,
+            "observed_in_frame_retention_rate": None,
+        },
+        Tables={
+            "frame_domain_contingency_table": [[0, 0], [0, 0]],
+            "permutation_null_retention_rates": [],
+        },
+        Warnings=[
+            f"{gene_config.gene_symbol or gene_config.gene_pair} has no key_domains "
+            "configured; domain-retention analysis was skipped."
+        ],
+    )
+
+
+def analyze_structural_variant_calls_with_config(
     calls: list[dict],
-    gene_symbol: str,
+    config: GeneConfig,
     study_id: str,
     *,
     molecular_profile_id: str | None = None,
     genome_nexus_client: GenomeNexusClient | None = None,
     n_permutations: int = 1_000,
     algorithm_names: list[str] | None = None,
+    algorithm_params: dict[str, dict] | None = None,
 ) -> RealBenchmarkRun:
-    """Normalize and analyze already-fetched cBioPortal SV API objects."""
+    """Normalize and analyze already-fetched cBioPortal SV API objects
+    against an already-resolved ``GeneConfig``.
+
+    This is the config-agnostic core :func:`analyze_structural_variant_calls`
+    delegates to after resolving a curated config by gene symbol. Callers
+    that already have a ``GeneConfig`` in hand -- e.g. a genome-wide scan
+    using an auto-generated config for a gene with no curated YAML file --
+    call this directly instead, so they are not forced to write one to disk
+    first. Unlike the curated lookup path, ``config.key_domains`` being
+    empty is not an error here: it degrades to a graceful no-op
+    ``domain_retention`` result (see :func:`_no_key_domain_result`), the
+    same opt-in/no-op pattern already used for ``disruption_required_domains``,
+    ``expected_retained_exon_hint``, and ``gene_pair``.
+
+    ``algorithm_params`` lets a caller pass through additional per-algorithm
+    parameters (e.g. adaptive-permutation knobs) merged under each
+    algorithm's existing defaults below.
+    """
     if n_permutations <= 0:
         raise RealBenchmarkInputError("n_permutations must be positive")
-    config = _load_benchmark_config(gene_symbol)
+    if config.gene_symbol is None:
+        raise RealBenchmarkInputError(
+            "analyze_structural_variant_calls_with_config requires a single-gene "
+            "GeneConfig (gene_symbol set, not gene_pair)"
+        )
+    algorithm_params = algorithm_params or {}
     profile_id = molecular_profile_id or f"{study_id}_structural_variants"
     client = genome_nexus_client or GenomeNexusClient()
 
@@ -202,7 +258,8 @@ def analyze_structural_variant_calls(
     ]
 
     warnings: list[str] = []
-    if selected:
+    needs_domain_lookup = bool(config.key_domains or config.disruption_required_domains)
+    if selected and needs_domain_lookup:
         try:
             domains = resolve_domains(
                 config.gene_symbol,
@@ -214,17 +271,27 @@ def analyze_structural_variant_calls(
                 f"Genome Nexus/domain lookup failed for {config.gene_symbol}: {exc}. "
                 "Check network access and https://www.genomenexus.org availability, then retry."
             ) from exc
-    else:
+    elif not selected:
         domains = []
         warnings.append(
             f"No protein-fusion records for {config.gene_symbol} were returned by "
             f"{profile_id}. Verify the gene and study ID, or try a study with SV data."
         )
+    else:
+        # No key_domains/disruption_required_domains configured at all, so no
+        # domain would ever be classified against these results regardless
+        # of what a domain lookup returned (see _combined_domains) -- skip
+        # the lookup (and its network call) entirely rather than resolve
+        # domains nothing will use.
+        domains = []
     domain_source = _ResolvedDomainSource(domains)
     events: list[FusionEvent] = []
     features: list[FusionFeature] = []
     rows: list[dict] = []
-    target_key = config.key_domains[0].key or config.key_domains[0].name
+    has_key_domain = bool(config.key_domains)
+    target_key = (
+        (config.key_domains[0].key or config.key_domains[0].name) if has_key_domain else None
+    )
 
     for row, event in selected:
         try:
@@ -271,7 +338,11 @@ def analyze_structural_variant_calls(
                 "breakpoint_exon": mapping.breakpoint_exon,
                 "breakpoint_protein_position": mapping.breakpoint_protein_position,
                 "is_intronic_breakpoint": mapping.is_intronic_breakpoint,
-                "domain_status": (feature.Domain_retention_flags or {}).get(target_key, "unknown"),
+                "domain_status": (
+                    (feature.Domain_retention_flags or {}).get(target_key, "unknown")
+                    if target_key
+                    else "unknown"
+                ),
                 "retained_domains": "; ".join(feature.Retained_domains or []),
                 "lost_domains": "; ".join(feature.Lost_domains or []),
                 "disrupted_domains": "; ".join(feature.Disrupted_domains or []),
@@ -287,13 +358,16 @@ def analyze_structural_variant_calls(
             }
         )
 
-    in_frame_mapped = any(
+    in_frame_mapped = has_key_domain and any(
         event.Frame_status == "in-frame"
         and (feature.Domain_retention_flags or {}).get(target_key)
         in {"retained", "lost", "disrupted"}
         for event, feature in zip(events, features, strict=True)
     )
-    if not in_frame_mapped:
+    if not has_key_domain:
+        domain_result = _no_key_domain_result(config)
+        warnings.append(domain_result.Warnings[0])
+    elif not in_frame_mapped:
         message = (
             "Domain-retention statistics are unavailable because no mapped in-frame "
             "protein-fusion record has a known domain state. Verify the gene/study IDs "
@@ -314,6 +388,7 @@ def analyze_structural_variant_calls(
                     "seed": 42,
                     "n_permutations": n_permutations,
                     "genome_nexus_client": client,
+                    **algorithm_params.get("domain_retention", {}),
                 }},
             )[0]
         except requests.RequestException as exc:
@@ -336,10 +411,16 @@ def analyze_structural_variant_calls(
         features,
         config,
         {
-            "frequency": {"dedup_by_patient": False},
+            "frequency": {"dedup_by_patient": False, **algorithm_params.get("frequency", {})},
             "cutpoint_detection": {
                 "n_permutations": n_permutations,
                 "genome_nexus_client": client,
+                **algorithm_params.get("cutpoint_detection", {}),
+            },
+            **{
+                name: value
+                for name, value in algorithm_params.items()
+                if name not in {"frequency", "cutpoint_detection", "domain_retention"}
             },
         },
         extra_results=[domain_result],
@@ -358,14 +439,18 @@ def analyze_structural_variant_calls(
         row["frame_status"] == "in-frame" and row["domain_status"] == "retained"
         for row in rows
     )
-    domain_definition = next(
-        (
-            domain
-            for domain in domains
-            if domain.accession == config.key_domains[0].accession
-            or domain.name == config.key_domains[0].accession
-        ),
-        None,
+    domain_definition = (
+        next(
+            (
+                domain
+                for domain in domains
+                if domain.accession == config.key_domains[0].accession
+                or domain.name == config.key_domains[0].accession
+            ),
+            None,
+        )
+        if has_key_domain
+        else None
     )
     total = len(selected_events)
     summary = {
@@ -385,7 +470,7 @@ def analyze_structural_variant_calls(
             "frame_domain_contingency_table"
         ],
         "partner_counts": partner_counts,
-        "domain_accession": config.key_domains[0].accession,
+        "domain_accession": config.key_domains[0].accession if has_key_domain else None,
         "domain_start_aa": domain_definition.start_aa if domain_definition else None,
         "domain_end_aa": domain_definition.end_aa if domain_definition else None,
     }
@@ -409,6 +494,35 @@ def analyze_structural_variant_calls(
         reference=(
             config.benchmark_reference.model_dump() if config.benchmark_reference else None
         ),
+    )
+
+
+def analyze_structural_variant_calls(
+    calls: list[dict],
+    gene_symbol: str,
+    study_id: str,
+    *,
+    molecular_profile_id: str | None = None,
+    genome_nexus_client: GenomeNexusClient | None = None,
+    n_permutations: int = 1_000,
+    algorithm_names: list[str] | None = None,
+) -> RealBenchmarkRun:
+    """Normalize and analyze already-fetched cBioPortal SV API objects.
+
+    Resolves ``gene_symbol`` against the curated
+    :func:`~cfh.genes.registry.load_gene_config` registry (requiring
+    ``entrez_gene_id`` and at least one configured key domain, as before)
+    and delegates to :func:`analyze_structural_variant_calls_with_config`.
+    """
+    config = _load_benchmark_config(gene_symbol)
+    return analyze_structural_variant_calls_with_config(
+        calls,
+        config,
+        study_id,
+        molecular_profile_id=molecular_profile_id,
+        genome_nexus_client=genome_nexus_client,
+        n_permutations=n_permutations,
+        algorithm_names=algorithm_names,
     )
 
 
