@@ -5,9 +5,9 @@ import yaml
 REPO_ROOT = Path(__file__).parent.parent
 
 
-def test_license_first_line_is_mit():
-    first_line = (REPO_ROOT / "LICENSE").read_text().splitlines()[0]
-    assert first_line == "MIT License"
+def test_license_first_line_is_apache():
+    first_line = (REPO_ROOT / "LICENSE").read_text().splitlines()[0].strip()
+    assert first_line == "Apache License"
 
 
 def test_ci_workflow_has_lint_and_test_steps():
