@@ -5,6 +5,7 @@ module's ``@register`` decorator.
 """
 
 from cfh.algorithms.confidence_stats import ConfidenceStatsAlgorithm
+from cfh.algorithms.cutpoint_detection import CutpointDetectionAlgorithm
 from cfh.algorithms.domain_retention import DomainRetentionAlgorithm
 from cfh.algorithms.exon_retention import ExonRetentionAnalysis
 from cfh.algorithms.frequency import FrequencyAnalysis
@@ -12,6 +13,7 @@ from cfh.algorithms.joint_partner import JointPartnerMode
 
 __all__ = [
     "ConfidenceStatsAlgorithm",
+    "CutpointDetectionAlgorithm",
     "DomainRetentionAlgorithm",
     "ExonRetentionAnalysis",
     "FrequencyAnalysis",
