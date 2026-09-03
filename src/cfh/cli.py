@@ -6,6 +6,7 @@ from pathlib import Path
 
 import click
 
+from cfh.gene_comparison import compare_gene_runs, write_comparison_tsv
 from cfh.genes.registry import available_genes, load_gene_config
 from cfh.real_benchmark import RealBenchmarkError, run_analysis, run_real_benchmark, write_outputs
 
@@ -28,6 +29,33 @@ def show_gene(gene_symbol: str) -> None:
     """Print the resolved GeneConfig for a gene symbol."""
     config = load_gene_config(gene_symbol)
     click.echo(config.model_dump_json(indent=2))
+
+
+@main.command("compare-genes")
+@click.argument(
+    "run_artifacts",
+    nargs=-1,
+    required=True,
+    type=click.Path(path_type=Path, exists=True),
+)
+@click.option(
+    "--output",
+    "output_path",
+    required=True,
+    type=click.Path(path_type=Path, dir_okay=False),
+    help="Path for the adjusted-p-value TSV report.",
+)
+def compare_genes(run_artifacts: tuple[Path, ...], output_path: Path) -> None:
+    """BH-adjust p-values from existing run directories or results.json files."""
+    try:
+        rows = compare_gene_runs(list(run_artifacts))
+        if not rows:
+            raise click.ClickException("No applicable p-values were found in the run artifacts.")
+        write_comparison_tsv(rows, output_path)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from None
+    click.echo(f"Adjusted {len(rows)} p-values across {len(run_artifacts)} run artifacts")
+    click.echo(f"report: {output_path}")
 
 
 @main.command("real-benchmark")
