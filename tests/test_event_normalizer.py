@@ -70,6 +70,42 @@ def test_imprecise_numeric_row_still_normalizes(sv_fixture_file, clinical_sample
     assert event.Confidence_class == "low"
 
 
+def test_negative_read_support_sentinels_are_missing(sv_fixture_file, clinical_sample_fixture):
+    raw = sv_parser.parse_sv_file(sv_fixture_file).iloc[:1].copy()
+    raw.loc[raw.index[0], "Tumor_Paired_End_Read_Count"] = -1
+    raw.loc[raw.index[0], "Tumor_Split_Read_Count"] = -1
+    clinical = clinical_parser.parse_clinical_sample(clinical_sample_fixture)
+
+    event = normalize(raw, clinical, DEFAULT_COHORT)[0]
+    assert event.Paired_end_read_support is None
+    assert event.Split_read_support is None
+    assert event.Total_read_support is None
+
+
+def test_tumor_variant_count_is_populated_from_the_live_api_column(
+    sv_fixture_file, clinical_sample_fixture
+):
+    # Tumor_Variant_Count has no column in the offline data_sv.txt schema
+    # (sv_parser.EXPECTED_COLUMNS) -- it only arrives via the cBioPortal
+    # structural-variant API path (see cbioportal_api._API_TO_NORMALIZED_COLUMNS),
+    # so it's added directly to the raw frame here to exercise that column.
+    raw = sv_parser.parse_sv_file(sv_fixture_file).iloc[:1].copy()
+    raw["Tumor_Variant_Count"] = 35
+    clinical = clinical_parser.parse_clinical_sample(clinical_sample_fixture)
+
+    event = normalize(raw, clinical, DEFAULT_COHORT)[0]
+    assert event.Tumor_variant_count == 35
+
+
+def test_negative_tumor_variant_count_sentinel_is_missing(sv_fixture_file, clinical_sample_fixture):
+    raw = sv_parser.parse_sv_file(sv_fixture_file).iloc[:1].copy()
+    raw["Tumor_Variant_Count"] = -1
+    clinical = clinical_parser.parse_clinical_sample(clinical_sample_fixture)
+
+    event = normalize(raw, clinical, DEFAULT_COHORT)[0]
+    assert event.Tumor_variant_count is None
+
+
 def test_ambiguous_orientation_is_never_guessed(sv_fixture_file, clinical_sample_fixture):
     events = _events(sv_fixture_file, clinical_sample_fixture)
     event = _by_sample(events, "SAMPLE-009")
@@ -109,6 +145,7 @@ def test_float_valued_read_support_column_is_coerced_to_int_not_dropped(
     event = _by_sample(events, "SAMPLE-001")
     assert event.Paired_end_read_support == 10
     assert isinstance(event.Paired_end_read_support, int)
+    assert event.Total_read_support == (event.Paired_end_read_support + event.Split_read_support)
 
 
 def test_cohort_is_caller_supplied_not_hardcoded(sv_fixture_file, clinical_sample_fixture):

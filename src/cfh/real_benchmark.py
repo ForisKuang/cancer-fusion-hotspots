@@ -14,6 +14,7 @@ from pathlib import Path
 import pandas as pd
 import requests
 
+from cfh.algorithms.confidence_stats import resolve_confidence_stats_params
 from cfh.algorithms.frequency import FrequencyAnalysis
 from cfh.algorithms.registry import list_algorithms
 from cfh.genes.registry import GeneConfig, derive_gene_config_defaults, load_gene_config
@@ -128,9 +129,7 @@ def _retained_exon_ranks(
     )
     if role == "five_prime":
         return [
-            boundary.exon_rank
-            for boundary in boundaries
-            if boundary.end_aa <= junction_position_aa
+            boundary.exon_rank for boundary in boundaries if boundary.end_aa <= junction_position_aa
         ]
     if role == "three_prime":
         return [
@@ -675,6 +674,9 @@ def analyze_structural_variant_calls_with_config(
         features,
         config,
         {
+            "confidence_stats": {
+                **resolve_confidence_stats_params(config, algorithm_params.get("confidence_stats")),
+            },
             "frequency": {"dedup_by_patient": False, **algorithm_params.get("frequency", {})},
             "cutpoint_detection": {
                 "n_permutations": n_permutations,
@@ -684,7 +686,13 @@ def analyze_structural_variant_calls_with_config(
             **{
                 name: value
                 for name, value in algorithm_params.items()
-                if name not in {"frequency", "cutpoint_detection", "domain_retention"}
+                if name
+                not in {
+                    "confidence_stats",
+                    "frequency",
+                    "cutpoint_detection",
+                    "domain_retention",
+                }
             },
         },
         extra_results=[domain_result],

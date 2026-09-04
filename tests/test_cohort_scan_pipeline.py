@@ -72,7 +72,13 @@ def _breakpoint_genomic_for_protein_position(position: int) -> int:
 
 
 def _sv_call(
-    sample_id: str, partner: str, gene_symbol: str, *, position: int, in_frame: bool
+    sample_id: str,
+    partner: str,
+    gene_symbol: str,
+    *,
+    position: int,
+    in_frame: bool,
+    tumor_variant_count: int = 20,
 ) -> dict:
     frame_text = "in frame" if in_frame else "out of frame"
     return {
@@ -83,6 +89,9 @@ def _sv_call(
         "connectionType": "3to3",
         "site2Position": _breakpoint_genomic_for_protein_position(position),
         "site2EffectOnFrame": "NA",
+        "tumorPairedEndReadCount": 10,
+        "tumorSplitReadCount": 5,
+        "tumorVariantCount": tumor_variant_count,
         "eventInfo": f"Protein Fusion: {frame_text}  {{{partner}:{gene_symbol}}}",
     }
 
@@ -95,18 +104,35 @@ def _sv_calls_for_gene(gene_symbol: str) -> list[dict]:
     calls = []
     for i in range(3):
         calls.append(
-            _sv_call(f"{gene_symbol}-IN-{i}", "PARTNERA", gene_symbol, position=60, in_frame=True)
-        )
-    for i in range(2):
-        calls.append(
             _sv_call(
-                f"{gene_symbol}-INLOST-{i}", "PARTNERB", gene_symbol, position=400, in_frame=True
+                f"{gene_symbol}-IN-{i}",
+                "PARTNERA",
+                gene_symbol,
+                position=60,
+                in_frame=True,
+                tumor_variant_count=30 + i,
             )
         )
     for i in range(2):
         calls.append(
             _sv_call(
-                f"{gene_symbol}-OUT-{i}", "PARTNERA", gene_symbol, position=400, in_frame=False
+                f"{gene_symbol}-INLOST-{i}",
+                "PARTNERB",
+                gene_symbol,
+                position=400,
+                in_frame=True,
+                tumor_variant_count=5 + i,
+            )
+        )
+    for i in range(2):
+        calls.append(
+            _sv_call(
+                f"{gene_symbol}-OUT-{i}",
+                "PARTNERA",
+                gene_symbol,
+                position=400,
+                in_frame=False,
+                tumor_variant_count=5 + i,
             )
         )
     return calls
@@ -204,7 +230,16 @@ def test_cohort_scan_end_to_end_offline(mock_session, tmp_path):
         assert outcome.run is not None
         algorithm_names = {r.Algorithm for r in outcome.run.results}
         assert "composite_score" in algorithm_names
+        assert "confidence_stats" in algorithm_names
         assert "frequency" in algorithm_names
+
+    braf_confidence = next(
+        r for r in outcomes_by_gene["BRAF"].run.results if r.Algorithm == "confidence_stats"
+    )
+    assert braf_confidence.Parameters["group_field"] == "Domain_retention_flags"
+    assert braf_confidence.Parameters["numeric_field"] == "Tumor_variant_count"
+    assert "group_field' is required" not in " ".join(braf_confidence.Warnings)
+    assert braf_confidence.Summary["mle"]["groups"]["retained"]["n"] > 0
 
     # FAKE2 (no Pfam domains) must gracefully no-op domain_retention rather
     # than crash the gene -- the same opt-in/no-op pattern proven elsewhere.
