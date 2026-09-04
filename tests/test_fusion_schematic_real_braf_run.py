@@ -16,11 +16,14 @@ import re
 from pathlib import Path
 
 from cfh.reporting.fusion_schematic import (
-    RETAINED_COLOR,
-    TRUNCATED_COLOR,
     render_fusion_schematic_svg,
     render_intragenic_deletion_schematic_svg,
 )
+
+# Imported from the shared palette module (not re-exported from
+# fusion_schematic) so these assertions catch the two renderers actually
+# drifting apart, not just a coincidental match today.
+from cfh.reporting.palette import RETAINED_COLOR, TRUNCATED_COLOR
 
 REPO_ROOT = Path(__file__).parent.parent
 BRAF_RUN_DIR = REPO_ROOT / "runs" / "braf_msk-impact-50k-2026_20260903T193605Z"

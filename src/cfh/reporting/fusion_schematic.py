@@ -13,14 +13,15 @@ literally; every gene-specific fact (protein length, domain boundaries,
 exon boundaries, partner names, breakpoints) comes from the payload.
 
 Colors for domain-retention status (``RETAINED_COLOR``/``TRUNCATED_COLOR``)
-intentionally reuse the same hex values as the existing per-event
-domain-retention lollipop track (``cfh.real_benchmark._domain_track_svg``'s
-"fully retained"/"truncated" dot colors), and the breakpoint-marker red
-matches that track's "reference discrepancy" outline color -- this module
-does not invent a new domain-retention color scheme. Partner-gene colors
-and the neutral domain backbone are new (the lollipop track has neither
-per-partner nor backbone-fill colors to reuse), computed deterministically
-so a given partner always renders the same color within and across runs.
+and the breakpoint marker (``BREAKPOINT_COLOR``) are imported from
+:mod:`cfh.reporting.palette`, the single source of truth also used by the
+existing per-event domain-retention lollipop track
+(``cfh.real_benchmark._domain_track_svg``) -- this module does not define
+its own copies of those hex values, so the two renderers cannot drift
+apart on what a color means. Partner-gene colors and the neutral domain
+backbone are new (the lollipop track has neither per-partner nor
+backbone-fill colors to reuse), computed deterministically so a given
+partner always renders the same color within and across runs.
 """
 
 from __future__ import annotations
@@ -28,12 +29,19 @@ from __future__ import annotations
 import colorsys
 import zlib
 
-# Reused verbatim from cfh.real_benchmark._domain_track_svg's status-color
-# convention -- do not change these without also updating that function's
-# legend, or the two will visually disagree about what a color means.
-RETAINED_COLOR = "#2878b5"
-TRUNCATED_COLOR = "#f2a93b"
-BREAKPOINT_COLOR = "#d62728"
+from cfh.reporting.palette import BREAKPOINT_COLOR, RETAINED_COLOR, TRUNCATED_COLOR
+
+__all__ = [
+    "RETAINED_COLOR",
+    "TRUNCATED_COLOR",
+    "BREAKPOINT_COLOR",
+    "BACKBONE_COLOR",
+    "AXIS_COLOR",
+    "CONNECTOR_COLOR",
+    "partner_color",
+    "render_fusion_schematic_svg",
+    "render_intragenic_deletion_schematic_svg",
+]
 
 # New to this module (the lollipop track has no backbone/partner fill).
 BACKBONE_COLOR = "#e2e2e2"

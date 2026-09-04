@@ -37,6 +37,7 @@ from cfh.reporting.fusion_schematic import (
     render_fusion_schematic_svg,
     render_intragenic_deletion_schematic_svg,
 )
+from cfh.reporting.palette import BREAKPOINT_COLOR, LOST_COLOR, RETAINED_COLOR, TRUNCATED_COLOR
 from cfh.reporting.pdf import render_pdf_report
 from cfh.stats.breakpoint_tests import build_frame_domain_contingency_table
 from cfh.studies.registry import load_study_config
@@ -969,14 +970,14 @@ def _domain_track_svg(run: RealBenchmarkRun, outlier_ids: set[str]) -> str:
         fraction = row.get("domain_retained_fraction")
         status = row.get("domain_status")
         if row.get("domain_is_truncated") or status == "disrupted":
-            color = "#f2a93b"
+            color = TRUNCATED_COLOR
         elif fraction == 0.0 or status == "lost":
-            color = "#777777"
+            color = LOST_COLOR
         elif fraction == 1.0 or status == "retained":
-            color = "#2878b5"
+            color = RETAINED_COLOR
         else:
             color = "#aaaaaa"
-        stroke = "#d62728" if row["event_id"] in outlier_ids else "none"
+        stroke = BREAKPOINT_COLOR if row["event_id"] in outlier_ids else "none"
         stroke_width = "1.5" if row["event_id"] in outlier_ids else "0"
         y = 100 + (index % 5) * 7
         dots.append(
@@ -993,13 +994,14 @@ def _domain_track_svg(run: RealBenchmarkRun, outlier_ids: set[str]) -> str:
         f'width="{max(2, (end-start)*scale):.1f}" height="28" '
         'fill="#62b36f" opacity="0.55"/>',
         *dots,
-        '<circle cx="60" cy="150" r="4" fill="#2878b5"/>'
+        f'<circle cx="60" cy="150" r="4" fill="{RETAINED_COLOR}"/>'
         '<text x="70" y="155" font-family="sans-serif" font-size="12">fully retained</text>',
-        '<circle cx="180" cy="150" r="4" fill="#f2a93b"/>'
+        f'<circle cx="180" cy="150" r="4" fill="{TRUNCATED_COLOR}"/>'
         '<text x="190" y="155" font-family="sans-serif" font-size="12">truncated</text>',
-        '<circle cx="275" cy="150" r="4" fill="#777777"/>'
+        f'<circle cx="275" cy="150" r="4" fill="{LOST_COLOR}"/>'
         '<text x="285" y="155" font-family="sans-serif" font-size="12">fully lost</text>',
-        '<circle cx="365" cy="150" r="4" fill="white" stroke="#d62728" stroke-width="1.5"/>'
+        f'<circle cx="365" cy="150" r="4" fill="white" stroke="{BREAKPOINT_COLOR}" '
+        'stroke-width="1.5"/>'
         '<text x="375" y="155" font-family="sans-serif" font-size="12">'
         'reference discrepancy</text>',
         '</svg>',

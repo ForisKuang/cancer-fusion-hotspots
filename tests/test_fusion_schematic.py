@@ -14,15 +14,17 @@ import pytest
 
 from cfh.reporting.fusion_schematic import (
     BACKBONE_COLOR,
-    BREAKPOINT_COLOR,
-    RETAINED_COLOR,
-    TRUNCATED_COLOR,
     _domain_color_segments,
     _fusion_groups,
     partner_color,
     render_fusion_schematic_svg,
     render_intragenic_deletion_schematic_svg,
 )
+
+# Imported from the shared palette module (not re-exported from
+# fusion_schematic) so these assertions catch the two renderers actually
+# drifting apart, not just a coincidental match today.
+from cfh.reporting.palette import BREAKPOINT_COLOR, RETAINED_COLOR, TRUNCATED_COLOR
 
 _KINASE = {
     "name": "Protein kinase domain",
