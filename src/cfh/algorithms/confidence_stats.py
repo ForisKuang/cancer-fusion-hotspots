@@ -102,9 +102,7 @@ def resolve_confidence_stats_params(
     """Merge caller overrides without retaining incompatible group/outcome defaults."""
     defaults = default_confidence_stats_params(gene_config)
     overrides = overrides or {}
-    if overrides.get("group_field", defaults.get("group_field")) != defaults.get(
-        "group_field"
-    ):
+    if overrides.get("group_field", defaults.get("group_field")) != defaults.get("group_field"):
         for key in ("group_key", "group_value_map", "group_values"):
             if key not in overrides:
                 defaults.pop(key, None)
@@ -157,6 +155,7 @@ def _split_groups(
     group_value_map: dict[Any, Any] | None = None,
 ) -> tuple[tuple[Any, list[dict]], tuple[Any, list[dict]]]:
     """Split rows into two groups by the distinct values of ``group_field``."""
+
     def group_value(row: dict) -> Any:
         value = row.get(group_field)
         if group_key is not None:

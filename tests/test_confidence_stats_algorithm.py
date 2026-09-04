@@ -196,9 +196,9 @@ def test_mle_empty_group_emits_a_warning_matching_the_welch_skip_style():
 
     assert result.Summary["mle"]["groups"]["c"]["n"] == 0
     assert result.Summary["mle"]["groups"]["c"]["point_estimate"] is None
-    assert any(
-        "MLE" in warning and "Frame_status" in warning for warning in result.Warnings
-    ), result.Warnings
+    assert any("MLE" in warning and "Frame_status" in warning for warning in result.Warnings), (
+        result.Warnings
+    )
 
 
 def test_both_mle_and_ttest_requested():

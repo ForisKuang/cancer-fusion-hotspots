@@ -129,9 +129,7 @@ def _retained_exon_ranks(
     )
     if role == "five_prime":
         return [
-            boundary.exon_rank
-            for boundary in boundaries
-            if boundary.end_aa <= junction_position_aa
+            boundary.exon_rank for boundary in boundaries if boundary.end_aa <= junction_position_aa
         ]
     if role == "three_prime":
         return [
@@ -677,9 +675,7 @@ def analyze_structural_variant_calls_with_config(
         config,
         {
             "confidence_stats": {
-                **resolve_confidence_stats_params(
-                    config, algorithm_params.get("confidence_stats")
-                ),
+                **resolve_confidence_stats_params(config, algorithm_params.get("confidence_stats")),
             },
             "frequency": {"dedup_by_patient": False, **algorithm_params.get("frequency", {})},
             "cutpoint_detection": {

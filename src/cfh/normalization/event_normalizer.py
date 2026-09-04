@@ -253,9 +253,7 @@ def normalize(
         # -- Total_read_support is "whatever read-support evidence exists,"
         # not a guarantee both components contributed.
         read_support_values = [
-            value
-            for value in (paired_end_read_support, split_read_support)
-            if value is not None
+            value for value in (paired_end_read_support, split_read_support) if value is not None
         ]
 
         events.append(

@@ -97,9 +97,7 @@ def test_tumor_variant_count_is_populated_from_the_live_api_column(
     assert event.Tumor_variant_count == 35
 
 
-def test_negative_tumor_variant_count_sentinel_is_missing(
-    sv_fixture_file, clinical_sample_fixture
-):
+def test_negative_tumor_variant_count_sentinel_is_missing(sv_fixture_file, clinical_sample_fixture):
     raw = sv_parser.parse_sv_file(sv_fixture_file).iloc[:1].copy()
     raw["Tumor_Variant_Count"] = -1
     clinical = clinical_parser.parse_clinical_sample(clinical_sample_fixture)
@@ -147,9 +145,7 @@ def test_float_valued_read_support_column_is_coerced_to_int_not_dropped(
     event = _by_sample(events, "SAMPLE-001")
     assert event.Paired_end_read_support == 10
     assert isinstance(event.Paired_end_read_support, int)
-    assert event.Total_read_support == (
-        event.Paired_end_read_support + event.Split_read_support
-    )
+    assert event.Total_read_support == (event.Paired_end_read_support + event.Split_read_support)
 
 
 def test_cohort_is_caller_supplied_not_hardcoded(sv_fixture_file, clinical_sample_fixture):

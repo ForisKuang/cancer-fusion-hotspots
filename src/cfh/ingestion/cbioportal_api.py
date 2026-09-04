@@ -113,9 +113,7 @@ def fetch_structural_variant_genes(
     return response.json()
 
 
-_API_OUTPUT_COLUMNS = [
-    *dict.fromkeys([*OUTPUT_COLUMNS, *_API_TO_NORMALIZED_COLUMNS.values()])
-]
+_API_OUTPUT_COLUMNS = [*dict.fromkeys([*OUTPUT_COLUMNS, *_API_TO_NORMALIZED_COLUMNS.values()])]
 """``OUTPUT_COLUMNS`` plus every API field the live fetch path can supply.
 
 ``tumorVariantCount`` (unlike the split/paired-end read counts) has no

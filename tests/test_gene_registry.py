@@ -178,9 +178,7 @@ def test_derive_defaults_respects_explicit_empty_disruption_domain_list():
             "gene_symbol": "FAKE",
             "canonical_transcript_id": "NM_1",
             "protein_id": "P1",
-            "key_domains": [
-                {"name": "key", "source": "genome_nexus", "accession": "PF00002"}
-            ],
+            "key_domains": [{"name": "key", "source": "genome_nexus", "accession": "PF00002"}],
             "disruption_required_domains": [],
         }
     )
