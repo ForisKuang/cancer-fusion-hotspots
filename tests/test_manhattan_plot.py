@@ -39,12 +39,14 @@ def _row(
     q_value: float | None,
     composite_score: float | None,
     significant: bool = False,
+    partner_gene: str | None = None,
 ) -> dict:
     return {
         "gene_symbol": gene_symbol,
         "min_fdr_adjusted_q_value": q_value,
         "top_composite_score": composite_score,
         "fdr_significant": significant,
+        "top_composite_partner_gene": partner_gene,
     }
 
 
@@ -146,6 +148,65 @@ def test_labels_fill_remaining_slots_by_significance_not_composite_rank():
     assert ">SIGGENE<" in svg
     assert ">BESTQNOTSIG<" in svg
     assert ">WORSTQNOTSIG<" not in svg
+
+
+def test_priority_genes_keep_their_label_over_a_more_significant_non_priority_gene():
+    """A partner-only gene (e.g. an auto-scanned fusion partner) can reach a
+    smaller raw q-value than a hand-curated/near-miss gene purely by sharing
+    breakpoint events with its driver. The label budget must not let that
+    partner gene crowd out a ``priority_genes`` member."""
+    rows = [
+        _row("PARTNERGENE", q_value=0.01, composite_score=0.9, significant=False),
+        _row("CURATEDGENE", q_value=0.5, composite_score=0.1, significant=False),
+    ]
+    svg_unprioritized = render_manhattan_svg(rows, significance_level=0.05, max_labels=1)
+    assert ">PARTNERGENE<" in svg_unprioritized
+    assert ">CURATEDGENE<" not in svg_unprioritized
+
+    svg_prioritized = render_manhattan_svg(
+        rows, significance_level=0.05, max_labels=1, priority_genes={"CURATEDGENE"}
+    )
+    assert ">CURATEDGENE<" in svg_prioritized
+    assert ">PARTNERGENE<" not in svg_prioritized
+
+
+def test_priority_genes_share_remaining_slots_alongside_significant_genes():
+    rows = [
+        _row("SIGGENE", q_value=0.001, composite_score=0.9, significant=True),
+        _row("PRIORITYGENE", q_value=0.2, composite_score=0.5, significant=False),
+        _row("OTHERGENE", q_value=0.15, composite_score=0.4, significant=False),
+    ]
+    svg = render_manhattan_svg(
+        rows, significance_level=0.05, max_labels=2, priority_genes={"PRIORITYGENE"}
+    )
+    # 1 slot guaranteed to the significant gene + 1 remaining slot: the
+    # priority gene wins that slot even though OTHERGENE has a smaller q.
+    assert ">SIGGENE<" in svg
+    assert ">PRIORITYGENE<" in svg
+    assert ">OTHERGENE<" not in svg
+
+
+def test_partner_gene_context_rendered_as_tooltip_not_competing_label():
+    rows = [
+        _row(
+            "ALK",
+            q_value=0.1,
+            composite_score=0.8,
+            significant=False,
+            partner_gene="EML4",
+        ),
+        _row("NOPARTNER", q_value=0.3, composite_score=0.4, significant=False),
+    ]
+    svg = render_manhattan_svg(rows, significance_level=0.05)
+
+    alk_circle = re.search(r'<circle[^>]*data-gene="ALK".*?</circle>', svg, re.DOTALL)
+    assert alk_circle, "ALK circle with a title tooltip not found"
+    assert "<title>ALK: top composite-evidence partner gene EML4</title>" in alk_circle.group(0)
+    # The partner gene itself never appears as its own competing text label.
+    assert ">EML4<" not in svg
+
+    no_partner_circle = re.search(r'<circle[^>]*data-gene="NOPARTNER"[^>]*/>', svg)
+    assert no_partner_circle, "gene with no partner should render a plain self-closed circle"
 
 
 def test_empty_and_all_untested_rows_render_a_valid_placeholder_svg():

@@ -38,7 +38,23 @@ threshold line carries ``id="fdr-threshold-line"`` for the same reason.
 
 Gene-symbol labels are drawn for every FDR-significant point, plus (up to
 ``max_labels`` genes total) the remaining most-significant points --
-avoiding label clutter on a genome-wide scan of hundreds of genes.
+avoiding label clutter on a genome-wide scan of hundreds of genes. A
+genome-wide scan analyzes fusion PARTNER genes as their own independent
+scanned genes (e.g. ``EML4``, ``KIAA1549``, ``TACC3`` each get their own row,
+alongside the primary driver genes ``ALK``, ``BRAF``, ``NTRK1``), and a
+partner gene's row can happen to reach a smaller raw q-value than a
+biologically more interesting primary driver simply because they share the
+same underlying breakpoint events. Left unweighted, filling the label budget
+by raw q-value alone lets those partner-gene rows crowd out hand-curated
+driver genes and top near-miss genes from the limited label slots. Callers
+should therefore pass ``priority_genes`` (hand-curated genes plus the
+"honorable mentions" near-significant tier -- see
+:func:`cfh.cohort.outputs.build_honorable_mentions`) so those genes' labels
+are filled first, ahead of any other non-significant gene, regardless of
+where they land in the raw q-value ranking. Each point's underlying
+``top_composite_partner_gene`` (if any) is still preserved -- as an SVG
+``<title>`` tooltip on its circle -- even when that gene's own label loses
+its slot.
 """
 
 from __future__ import annotations
@@ -72,15 +88,42 @@ def _plottable_points(rows: list[dict]) -> list[dict]:
     return plottable
 
 
-def _label_indices(points: list[dict], max_labels: int) -> set[int]:
+def _escape_xml_text(text: str) -> str:
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def _label_indices(
+    points: list[dict], max_labels: int, priority_gene_symbols: frozenset[str] = frozenset()
+) -> set[int]:
+    """Every FDR-significant point is always labeled. Remaining label slots
+    (``max_labels`` minus the significant count) go first to non-significant
+    points whose gene is in ``priority_gene_symbols`` (ranked by q-value
+    among themselves), then to the next most-significant points overall --
+    so a hand-curated or near-miss "honorable mention" gene never loses its
+    label slot to an incidentally-significant fusion-partner gene."""
     significant_idx = [index for index, point in enumerate(points) if point["significant"]]
-    remaining_by_significance = sorted(
-        (index for index in range(len(points)) if not points[index]["significant"]),
-        key=lambda index: points[index]["neg_log_q"],
+    remaining = [index for index in range(len(points)) if not points[index]["significant"]]
+
+    def by_neg_log_q(index: int) -> float:
+        return points[index]["neg_log_q"]
+
+    priority_idx = sorted(
+        (index for index in remaining if points[index]["gene_symbol"] in priority_gene_symbols),
+        key=by_neg_log_q,
+        reverse=True,
+    )
+    other_idx = sorted(
+        (
+            index
+            for index in remaining
+            if points[index]["gene_symbol"] not in priority_gene_symbols
+        ),
+        key=by_neg_log_q,
         reverse=True,
     )
     slots = max(max_labels - len(significant_idx), 0)
-    return set(significant_idx) | set(remaining_by_significance[:slots])
+    ordered_candidates = priority_idx + other_idx
+    return set(significant_idx) | set(ordered_candidates[:slots])
 
 
 def render_manhattan_svg(
@@ -88,6 +131,7 @@ def render_manhattan_svg(
     *,
     significance_level: float = 0.05,
     max_labels: int = DEFAULT_MAX_LABELS,
+    priority_genes: "frozenset[str] | set[str]" = frozenset(),
 ) -> str:
     """Render the genome-wide Manhattan/volcano-style summary SVG for one
     cohort scan's already-built summary rows. Returns the raw SVG markup
@@ -106,6 +150,7 @@ def render_manhattan_svg(
             "gene_symbol": row["gene_symbol"],
             "neg_log_q": -math.log10(max(row["min_fdr_adjusted_q_value"], 1e-300)),
             "significant": bool(row.get("fdr_significant")),
+            "partner_gene": row.get("top_composite_partner_gene"),
         }
         for row in ranked
     ]
@@ -167,13 +212,24 @@ def render_manhattan_svg(
             color, radius = _SIGNIFICANT_COLOR, 4.0
         else:
             color, radius = _NOT_SIGNIFICANT_COLOR, 2.6
-        elements.append(
-            f'<circle cx="{x:.2f}" cy="{y:.2f}" r="{radius}" fill="{color}" '
+        circle_attrs = (
+            f'cx="{x:.2f}" cy="{y:.2f}" r="{radius}" fill="{color}" '
             f'data-gene="{point["gene_symbol"]}" '
-            f'data-significant="{"true" if point["significant"] else "false"}"/>'
+            f'data-significant="{"true" if point["significant"] else "false"}"'
         )
+        if point["partner_gene"]:
+            title = _escape_xml_text(
+                f'{point["gene_symbol"]}: top composite-evidence partner gene '
+                f'{point["partner_gene"]}'
+            )
+            elements.append(f"<circle {circle_attrs}><title>{title}</title></circle>")
+        else:
+            elements.append(f"<circle {circle_attrs}/>")
 
-    labeled_indices = sorted(_label_indices(points, max_labels), key=x_for_rank)
+    priority_gene_symbols = frozenset(priority_genes)
+    labeled_indices = sorted(
+        _label_indices(points, max_labels, priority_gene_symbols), key=x_for_rank
+    )
     for order, index in enumerate(labeled_indices):
         point = points[index]
         x = x_for_rank(index)

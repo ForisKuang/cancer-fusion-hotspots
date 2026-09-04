@@ -6,7 +6,7 @@ from pathlib import Path
 
 import click
 
-from cfh.cohort.outputs import write_cohort_scan_outputs
+from cfh.cohort.outputs import DEFAULT_HONORABLE_MENTION_COUNT, write_cohort_scan_outputs
 from cfh.cohort.recurrence import DEFAULT_MIN_DISTINCT_PATIENTS
 from cfh.cohort.scan import DEFAULT_N_PERMUTATIONS_SMALL, run_cohort_scan
 from cfh.gene_comparison import compare_gene_runs, write_comparison_tsv
@@ -223,6 +223,14 @@ def analyze(
     show_default=True,
     help="Also render summary.pdf and full per-gene report.pdf files.",
 )
+@click.option(
+    "--honorable-mention-count",
+    type=click.IntRange(min=0),
+    default=DEFAULT_HONORABLE_MENTION_COUNT,
+    show_default=True,
+    help="Size of the 'honorable mentions' near-significant tier: the top N genes by raw "
+    "Fisher p-value among genes that did NOT survive genome-wide FDR correction.",
+)
 def cohort_scan(
     study_id: str,
     output_dir: Path,
@@ -233,6 +241,7 @@ def cohort_scan(
     max_genes: int | None,
     cache_dir: Path | None,
     pdf: bool,
+    honorable_mention_count: int,
 ) -> None:
     """Genome-wide fusion-hotspot scan: gate cohort-wide SV recurrence, run
     the full algorithm suite for every gated gene (auto-configuring genes
@@ -247,7 +256,9 @@ def cohort_scan(
             max_genes=max_genes,
             cache_dir=cache_dir or (output_dir / ".cohort_scan_cache"),
         )
-        paths = write_cohort_scan_outputs(result, output_dir, pdf=pdf)
+        paths = write_cohort_scan_outputs(
+            result, output_dir, pdf=pdf, honorable_mention_count=honorable_mention_count
+        )
     except Exception as exc:
         raise click.ClickException(f"Cohort scan failed: {type(exc).__name__}: {exc}") from None
 
