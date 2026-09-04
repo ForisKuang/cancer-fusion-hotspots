@@ -45,7 +45,6 @@ DEFAULT_N_PERMUTATIONS = 1_000
 DEFAULT_N_PERMUTATIONS_SMALL = 100
 DEFAULT_SIGNIFICANCE_LEVEL = 0.05
 ADAPTIVE_ALGORITHMS = ("domain_retention", "domain_disruption", "cutpoint_detection")
-ALWAYS_FULL_REPORT_GENES = ("BRAF", "RET")
 
 
 @dataclass
@@ -333,10 +332,26 @@ def per_gene_min_q_value(result: CohortScanResult) -> dict[str, float]:
     return per_gene
 
 
-def genes_needing_full_report(result: CohortScanResult) -> list[str]:
-    """BRAF, RET, and every FDR-significant gene -- the genes a cohort scan
-    generates a full per-gene report for (everything else stays summary-only)."""
+def genes_needing_full_report(
+    result: CohortScanResult, honorable_mention_genes: "frozenset[str] | set[str]" = frozenset()
+) -> list[str]:
+    """Every hand-curated gene, every FDR-significant gene, and every
+    ``honorable_mention_genes`` (the highly ranked non-FDR-significant "second
+    tier" a human reviewer should still see a full report for) -- the genes a
+    cohort scan generates a full per-gene report for (everything else stays
+    summary-only).
+
+    Curated genes are derived from each outcome's own ``config_source``
+    rather than a hardcoded gene list: a hardcoded list silently goes stale
+    every time a new curated ``GeneConfig`` is added (this happened once
+    already -- ALK and NTRK1 curated configs were added the commit right
+    after this list was introduced, and it was never updated to match).
+    """
     scanned = {outcome.gene_symbol for outcome in result.gene_outcomes if outcome.run is not None}
-    names = {gene for gene in ALWAYS_FULL_REPORT_GENES if gene in scanned}
-    names.update(gene for gene in result.significant_genes if gene in scanned)
-    return sorted(names)
+    curated = {
+        outcome.gene_symbol
+        for outcome in result.gene_outcomes
+        if outcome.config_source == "curated"
+    }
+    names = curated | set(result.significant_genes) | set(honorable_mention_genes)
+    return sorted(names & scanned)
