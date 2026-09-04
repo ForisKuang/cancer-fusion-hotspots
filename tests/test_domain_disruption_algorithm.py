@@ -156,9 +156,7 @@ def test_disruption_result_reports_optional_truncation_descriptives():
     assert row["Quantitative_call_count"] == 2
     assert row["Truncated_count"] == 1
     assert row["Fully_lost_count"] == 1
-    assert row["Mean_retained_fraction_among_non_retained_calls"] == pytest.approx(
-        (61 / 101) / 2
-    )
+    assert row["Mean_retained_fraction_among_non_retained_calls"] == pytest.approx((61 / 101) / 2)
 
 
 def test_permutation_null_is_bit_identical_for_a_fixed_seed():

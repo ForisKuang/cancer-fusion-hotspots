@@ -279,9 +279,7 @@ def test_resolve_domains_falls_back_to_uniprot_when_gene_not_in_genome_nexus(
     uniprot_fixture_path,
 ):
     mock_gn_client = MagicMock()
-    mock_gn_client.fetch_canonical_transcript.side_effect = gns.GenomeNexusGeneNotFound(
-        "not found"
-    )
+    mock_gn_client.fetch_canonical_transcript.side_effect = gns.GenomeNexusGeneNotFound("not found")
 
     uniprot_source = UniProtDomainSource()
     uniprot_payload = json.loads(uniprot_fixture_path.read_text())

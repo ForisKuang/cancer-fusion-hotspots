@@ -71,9 +71,7 @@ def test_domain_retention_track_x_axis_spans_the_real_protein_length():
         assert ">0<" in svg, gene
         # At least one interior hundred-aa tick between 0 and the protein
         # length actually appears (not just the two endpoints).
-        interior_hundreds = [
-            str(hundred) for hundred in range(100, protein_length, 100)
-        ]
+        interior_hundreds = [str(hundred) for hundred in range(100, protein_length, 100)]
         assert any(f">{value}<" in svg for value in interior_hundreds), gene
 
 

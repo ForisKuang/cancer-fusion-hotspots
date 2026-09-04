@@ -134,9 +134,7 @@ def test_fusion_schematic_partner_labels_match_real_partner_names():
 
 def test_fusion_schematic_shows_real_exon_numbers_from_the_canonical_transcript():
     payload = _payload()
-    exon_ranks = sorted(
-        {b["exon_rank"] for b in payload["gene_track"]["exon_boundaries_aa"]}
-    )
+    exon_ranks = sorted({b["exon_rank"] for b in payload["gene_track"]["exon_boundaries_aa"]})
     assert exon_ranks  # the real BRAF canonical transcript has exon boundaries
     svg = render_fusion_schematic_svg(payload)
     for rank in exon_ranks:
@@ -156,9 +154,7 @@ def test_intragenic_deletion_schematic_row_count_and_bounds():
     svg = render_intragenic_deletion_schematic_svg(payload)
     assert svg is not None  # this real cohort does have qualifying records
 
-    connectors = re.findall(
-        r'<line x1="([\d.]+)"[^>]*x2="([\d.]+)"[^>]*stroke="#999999"', svg
-    )
+    connectors = re.findall(r'<line x1="([\d.]+)"[^>]*x2="([\d.]+)"[^>]*stroke="#999999"', svg)
     assert 0 < len(connectors) <= _MAX_ROWS
     for x1, x2 in connectors:
         aa1 = (float(x1) - _AXIS_LEFT) / _AXIS_WIDTH * protein_length

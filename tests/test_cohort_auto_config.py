@@ -139,9 +139,7 @@ def test_build_auto_gene_config_populates_minimal_fields_only():
     )
     description_source = _mock_description_source({"PF07714": "Protein tyrosine kinase"})
 
-    config = build_auto_gene_config(
-        "braf", 673, canonical, description_source=description_source
-    )
+    config = build_auto_gene_config("braf", 673, canonical, description_source=description_source)
 
     assert config is not None
     assert config.gene_symbol == "BRAF"
@@ -242,15 +240,11 @@ def test_batch_fetch_canonical_transcripts_uses_disk_cache(tmp_path):
     ]
     mock_session.post.return_value = response
 
-    first = batch_fetch_canonical_transcripts(
-        ["BRAF"], session=mock_session, cache_dir=tmp_path
-    )
+    first = batch_fetch_canonical_transcripts(["BRAF"], session=mock_session, cache_dir=tmp_path)
     assert "BRAF" in first.by_gene_symbol
     assert mock_session.post.call_count == 1
 
     second_session = MagicMock()
-    second = batch_fetch_canonical_transcripts(
-        ["BRAF"], session=second_session, cache_dir=tmp_path
-    )
+    second = batch_fetch_canonical_transcripts(["BRAF"], session=second_session, cache_dir=tmp_path)
     assert "BRAF" in second.by_gene_symbol
     second_session.post.assert_not_called()

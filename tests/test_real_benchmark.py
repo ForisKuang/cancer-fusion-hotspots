@@ -229,8 +229,7 @@ def test_malformed_fusion_rows_are_warned_and_skipped_without_losing_valid_rows(
     assert run.summary["skipped_fusions"] == 2
     assert [event.Sample_id for event in run.events] == ["VALID"]
     assert any(
-        "BAD-ROLE" in warning and "could not determine" in warning
-        for warning in run.warnings
+        "BAD-ROLE" in warning and "could not determine" in warning for warning in run.warnings
     )
     assert any(
         "NO-BREAKPOINT" in warning and "no genomic breakpoint" in warning
