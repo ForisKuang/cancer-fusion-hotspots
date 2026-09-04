@@ -23,6 +23,31 @@ def test_loads_ret_yaml_with_live_genome_nexus_identifiers():
     assert config.benchmark_reference.fusion_count == 7
 
 
+@pytest.mark.parametrize(
+    ("gene", "transcript", "protein", "entrez"),
+    [
+        ("alk", "NM_004304", "Q9UM73", 238),
+        ("ntrk1", "NM_002529", "P04629", 4914),
+    ],
+)
+def test_loads_alk_and_ntrk1_yaml_with_genome_nexus_canonical_identifiers(
+    gene, transcript, protein, entrez
+):
+    """Curated IDs are the live Genome Nexus canonical-transcript values.
+
+    Both targets use the catalytic protein-kinase Pfam family returned by
+    that endpoint; its live residue bounds are deliberately resolved by the
+    production Genome Nexus mapping path rather than copied into YAML.
+    """
+    config = load_gene_config(gene)
+
+    assert config.canonical_transcript_id == transcript
+    assert config.protein_id == protein
+    assert config.entrez_gene_id == entrez
+    assert config.key_domains[0].accession == "PF07714"
+    assert config.key_domains[0].source == "genome_nexus"
+
+
 def test_unknown_gene_raises():
     with pytest.raises(FileNotFoundError):
         load_gene_config("not_a_real_gene")

@@ -21,6 +21,7 @@ from cfh.ingestion import cbioportal_api
 from cfh.mapping.domain_source import ProteinDomain
 from cfh.mapping.feature_mapper import map_event
 from cfh.mapping.genome_nexus_source import (
+    CanonicalTranscript,
     GenomeNexusClient,
     GenomeNexusGeneNotFound,
     gene_track_from_canonical_transcript,
@@ -57,6 +58,15 @@ class RealBenchmarkInputError(RealBenchmarkError):
 
 class RealBenchmarkNetworkError(RealBenchmarkError):
     """Raised when a required public data service cannot be reached."""
+
+
+_TARGET_LOCUS_TOLERANCE_BP = 1_000_000
+"""Permit a nearby assembly/annotation offset while rejecting remote loci.
+
+Some imported cBioPortal rows omit or mix genome-build metadata. A one-Mb
+envelope retains legitimate target-gene coordinates that differ slightly
+between builds, while easily rejecting partner positions many megabases away.
+"""
 
 
 @dataclass
@@ -106,20 +116,69 @@ def _is_target_protein_fusion(event: FusionEvent, target_gene: str) -> bool:
     )
 
 
-def _target_breakpoint(row: dict, target_gene: str) -> int:
-    target = target_gene.upper()
-    if str(row.get("Site1_Hugo_Symbol") or "").upper() == target:
-        value = row.get("Site1_Position")
-    elif str(row.get("Site2_Hugo_Symbol") or "").upper() == target:
-        value = row.get("Site2_Position")
-    else:  # pragma: no cover - guarded by _is_target_protein_fusion
-        raise ValueError(f"row does not contain target gene {target_gene}")
-    if value is None or pd.isna(value):
+def _target_locus(canonical: CanonicalTranscript) -> tuple[int, int]:
+    """Return the inclusive genomic footprint spanned by a target's exons."""
+    if not canonical.exons:
+        raise ValueError("Genome Nexus returned no exon coordinates for target-locus validation")
+    return (
+        min(exon.start for exon in canonical.exons),
+        max(exon.end for exon in canonical.exons),
+    )
+
+
+def _target_breakpoint(row: dict, target_gene: str, target_locus: tuple[int, int]) -> int:
+    """Choose the only site position compatible with the target's GN locus.
+
+    cBioPortal structural-variant rows can pair a site label with the other
+    fusion partner's coordinate. Labels alone are therefore not a safe
+    breakpoint selector. The canonical transcript already fetched from
+    Genome Nexus supplies the target's exon-spanned genomic footprint; use
+    that to select a position independently of its reported site label.
+    """
+    locus_start, locus_end = target_locus
+    exact_candidates: list[tuple[str, int]] = []
+    nearby_candidates: list[tuple[str, int]] = []
+    invalid_values: list[str] = []
+    for site in ("Site1", "Site2"):
+        value = row.get(f"{site}_Position")
+        if value is None or pd.isna(value):
+            continue
+        try:
+            position = int(value)
+        except (TypeError, ValueError):
+            invalid_values.append(f"{site}={value!r}")
+            continue
+        if locus_start <= position <= locus_end:
+            exact_candidates.append((site, position))
+        elif (
+            locus_start - _TARGET_LOCUS_TOLERANCE_BP
+            <= position
+            <= locus_end + _TARGET_LOCUS_TOLERANCE_BP
+        ):
+            nearby_candidates.append((site, position))
+
+    if len(exact_candidates) == 1:
+        return exact_candidates[0][1]
+    site_positions = ", ".join(
+        f"{site}={row.get(f'{site}_Position')!r}" for site in ("Site1", "Site2")
+    )
+    if len(exact_candidates) == 2:
+        raise ValueError(
+            f"{target_gene} fusion has ambiguous genomic breakpoints within target locus "
+            f"{locus_start}-{locus_end}: {site_positions}"
+        )
+    if len(nearby_candidates) == 1:
+        return nearby_candidates[0][1]
+    if not invalid_values and all(
+        row.get(f"{site}_Position") is None or pd.isna(row.get(f"{site}_Position"))
+        for site in ("Site1", "Site2")
+    ):
         raise ValueError(f"{target_gene} fusion has no genomic breakpoint")
-    try:
-        return int(value)
-    except (TypeError, ValueError) as exc:
-        raise ValueError(f"{target_gene} fusion has invalid genomic breakpoint {value!r}") from exc
+    invalid_note = f"; invalid values: {', '.join(invalid_values)}" if invalid_values else ""
+    raise ValueError(
+        f"{target_gene} fusion has no site breakpoint within target locus "
+        f"{locus_start}-{locus_end}: {site_positions}{invalid_note}"
+    )
 
 
 def _target_role(event: FusionEvent, target_gene: str) -> str:
@@ -410,6 +469,19 @@ def analyze_structural_variant_calls_with_config(
         # the lookup (and its network call) entirely rather than resolve
         # domains nothing will use.
         domains = []
+    if selected:
+        try:
+            target_canonical = parse_canonical_transcript(
+                client.fetch_canonical_transcript(config.gene_symbol)
+            )
+            target_locus = _target_locus(target_canonical)
+        except requests.RequestException as exc:
+            raise RealBenchmarkNetworkError(
+                f"Genome Nexus target-locus lookup failed for {config.gene_symbol}: {exc}. "
+                "Check network access and https://www.genomenexus.org availability, then retry."
+            ) from exc
+    else:
+        target_locus = None
     domain_source = _ResolvedDomainSource(domains)
 
     gene_track: dict | None = None
@@ -431,7 +503,9 @@ def analyze_structural_variant_calls_with_config(
     for row, event in selected:
         try:
             role = _target_role(event, config.gene_symbol)
-            breakpoint = _target_breakpoint(row, config.gene_symbol)
+            if target_locus is None:  # pragma: no cover - no selected records means no loop
+                raise ValueError("target locus was not resolved")
+            breakpoint = _target_breakpoint(row, config.gene_symbol, target_locus)
             mapping = resolve_breakpoint_protein_position(
                 None,
                 config,
@@ -746,6 +820,8 @@ def _format_stat(value: float | int | None) -> str:
 def markdown_summary(
     run: RealBenchmarkRun,
     *,
+    domain_svg_path: str = "visualizations/domain_retention_outliers.svg",
+    comparison_svg_path: str = "visualizations/reference_comparison.svg",
     fusion_schematic_svg_path: str | None = None,
     intragenic_deletion_svg_path: str | None = None,
 ) -> str:
@@ -761,6 +837,7 @@ def markdown_summary(
     """
     summary = run.summary
     domain = summary["domain_accession"] or "configured domain"
+    results_by_name = {result.Algorithm: result for result in run.results}
     partners = ", ".join(
         f"{row['Partner_gene']} ({row['Event_count']})" for row in summary["partner_counts"]
     )
@@ -792,6 +869,13 @@ def markdown_summary(
         f"{_format_stat(summary['permutation_p_value'])}",
         f"- Contingency table `[[retained/in-frame, retained/other], "
         f"[not-retained/in-frame, not-retained/other]]`: `{table}`",
+        "",
+        "### Domain retention and discrepancies",
+        "",
+        f"![Domain retention diagram]({domain_svg_path})",
+        "",
+        "*Domain-retention positions for analyzed fusion events; red outlines mark "
+        "reference discrepancies.*",
         "",
     ]
     if fusion_schematic_svg_path:
@@ -825,24 +909,59 @@ def markdown_summary(
         )
     lines.extend(
         [
-        "## Method",
-        "",
-        f"The cBioPortal `{run.molecular_profile_id}` structural-variant profile was "
-        "queried by the configured Entrez gene ID. Fusion-annotated records were "
-        "adapted to the production SV schema and normalized; when "
-        "`site2EffectOnFrame=NA`, frame status was resolved from `Event_Info`, not "
-        "copied into `FusionEvent.Frame_status`.",
-        "",
-        f"{run.gene_symbol} genomic breakpoints were mapped against the Genome Nexus "
-        f"canonical transcript, and retention was classified against its returned {domain} "
-        "coordinates. Counts are event-level with no patient deduplication. The "
-        "Fisher comparison's `other` column combines out-of-frame and unknown-frame "
-        "events, as pre-specified by the domain-retention algorithm.",
-        "",
-        "## Partners",
-        "",
-        partners or "None",
-        "",
+            "## Method",
+            "",
+            f"The cBioPortal `{run.molecular_profile_id}` structural-variant profile was "
+            "queried by the configured Entrez gene ID. Fusion-annotated records were "
+            "adapted to the production SV schema and normalized; when "
+            "`site2EffectOnFrame=NA`, frame status was resolved from `Event_Info`, not "
+            "copied into `FusionEvent.Frame_status`.",
+            "",
+            f"{run.gene_symbol} genomic breakpoints were mapped against the Genome Nexus "
+            f"canonical transcript, and retention was classified against its returned {domain} "
+            "coordinates. Counts are event-level with no patient deduplication. The "
+            "Fisher comparison's `other` column combines out-of-frame and unknown-frame "
+            "events, as pre-specified by the domain-retention algorithm.",
+            "",
+            "For each fusion, breakpoint selection preferred the Genome Nexus canonical "
+            "transcript's exon-spanned target locus over cBioPortal site labels; malformed "
+            "rows with no unambiguous target-locus coordinate were skipped and listed in Warnings.",
+            "",
+            "## Full-suite highlights",
+            "",
+            "- Registered algorithms executed: "
+            + ", ".join(result.Algorithm for result in run.results),
+        ]
+    )
+    cutpoint = results_by_name.get("cutpoint_detection")
+    if cutpoint and cutpoint.Summary.get("determinable"):
+        cutpoint_summary = cutpoint.Summary
+        lines.append(
+            "- Cutpoint detection: inferred breakpoint "
+            f"{cutpoint_summary['inferred_cutpoint_aa']} aa; corrected permutation "
+            f"p={_format_stat(cutpoint_summary['corrected_p_value'])}."
+        )
+    elif cutpoint:
+        lines.append(
+            "- Cutpoint detection: not determinable "
+            f"({cutpoint.Summary.get('reason') or 'no reason reported'})."
+        )
+    composite = results_by_name.get("composite_score")
+    ranking = (composite.Tables or {}).get("composite_evidence_ranking", []) if composite else []
+    if ranking:
+        top = ranking[0]
+        lines.append(
+            "- Top composite score: "
+            f"{top['Partner_gene']} ({top['Event_count']} events), "
+            f"{top['Composite_score']:.6g}."
+        )
+    lines.extend(
+        [
+            "",
+            "## Partners",
+            "",
+            partners or "None",
+            "",
         ]
     )
     if run.warnings:
@@ -861,6 +980,21 @@ def markdown_summary(
                 f"{summary['in_frame_percent']:.1f}% |",
                 f"| Domain retained | {run.reference['domain_retained_percent']:.1f}% | "
                 f"{summary['kinase_retained_percent']:.1f}% |",
+                "",
+                f"![Reference comparison]({comparison_svg_path})",
+                "",
+                "*Published reference percentages compared with this run.*",
+                "",
+            ]
+        )
+    else:
+        lines.extend(
+            [
+                "## Reference comparison",
+                "",
+                f"![Reference comparison]({comparison_svg_path})",
+                "",
+                "*Configured reference percentages compared with this run.*",
                 "",
             ]
         )
@@ -886,6 +1020,34 @@ def markdown_summary(
                 "original `msk_impact_2017` cohort. This is therefore replication in a "
                 "related cohort, not a reanalysis of the paper's original 33 cases.",
             ]
+        )
+    elif run.gene_symbol.upper() == "ALK" and run.study_id == "msk_impact_50k_2026":
+        eml4_count = next(
+            (
+                row["Event_count"]
+                for row in summary["partner_counts"]
+                if row["Partner_gene"] == "EML4"
+            ),
+            0,
+        )
+        lines.append(
+            f"EML4 is the recurrent partner ({eml4_count}/{summary['total_fusions']} events), "
+            f"and PF07714 retention is {summary['kinase_retained_percent']:.1f}%. These "
+            "directions are consistent with the well-known EML4-ALK fusion pattern; this "
+            "is a cohort-specific live measurement, not a comparison forced to a literature value."
+        )
+    elif run.gene_symbol.upper() == "NTRK1" and run.study_id == "msk_impact_50k_2026":
+        partner_counts = {
+            row["Partner_gene"]: row["Event_count"] for row in summary["partner_counts"]
+        }
+        lines.append(
+            "LMNA and TPM3 each occur in "
+            f"{partner_counts.get('LMNA', 0)}/{summary['total_fusions']} and "
+            f"{partner_counts.get('TPM3', 0)}/{summary['total_fusions']} events, respectively; "
+            f"{summary['in_frame_kinase_retained_count']}/{summary['in_frame_count']} in-frame "
+            "events retain PF07714. This is directionally consistent with LMNA-NTRK1/TPM3-NTRK1 "
+            "biology, while the all-event in-frame percentage is reported as observed rather than "
+            "treated as a literature replication."
         )
     else:
         lines.append("These values describe the live study named above.")
@@ -1032,7 +1194,8 @@ def _comparison_svg(run: RealBenchmarkRun) -> str:
             f'<rect x="140" y="{y-14}" width="{ref_value*3.8:.1f}" height="16" fill="#999"/>',
             f'<text x="530" y="{y}" font-family="sans-serif" font-size="12">'
             f'reference {ref_value:.1f}%</text>',
-            f'<rect x="140" y="{y+10}" width="{run_value*3.8:.1f}" height="16" fill="#2878b5"/>',
+            f'<rect x="140" y="{y+10}" width="{run_value*3.8:.1f}" height="16" '
+            f'fill="{RETAINED_COLOR}"/>',
             f'<text x="530" y="{y+24}" font-family="sans-serif" font-size="12">'
             f'run {run_value:.1f}%</text>',
         ]
@@ -1098,21 +1261,6 @@ def write_outputs(
         intragenic_deletion_svg = visualization_dir / "intragenic_deletion_schematic.svg"
         intragenic_deletion_svg.write_text(deletion_markup + "\n")
 
-    markdown_path.write_text(
-        markdown_summary(
-            run,
-            fusion_schematic_svg_path=(
-                fusion_schematic_svg.relative_to(destination).as_posix()
-                if fusion_schematic_svg
-                else None
-            ),
-            intragenic_deletion_svg_path=(
-                intragenic_deletion_svg.relative_to(destination).as_posix()
-                if intragenic_deletion_svg
-                else None
-            ),
-        )
-    )
     discrepancies = _discrepancies(run)
     outliers_path = destination / "outliers.tsv"
     _write_tsv(outliers_path, discrepancies, [
@@ -1126,6 +1274,23 @@ def write_outputs(
     }
     domain_svg = visualization_dir / "domain_retention_outliers.svg"
     comparison_svg = visualization_dir / "reference_comparison.svg"
+    markdown_path.write_text(
+        markdown_summary(
+            run,
+            domain_svg_path=domain_svg.relative_to(destination).as_posix(),
+            comparison_svg_path=comparison_svg.relative_to(destination).as_posix(),
+            fusion_schematic_svg_path=(
+                fusion_schematic_svg.relative_to(destination).as_posix()
+                if fusion_schematic_svg
+                else None
+            ),
+            intragenic_deletion_svg_path=(
+                intragenic_deletion_svg.relative_to(destination).as_posix()
+                if intragenic_deletion_svg
+                else None
+            ),
+        )
+    )
     domain_svg.write_text(_domain_track_svg(run, reference_ids) + "\n")
     comparison_svg.write_text(_comparison_svg(run) + "\n")
     manifest_path = destination / "manifest.json"

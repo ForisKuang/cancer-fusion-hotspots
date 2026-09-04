@@ -77,6 +77,7 @@ class CohortScanResult:
     gene_outcomes: list[GeneScanOutcome]
     fdr_rows: list[dict]
     significant_genes: list[str]
+    significance_level: float = DEFAULT_SIGNIFICANCE_LEVEL
     warnings: list[str] = field(default_factory=list)
 
     @property
@@ -317,6 +318,7 @@ def run_cohort_scan(
         gene_outcomes=outcomes,
         fdr_rows=fdr_rows,
         significant_genes=significant_genes,
+        significance_level=significance_level,
         warnings=warnings,
     )
 
