@@ -9,6 +9,8 @@
   "significant_genes": [
     "ETV6"
   ],
+  "significance_level": 0.05,
+  "generated_at": "2026-09-04T15:54:53.136605+00:00",
   "warnings": [
     "20 gated gene(s) had no resolvable canonical transcript in Genome Nexus and were skipped: AGAP3, CDH3, CDKN2B-AS1, CREB3L1, ERF, H3C2, H3C6, KMT2B, LINC00114, MAP3K14, MEF2B, NBPF20, PLCD3, RAB11FIP4, RECQL4, SEPTIN14, TCF3, TRAF2, TRAP1, ZFTA"
   ],

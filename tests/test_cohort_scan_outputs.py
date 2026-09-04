@@ -322,6 +322,49 @@ def test_honorable_mention_count_is_configurable(tmp_path, monkeypatch):
     assert len(payload["honorable_mentions"]) == 3
 
 
+def test_write_cohort_scan_outputs_wires_up_the_manuscript_report(tmp_path, monkeypatch):
+    """Regression test for the ``cfh cohort-scan`` CLI path: every call to
+    :func:`write_cohort_scan_outputs` (which the CLI always calls) must also
+    produce the cross-gene manuscript report (``paper.md``/``paper.pdf``),
+    not just as a one-off manual regeneration."""
+    _stub_out_full_gene_report_writing(monkeypatch)
+    outcomes = [_outcome("SIGGENE", "auto"), _outcome("HONORABLEGENE", "auto")]
+    for outcome, (p_value, _q) in zip(outcomes, [(1e-8, 0.001), (0.01, 0.3)], strict=True):
+        outcome.run.summary = {
+            "total_fusions": 10,
+            "in_frame_percent": 60.0,
+            "kinase_retained_percent": 70.0,
+            "fisher_p_value": p_value,
+            "permutation_p_value": p_value,
+        }
+        outcome.run.results = []
+    result = _result(outcomes, significant_genes=["SIGGENE"])
+    result.fdr_rows = [
+        {"gene": "SIGGENE", "bh_adjusted_q": 0.001},
+        {"gene": "HONORABLEGENE", "bh_adjusted_q": 0.3},
+    ]
+
+    paths = write_cohort_scan_outputs(result, tmp_path / "runs", pdf=True)
+
+    assert "manuscript_markdown" in paths
+    assert "manuscript_pdf" in paths
+    markdown = paths["manuscript_markdown"].read_text()
+    assert markdown.startswith("# Genome-wide fusion-hotspot analysis of test_study")
+    assert "## Abstract" in markdown
+    assert "## Methods" in markdown
+    assert "## Results" in markdown
+    assert "## Discussion" in markdown
+    assert "## Appendix: per-gene report index" in markdown
+    assert "SIGGENE" in markdown
+    assert "HONORABLEGENE" in markdown
+
+    reader = PdfReader(str(paths["manuscript_pdf"]))
+    text = "".join(page.extract_text() or "" for page in reader.pages)
+    assert "Abstract" in text
+    assert "SIGGENE" in text
+    assert "HONORABLEGENE" in text
+
+
 def test_real_committed_run_honorable_mentions_are_precise_and_ranked_by_p_value():
     """Validates against the real, already-committed genome-wide
     ``msk_impact_50k_2026`` run: only ETV6 is FDR-significant, but RET,
