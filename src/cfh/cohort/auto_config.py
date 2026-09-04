@@ -21,7 +21,7 @@ from pathlib import Path
 
 import requests
 
-from cfh.genes.registry import GeneConfig, KeyDomain
+from cfh.genes.registry import GeneConfig, KeyDomain, derive_gene_config_defaults
 from cfh.mapping.genome_nexus_source import (
     CanonicalTranscript,
     PfamDomain,
@@ -167,11 +167,9 @@ def build_auto_gene_config(
     transcript: canonical transcript id, protein id, and (when available) a
     single best-guess ``key_domains`` entry.
 
-    ``disruption_required_domains``, ``expected_retained_exon_hint``, and
-    ``gene_pair`` are deliberately left unset -- the same opt-in fields a
-    curated config may or may not set -- so every algorithm's existing
-    graceful no-op path for an unconfigured optional field applies
-    unchanged; nothing here needs new no-op handling of its own.
+    Coordinate-derived defaults for ``disruption_required_domains`` and
+    ``expected_retained_exon_hint`` are populated from the same complete
+    canonical-transcript response. ``gene_pair`` remains unset.
 
     Returns ``None`` when the canonical transcript has no protein id (a
     ``GeneConfig`` requires one), which callers must treat as "this gene
@@ -180,12 +178,17 @@ def build_auto_gene_config(
     if not canonical.protein_id or not canonical.transcript_id:
         return None
     key_domain = select_key_domain(canonical.pfam_domains, description_source)
-    return GeneConfig(
+    config = GeneConfig(
         gene_symbol=gene_symbol.upper(),
         canonical_transcript_id=canonical.refseq_mrna_id or canonical.transcript_id,
         protein_id=canonical.protein_id,
         key_domains=[key_domain] if key_domain else [],
         entrez_gene_id=entrez_gene_id,
+    )
+    return derive_gene_config_defaults(
+        config,
+        canonical,
+        domain_name_resolver=description_source.describe if description_source else None,
     )
 
 

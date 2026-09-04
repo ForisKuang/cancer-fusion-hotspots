@@ -16,7 +16,7 @@ import requests
 
 from cfh.algorithms.frequency import FrequencyAnalysis
 from cfh.algorithms.registry import list_algorithms
-from cfh.genes.registry import GeneConfig, load_gene_config
+from cfh.genes.registry import GeneConfig, derive_gene_config_defaults, load_gene_config
 from cfh.ingestion import cbioportal_api
 from cfh.mapping.domain_source import ProteinDomain
 from cfh.mapping.feature_mapper import map_event
@@ -24,6 +24,8 @@ from cfh.mapping.genome_nexus_source import (
     CanonicalTranscript,
     GenomeNexusClient,
     GenomeNexusGeneNotFound,
+    cds_bounds_from_utrs,
+    exon_protein_boundaries,
     gene_track_from_canonical_transcript,
     parse_canonical_transcript,
     resolve_domains,
@@ -112,6 +114,31 @@ class _ResolvedDomainSource:
 
     def fetch(self, _accession: str) -> list[ProteinDomain]:
         return self.domains
+
+
+def _retained_exon_ranks(
+    canonical: CanonicalTranscript, junction_position_aa: int, role: str
+) -> list[int]:
+    """Return exons wholly present on the retained side of a fusion junction."""
+    cds_min, cds_max = cds_bounds_from_utrs(canonical.utrs)
+    boundaries = exon_protein_boundaries(
+        canonical.exons,
+        cds_min_genomic=cds_min,
+        cds_max_genomic=cds_max,
+    )
+    if role == "five_prime":
+        return [
+            boundary.exon_rank
+            for boundary in boundaries
+            if boundary.end_aa <= junction_position_aa
+        ]
+    if role == "three_prime":
+        return [
+            boundary.exon_rank
+            for boundary in boundaries
+            if boundary.start_aa >= junction_position_aa
+        ]
+    return []
 
 
 def _is_target_protein_fusion(event: FusionEvent, target_gene: str) -> bool:
@@ -450,6 +477,7 @@ def analyze_structural_variant_calls_with_config(
     ]
 
     warnings: list[str] = []
+    target_canonical = None
     needs_domain_lookup = bool(config.key_domains or config.disruption_required_domains)
     if selected and needs_domain_lookup:
         try:
@@ -481,12 +509,14 @@ def analyze_structural_variant_calls_with_config(
             target_canonical = parse_canonical_transcript(
                 client.fetch_canonical_transcript(config.gene_symbol)
             )
-            target_locus = _target_locus(target_canonical)
+            config = derive_gene_config_defaults(config, target_canonical)
         except requests.RequestException as exc:
             raise RealBenchmarkNetworkError(
                 f"Genome Nexus target-locus lookup failed for {config.gene_symbol}: {exc}. "
                 "Check network access and https://www.genomenexus.org availability, then retry."
             ) from exc
+    if target_canonical is not None:
+        target_locus = _target_locus(target_canonical)
     else:
         target_locus = None
     domain_source = _ResolvedDomainSource(domains)
@@ -527,7 +557,16 @@ def analyze_structural_variant_calls_with_config(
                 role=role,
                 junction_position_aa=mapping.breakpoint_protein_position,
                 domain_source=domain_source,
-            ).model_copy(update={"Breakpoint_exon": mapping.breakpoint_exon})
+            ).model_copy(
+                update={
+                    "Breakpoint_exon": mapping.breakpoint_exon,
+                    "Retained_exons": _retained_exon_ranks(
+                        target_canonical,
+                        mapping.breakpoint_protein_position,
+                        role,
+                    ),
+                }
+            )
         except requests.RequestException as exc:
             raise RealBenchmarkNetworkError(
                 f"Genome Nexus breakpoint mapping failed for {config.gene_symbol}: {exc}. "
