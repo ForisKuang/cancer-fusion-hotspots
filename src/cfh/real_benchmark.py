@@ -610,6 +610,7 @@ def markdown_summary(run: RealBenchmarkRun) -> str:
     """Render a concise, checked-in-friendly benchmark report."""
     summary = run.summary
     domain = summary["domain_accession"] or "configured domain"
+    results_by_name = {result.Algorithm: result for result in run.results}
     partners = ", ".join(
         f"{row['Partner_gene']} ({row['Event_count']})" for row in summary["partner_counts"]
     )
@@ -656,11 +657,42 @@ def markdown_summary(run: RealBenchmarkRun) -> str:
         "Fisher comparison's `other` column combines out-of-frame and unknown-frame "
         "events, as pre-specified by the domain-retention algorithm.",
         "",
+        "## Full-suite highlights",
+        "",
+        "- Registered algorithms executed: "
+        + ", ".join(result.Algorithm for result in run.results),
+    ]
+    cutpoint = results_by_name.get("cutpoint_detection")
+    if cutpoint and cutpoint.Summary.get("determinable"):
+        cutpoint_summary = cutpoint.Summary
+        lines.append(
+            "- Cutpoint detection: inferred breakpoint "
+            f"{cutpoint_summary['inferred_cutpoint_aa']} aa; corrected permutation "
+            f"p={_format_stat(cutpoint_summary['corrected_p_value'])}."
+        )
+    elif cutpoint:
+        lines.append(
+            "- Cutpoint detection: not determinable "
+            f"({cutpoint.Summary.get('reason') or 'no reason reported'})."
+        )
+    composite = results_by_name.get("composite_score")
+    ranking = (composite.Tables or {}).get("composite_evidence_ranking", []) if composite else []
+    if ranking:
+        top = ranking[0]
+        lines.append(
+            "- Top composite score: "
+            f"{top['Partner_gene']} ({top['Event_count']} events), "
+            f"{top['Composite_score']:.6g}."
+        )
+    lines.extend(
+        [
+            "",
         "## Partners",
         "",
         partners or "None",
         "",
-    ]
+        ]
+    )
     if run.warnings:
         lines.extend(["## Warnings", ""])
         lines.extend(f"- {warning}" for warning in run.warnings)
@@ -702,6 +734,34 @@ def markdown_summary(run: RealBenchmarkRun) -> str:
                 "original `msk_impact_2017` cohort. This is therefore replication in a "
                 "related cohort, not a reanalysis of the paper's original 33 cases.",
             ]
+        )
+    elif run.gene_symbol.upper() == "ALK" and run.study_id == "msk_impact_50k_2026":
+        eml4_count = next(
+            (
+                row["Event_count"]
+                for row in summary["partner_counts"]
+                if row["Partner_gene"] == "EML4"
+            ),
+            0,
+        )
+        lines.append(
+            f"EML4 is the recurrent partner ({eml4_count}/{summary['total_fusions']} events), "
+            f"and PF07714 retention is {summary['kinase_retained_percent']:.1f}%. These "
+            "directions are consistent with the well-known EML4-ALK fusion pattern; this "
+            "is a cohort-specific live measurement, not a comparison forced to a literature value."
+        )
+    elif run.gene_symbol.upper() == "NTRK1" and run.study_id == "msk_impact_50k_2026":
+        partner_counts = {
+            row["Partner_gene"]: row["Event_count"] for row in summary["partner_counts"]
+        }
+        lines.append(
+            "LMNA and TPM3 each occur in "
+            f"{partner_counts.get('LMNA', 0)}/{summary['total_fusions']} and "
+            f"{partner_counts.get('TPM3', 0)}/{summary['total_fusions']} events, respectively; "
+            f"{summary['in_frame_kinase_retained_count']}/{summary['in_frame_count']} in-frame "
+            "events retain PF07714. This is directionally consistent with LMNA-NTRK1/TPM3-NTRK1 "
+            "biology, while the all-event in-frame percentage is reported as observed rather than "
+            "treated as a literature replication."
         )
     else:
         lines.append("These values describe the live study named above.")
