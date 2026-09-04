@@ -9,6 +9,8 @@
   "significant_genes": [
     "ETV6"
   ],
+  "significance_level": 0.05,
+  "generated_at": "2026-09-04T15:54:53.136605+00:00",
   "warnings": [
     "20 gated gene(s) had no resolvable canonical transcript in Genome Nexus and were skipped: AGAP3, CDH3, CDKN2B-AS1, CREB3L1, ERF, H3C2, H3C6, KMT2B, LINC00114, MAP3K14, MEF2B, NBPF20, PLCD3, RAB11FIP4, RECQL4, SEPTIN14, TCF3, TRAF2, TRAP1, ZFTA"
   ],
@@ -6128,7 +6130,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.2857142857142857,
       "top_composite_partner_gene": "CDKN2B",
       "error": null
@@ -6145,7 +6147,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": "No canonical transcript/protein could be resolved for this gene."
@@ -6162,7 +6164,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.14285714285714285,
       "top_composite_partner_gene": "FGFR1",
       "error": null
@@ -6179,7 +6181,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": "No canonical transcript/protein could be resolved for this gene."
@@ -6196,7 +6198,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.25,
       "top_composite_partner_gene": "ESR1",
       "error": null
@@ -6213,7 +6215,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.3333333333333333,
       "top_composite_partner_gene": "FGFR3",
       "error": null
@@ -6230,7 +6232,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": "No canonical transcript/protein could be resolved for this gene."
@@ -6247,7 +6249,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.22222222222222224,
       "top_composite_partner_gene": "DNMT3B",
       "error": null
@@ -6264,7 +6266,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": "No canonical transcript/protein could be resolved for this gene."
@@ -6281,7 +6283,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "KIAA0825",
       "error": null
@@ -6298,7 +6300,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "KCNJ15",
       "error": null
@@ -6315,7 +6317,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "CAGE1",
       "error": null
@@ -6332,7 +6334,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "HIVEP3",
       "error": null
@@ -6349,7 +6351,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.3333333333333333,
       "top_composite_partner_gene": "CDC37L1",
       "error": null
@@ -6366,7 +6368,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.3333333333333333,
       "top_composite_partner_gene": "BCL2L14",
       "error": null
@@ -6383,7 +6385,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.25,
       "top_composite_partner_gene": "CTNNA2",
       "error": null
@@ -6400,7 +6402,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "CHCT1",
       "error": null
@@ -6417,7 +6419,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.3333333333333333,
       "top_composite_partner_gene": "MAML2",
       "error": null
@@ -6434,7 +6436,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.3333333333333333,
       "top_composite_partner_gene": "BCR",
       "error": null
@@ -6451,7 +6453,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.6666666666666666,
       "top_composite_partner_gene": "ARHGEF38",
       "error": null
@@ -6468,7 +6470,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": "No canonical transcript/protein could be resolved for this gene."
@@ -6485,7 +6487,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "KDR",
       "error": null
@@ -6502,7 +6504,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": "No canonical transcript/protein could be resolved for this gene."
@@ -6519,7 +6521,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "MAPK6",
       "error": null
@@ -6536,7 +6538,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.3333333333333333,
       "top_composite_partner_gene": "HELZ",
       "error": null
@@ -6553,7 +6555,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.2,
       "top_composite_partner_gene": "ERN2",
       "error": null
@@ -6570,7 +6572,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": "No canonical transcript/protein could be resolved for this gene."
@@ -6587,7 +6589,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.375,
       "top_composite_partner_gene": "SAE1",
       "error": null
@@ -6604,7 +6606,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "CAMK1D",
       "error": null
@@ -6621,7 +6623,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.3333333333333333,
       "top_composite_partner_gene": "ASB12",
       "error": null
@@ -6638,7 +6640,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "DNAJB4",
       "error": null
@@ -6655,7 +6657,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.2,
       "top_composite_partner_gene": "CD247",
       "error": null
@@ -6672,7 +6674,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.6666666666666666,
       "top_composite_partner_gene": "TECRL",
       "error": null
@@ -6689,7 +6691,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "FREM3",
       "error": null
@@ -6706,7 +6708,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.3333333333333333,
       "top_composite_partner_gene": "FBN2",
       "error": null
@@ -6723,7 +6725,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.3333333333333333,
       "top_composite_partner_gene": "DGKG",
       "error": null
@@ -6740,7 +6742,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.4,
       "top_composite_partner_gene": "CLMN",
       "error": null
@@ -6757,7 +6759,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.6666666666666666,
       "top_composite_partner_gene": "ZNF135",
       "error": null
@@ -6774,7 +6776,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "ATP8A2",
       "error": null
@@ -6791,7 +6793,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "FOXP1",
       "error": null
@@ -6808,7 +6810,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "BCAS3",
       "error": null
@@ -6825,7 +6827,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": "ValueError: Genome Nexus returned no exon coordinates for target-locus validation"
@@ -6842,7 +6844,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "IRAK2",
       "error": null
@@ -6859,7 +6861,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "GADL1",
       "error": null
@@ -6876,7 +6878,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": "No canonical transcript/protein could be resolved for this gene."
@@ -6893,7 +6895,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": "No canonical transcript/protein could be resolved for this gene."
@@ -6910,7 +6912,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.2857142857142857,
       "top_composite_partner_gene": "MGAT4A",
       "error": null
@@ -6927,7 +6929,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "APC",
       "error": null
@@ -6944,7 +6946,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "DNAH9",
       "error": null
@@ -6961,7 +6963,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "AATF",
       "error": null
@@ -6978,7 +6980,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": "No canonical transcript/protein could be resolved for this gene."
@@ -6995,7 +6997,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.3333333333333333,
       "top_composite_partner_gene": "CCT3",
       "error": null
@@ -7012,7 +7014,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "ACLY",
       "error": null
@@ -7029,7 +7031,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": "No canonical transcript/protein could be resolved for this gene."
@@ -7046,7 +7048,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "TACC1",
       "error": null
@@ -7063,7 +7065,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "TFAP2B",
       "error": null
@@ -7080,7 +7082,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.25,
       "top_composite_partner_gene": "OS9",
       "error": null
@@ -7097,7 +7099,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": "No canonical transcript/protein could be resolved for this gene."
@@ -7114,7 +7116,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.2,
       "top_composite_partner_gene": "ATM",
       "error": null
@@ -7131,7 +7133,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "KDM5C",
       "error": null
@@ -7148,7 +7150,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.16666666666666666,
       "top_composite_partner_gene": "BCAS3",
       "error": null
@@ -7165,7 +7167,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "GDPD1",
       "error": null
@@ -7182,7 +7184,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.3333333333333333,
       "top_composite_partner_gene": "BIRC2",
       "error": null
@@ -7199,7 +7201,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "RPL36A-HNRNPH2",
       "error": null
@@ -7216,7 +7218,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "SLC6A14",
       "error": null
@@ -7233,7 +7235,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "DCLK1",
       "error": null
@@ -7250,7 +7252,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "ABCA12",
       "error": null
@@ -7267,7 +7269,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.3333333333333333,
       "top_composite_partner_gene": "CDH12",
       "error": null
@@ -7284,7 +7286,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "RERE",
       "error": null
@@ -7301,7 +7303,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "ABCC4",
       "error": null
@@ -7318,7 +7320,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "HES7",
       "error": null
@@ -7335,7 +7337,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "ATP6V1E1",
       "error": null
@@ -7352,7 +7354,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "VPS4B",
       "error": null
@@ -7369,7 +7371,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "CDH15",
       "error": null
@@ -7386,7 +7388,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.6666666666666666,
       "top_composite_partner_gene": "CNTLN",
       "error": null
@@ -7403,7 +7405,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.3333333333333333,
       "top_composite_partner_gene": "PKD1L1",
       "error": null
@@ -7420,7 +7422,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "CHN1",
       "error": null
@@ -7437,7 +7439,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "NPAS1",
       "error": null
@@ -7454,7 +7456,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.3333333333333333,
       "top_composite_partner_gene": "AIG1",
       "error": null
@@ -7471,7 +7473,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.6666666666666666,
       "top_composite_partner_gene": "RAB3GAP2",
       "error": null
@@ -7488,7 +7490,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.4,
       "top_composite_partner_gene": "ETV6",
       "error": null
@@ -7505,7 +7507,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "GMPS",
       "error": null
@@ -7522,7 +7524,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": "No canonical transcript/protein could be resolved for this gene."
@@ -7539,7 +7541,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "GDPD3",
       "error": null
@@ -7556,7 +7558,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": null
@@ -7573,7 +7575,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": null
@@ -7590,7 +7592,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.3333333333333333,
       "top_composite_partner_gene": "ANKS1B",
       "error": null
@@ -7607,7 +7609,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.25,
       "top_composite_partner_gene": "ATXN2",
       "error": null
@@ -7624,7 +7626,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.6666666666666666,
       "top_composite_partner_gene": "XKR4",
       "error": null
@@ -7641,7 +7643,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "SMC2",
       "error": null
@@ -7658,7 +7660,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "EI24",
       "error": null
@@ -7675,7 +7677,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "HDAC6",
       "error": null
@@ -7692,7 +7694,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.3333333333333333,
       "top_composite_partner_gene": "ALDH2",
       "error": null
@@ -7709,7 +7711,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "KIF2A",
       "error": null
@@ -7726,7 +7728,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "LCN8",
       "error": null
@@ -7743,7 +7745,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": null
@@ -7760,7 +7762,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": null
@@ -7777,7 +7779,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "FHIT",
       "error": null
@@ -7794,7 +7796,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "NOTCH3",
       "error": null
@@ -7811,7 +7813,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.3333333333333333,
       "top_composite_partner_gene": "ALOXE3",
       "error": null
@@ -7828,7 +7830,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": null
@@ -7845,7 +7847,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.75,
       "top_composite_partner_gene": "ETV6",
       "error": null
@@ -7862,7 +7864,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "MED20",
       "error": null
@@ -7879,7 +7881,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.3333333333333333,
       "top_composite_partner_gene": "SCN4A",
       "error": null
@@ -7896,7 +7898,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.3333333333333333,
       "top_composite_partner_gene": "CRACDL",
       "error": null
@@ -7913,7 +7915,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.3333333333333333,
       "top_composite_partner_gene": "PPP6R3",
       "error": null
@@ -7930,7 +7932,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "LMNB2",
       "error": null
@@ -7947,7 +7949,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": null
@@ -7964,7 +7966,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.25,
       "top_composite_partner_gene": "ASIC2",
       "error": null
@@ -7981,7 +7983,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": "No canonical transcript/protein could be resolved for this gene."
@@ -7998,7 +8000,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "LINC01237",
       "error": null
@@ -8015,7 +8017,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.3333333333333333,
       "top_composite_partner_gene": "BCL2L12",
       "error": null
@@ -8032,7 +8034,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "SHH",
       "error": null
@@ -8049,7 +8051,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.42857142857142855,
       "top_composite_partner_gene": "FGFR1",
       "error": null
@@ -8066,7 +8068,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "EWSR1",
       "error": null
@@ -8083,7 +8085,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.3333333333333333,
       "top_composite_partner_gene": "NF1",
       "error": null
@@ -8100,7 +8102,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "TP53",
       "error": null
@@ -8117,7 +8119,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": null
@@ -8134,7 +8136,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "GMCL1",
       "error": null
@@ -8151,7 +8153,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": null
@@ -8168,7 +8170,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "EIF2AK2",
       "error": null
@@ -8185,7 +8187,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": null
@@ -8202,7 +8204,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": null
@@ -8219,7 +8221,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "WRN",
       "error": null
@@ -8236,7 +8238,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "CPPED1",
       "error": null
@@ -8253,7 +8255,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": "No canonical transcript/protein could be resolved for this gene."
@@ -8270,7 +8272,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": null
@@ -8287,7 +8289,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.3333333333333333,
       "top_composite_partner_gene": "ARHGEF11",
       "error": null
@@ -8304,7 +8306,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "TSC22D1",
       "error": null
@@ -8321,7 +8323,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": null
@@ -8338,7 +8340,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": "No canonical transcript/protein could be resolved for this gene."
@@ -8355,7 +8357,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "EYA1",
       "error": null
@@ -8372,7 +8374,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": null
@@ -8389,7 +8391,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": "No canonical transcript/protein could be resolved for this gene."
@@ -8406,7 +8408,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "CPT1A",
       "error": null
@@ -8423,7 +8425,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "KMT2C",
       "error": null
@@ -8440,7 +8442,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.8,
       "top_composite_partner_gene": "ERBB2",
       "error": null
@@ -8457,7 +8459,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "SLC17A3",
       "error": null
@@ -8474,7 +8476,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "UNK",
       "error": null
@@ -8491,7 +8493,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": "No canonical transcript/protein could be resolved for this gene."
@@ -8508,7 +8510,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "ABCD3",
       "error": null
@@ -8525,7 +8527,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "CDH12",
       "error": null
@@ -8542,7 +8544,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "EPC1",
       "error": null
@@ -8559,7 +8561,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "RB1",
       "error": null
@@ -8576,7 +8578,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.4,
       "top_composite_partner_gene": "MAP3K14",
       "error": null
@@ -8593,7 +8595,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.25,
       "top_composite_partner_gene": "FLT4",
       "error": null
@@ -8610,7 +8612,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": null
@@ -8627,7 +8629,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": null
@@ -8644,7 +8646,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "NKX2-8",
       "error": null
@@ -8661,7 +8663,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.6666666666666666,
       "top_composite_partner_gene": "FGFR2",
       "error": null
@@ -8678,7 +8680,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "GLIS3",
       "error": null
@@ -8695,7 +8697,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": "No canonical transcript/protein could be resolved for this gene."
@@ -8712,7 +8714,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": null
@@ -8729,7 +8731,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "PBK",
       "error": null
@@ -8746,7 +8748,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": null
@@ -8763,7 +8765,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.3333333333333333,
       "top_composite_partner_gene": "RASA2",
       "error": null
@@ -8780,7 +8782,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "TEX46",
       "error": null
@@ -8797,7 +8799,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "RBM44",
       "error": null
@@ -8814,7 +8816,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.6666666666666666,
       "top_composite_partner_gene": "TP53",
       "error": null
@@ -8831,7 +8833,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": null
@@ -8848,7 +8850,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": null
@@ -8865,7 +8867,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "NPM1",
       "error": null
@@ -8882,7 +8884,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.8,
       "top_composite_partner_gene": "TSC2",
       "error": null
@@ -8899,7 +8901,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "SHROOM2",
       "error": null
@@ -8916,7 +8918,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "SMO",
       "error": null
@@ -8933,7 +8935,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.2,
       "top_composite_partner_gene": "DNMT1",
       "error": null
@@ -8950,7 +8952,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.75,
       "top_composite_partner_gene": "NCOA3",
       "error": null
@@ -8967,7 +8969,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "H1-4",
       "error": null
@@ -8984,7 +8986,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": null
@@ -9001,7 +9003,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "RRAS",
       "error": null
@@ -9018,7 +9020,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.8,
       "top_composite_partner_gene": "FGFR2",
       "error": null
@@ -9035,7 +9037,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.3333333333333333,
       "top_composite_partner_gene": "BRCA1",
       "error": null
@@ -9052,7 +9054,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.6666666666666666,
       "top_composite_partner_gene": "FOXA1",
       "error": null
@@ -9069,7 +9071,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "MON1A",
       "error": null
@@ -9086,7 +9088,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "OSBPL9",
       "error": null
@@ -9103,7 +9105,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.3333333333333333,
       "top_composite_partner_gene": "DNAJC24",
       "error": null
@@ -9120,7 +9122,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "CCNL2",
       "error": null
@@ -9137,7 +9139,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "RAF1",
       "error": null
@@ -9154,7 +9156,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "ACTR3B",
       "error": null
@@ -9171,7 +9173,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": null
@@ -9188,7 +9190,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.4,
       "top_composite_partner_gene": "NAB2",
       "error": null
@@ -9205,7 +9207,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "IRAK2",
       "error": null
@@ -9222,7 +9224,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 0.5,
       "top_composite_partner_gene": "C4A",
       "error": null
@@ -9239,7 +9241,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": 1.0,
       "top_composite_partner_gene": "CHRDL1",
       "error": null
@@ -9256,7 +9258,7 @@
       "fisher_p_value": null,
       "permutation_p_value": null,
       "min_fdr_adjusted_q_value": null,
-      "fdr_significant": false,
+      "fdr_significant": null,
       "top_composite_score": null,
       "top_composite_partner_gene": null,
       "error": "No canonical transcript/protein could be resolved for this gene."
@@ -9413,5 +9415,15 @@
       "domain_retention_percent": 50.0,
       "note": "Did not survive genome-wide multiple-testing correction (FDR-adjusted q-value at or above the significance threshold), but ranks highly by raw p-value among the non-FDR-significant genes and may warrant targeted follow-up. This is NOT a claim of statistical significance."
     }
+  ],
+  "algorithms_run": [
+    "composite_score",
+    "confidence_stats",
+    "cutpoint_detection",
+    "domain_disruption",
+    "domain_retention",
+    "exon_retention",
+    "frequency",
+    "joint_partner"
   ]
 }

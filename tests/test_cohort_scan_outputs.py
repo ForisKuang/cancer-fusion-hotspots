@@ -8,6 +8,7 @@ plus a real-data check against the already-committed
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -108,6 +109,50 @@ class TestBuildHonorableMentions:
             _row("NOPVALUE", fisher_p=None, q_value=None, significant=False),
         ]
         assert build_honorable_mentions(rows) == []
+
+    def test_includes_a_gene_with_a_real_raw_p_value_but_no_computed_q_value(self):
+        """A gene can have a real Fisher p-value (domain_retention ran) yet
+        never contribute a hypothesis that produced a q-value (e.g. every
+        p-value it did produce was excluded from the BH correction for some
+        reason) -- ``min_fdr_adjusted_q_value`` is ``None`` and
+        ``fdr_significant`` is the tri-state ``None`` (see
+        ``build_summary_rows``), not ``False``. Such a gene is still a valid
+        honorable-mentions candidate by raw p-value ranking."""
+        rows = [
+            _row("NOQVALUE", fisher_p=0.001, q_value=None, significant=None),
+            _row("HASQVALUE", fisher_p=0.02, q_value=0.3, significant=False),
+        ]
+        mentions = build_honorable_mentions(rows)
+        assert {m["gene_symbol"] for m in mentions} == {"NOQVALUE", "HASQVALUE"}
+        # Ranked by raw p-value regardless of whether q was ever computed.
+        assert [m["gene_symbol"] for m in mentions] == ["NOQVALUE", "HASQVALUE"]
+
+    def test_note_never_claims_a_q_verdict_for_a_gene_with_no_computed_q_value(self):
+        """Regression test: the single, unconditional
+        ``_HONORABLE_MENTION_NOTE`` used to claim, for every candidate
+        regardless of whether it actually had a q-value, that its
+        "FDR-adjusted q-value [was] at or above the significance threshold".
+        For a gene that never had a q-value computed at all, that is an
+        invented verdict about a number that was never derived -- the note
+        must instead say the q-value/FDR status is unknown, never assert a
+        specific "at or above threshold" claim."""
+        rows = [
+            _row("NOQVALUE", fisher_p=0.001, q_value=None, significant=None),
+            _row("HASQVALUE", fisher_p=0.02, q_value=0.3, significant=False),
+        ]
+        mentions = {m["gene_symbol"]: m for m in build_honorable_mentions(rows)}
+
+        no_q_note = mentions["NOQVALUE"]["note"].lower()
+        assert "at or above the significance threshold" not in no_q_note
+        assert "no fdr-adjusted q-value was ever computed" in no_q_note
+        assert "unknown" in no_q_note
+        assert "not a claim of statistical significance" in no_q_note
+
+        # The gene that DOES have a real q-value keeps the original,
+        # precise wording -- this fix must not blur the two cases together.
+        has_q_note = mentions["HASQVALUE"]["note"].lower()
+        assert "at or above the significance threshold" in has_q_note
+        assert "no fdr-adjusted q-value was ever computed" not in has_q_note
 
 
 def _outcome(gene_symbol: str, config_source: str) -> GeneScanOutcome:
@@ -320,6 +365,88 @@ def test_honorable_mention_count_is_configurable(tmp_path, monkeypatch):
     )
     payload = json.loads(paths["summary_json"].read_text())
     assert len(payload["honorable_mentions"]) == 3
+
+
+def test_write_cohort_scan_outputs_wires_up_the_manuscript_report(tmp_path, monkeypatch):
+    """Regression test for the ``cfh cohort-scan`` CLI path: every call to
+    :func:`write_cohort_scan_outputs` (which the CLI always calls) must also
+    produce the cross-gene manuscript report (``paper.md``/``paper.pdf``),
+    not just as a one-off manual regeneration."""
+    _stub_out_full_gene_report_writing(monkeypatch)
+    outcomes = [_outcome("SIGGENE", "auto"), _outcome("HONORABLEGENE", "auto")]
+    for outcome, (p_value, _q) in zip(outcomes, [(1e-8, 0.001), (0.01, 0.3)], strict=True):
+        outcome.run.summary = {
+            "total_fusions": 10,
+            "in_frame_percent": 60.0,
+            "kinase_retained_percent": 70.0,
+            "fisher_p_value": p_value,
+            "permutation_p_value": p_value,
+        }
+        outcome.run.results = []
+    result = _result(outcomes, significant_genes=["SIGGENE"])
+    result.fdr_rows = [
+        {"gene": "SIGGENE", "bh_adjusted_q": 0.001},
+        {"gene": "HONORABLEGENE", "bh_adjusted_q": 0.3},
+    ]
+
+    paths = write_cohort_scan_outputs(result, tmp_path / "runs", pdf=True)
+
+    assert "manuscript_markdown" in paths
+    assert "manuscript_pdf" in paths
+    markdown = paths["manuscript_markdown"].read_text()
+    assert markdown.startswith("# Genome-wide fusion-hotspot analysis of test_study")
+    assert "## Abstract" in markdown
+    assert "## Methods" in markdown
+    assert "## Results" in markdown
+    assert "## Discussion" in markdown
+    assert "## Appendix: per-gene report index" in markdown
+    assert "SIGGENE" in markdown
+    assert "HONORABLEGENE" in markdown
+
+    reader = PdfReader(str(paths["manuscript_pdf"]))
+    text = "".join(page.extract_text() or "" for page in reader.pages)
+    assert "Abstract" in text
+    assert "SIGGENE" in text
+    assert "HONORABLEGENE" in text
+
+
+def test_write_cohort_scan_outputs_records_algorithms_actually_run_not_the_live_registry(
+    tmp_path, monkeypatch
+):
+    """Regression test: the Methods section must describe the algorithm
+    suite THIS run's own results actually recorded, not a live import of
+    ``cfh.algorithms.registry.list_algorithms()`` -- using algorithm names
+    that are not real registered algorithms proves the text is sourced from
+    ``outcome.run.results``, not the registry."""
+    _stub_out_full_gene_report_writing(monkeypatch)
+    outcomes = [_outcome("SIGGENE", "auto")]
+    fake_result_1 = MagicMock()
+    fake_result_1.Algorithm = "totally_fake_algorithm"
+    fake_result_2 = MagicMock()
+    fake_result_2.Algorithm = "another_fake_algorithm"
+    outcomes[0].run.summary = {
+        "total_fusions": 10,
+        "in_frame_percent": 60.0,
+        "kinase_retained_percent": 70.0,
+        "fisher_p_value": 1e-8,
+        "permutation_p_value": 1e-8,
+    }
+    outcomes[0].run.results = [fake_result_1, fake_result_2]
+    result = _result(outcomes, significant_genes=["SIGGENE"])
+    result.fdr_rows = [{"gene": "SIGGENE", "bh_adjusted_q": 0.001}]
+
+    paths = write_cohort_scan_outputs(result, tmp_path / "runs", pdf=False)
+
+    payload = json.loads(paths["summary_json"].read_text())
+    assert payload["algorithms_run"] == ["another_fake_algorithm", "totally_fake_algorithm"]
+
+    markdown = paths["manuscript_markdown"].read_text()
+    match = re.search(r"algorithm suite recorded for this scan \(([^)]*)\)", markdown)
+    assert match is not None
+    assert {name.strip() for name in match.group(1).split(",")} == {
+        "another_fake_algorithm",
+        "totally_fake_algorithm",
+    }
 
 
 def test_real_committed_run_honorable_mentions_are_precise_and_ranked_by_p_value():

@@ -352,6 +352,128 @@ def render_cohort_summary_pdf(
     return output_path
 
 
+def render_manuscript_pdf(
+    output_path: str | Path,
+    *,
+    title: str,
+    abstract: str,
+    methods: str,
+    manhattan_svg_path: str | Path | None,
+    manhattan_caption: str,
+    results_table_rows: list[list],
+    gene_highlights: list[dict],
+    discussion_bullets: list[str],
+    appendix_rows: list[list],
+) -> Path:
+    """Render the cross-gene manuscript-style synthesis report
+    (``paper.pdf``) to ``output_path`` and return that path.
+
+    Layout only -- every string/number here is already computed by
+    :mod:`cfh.reporting.manuscript_text` and :mod:`cfh.cohort.outputs`, and
+    every figure is a pre-existing SVG on disk (the cohort scan's own
+    ``manhattan.svg`` and, per highlighted gene, that gene's own already
+    -generated ``report.pdf`` figure) -- nothing is regenerated here.
+
+    ``gene_highlights`` is a list of ``{"heading", "paragraph",
+    "figure_path", "figure_caption", "report_note"}`` dicts, one per
+    highlighted gene (FDR-significant, honorable-mention, and hand-curated
+    genes); ``figure_path``/``figure_caption``/``report_note`` may be
+    ``None``. ``results_table_rows`` and ``appendix_rows`` are each a header
+    row followed by data rows, already string-formatted by the caller.
+    """
+    output_path = Path(output_path)
+    styles = _styles()
+    portrait_width, portrait_height = LETTER
+    landscape_size = landscape(LETTER)
+
+    doc = BaseDocTemplate(
+        str(output_path),
+        pagesize=LETTER,
+        leftMargin=0.75 * inch,
+        rightMargin=0.75 * inch,
+        topMargin=0.75 * inch,
+        bottomMargin=0.75 * inch,
+    )
+    portrait_frame = Frame(
+        doc.leftMargin,
+        doc.bottomMargin,
+        portrait_width - doc.leftMargin - doc.rightMargin,
+        portrait_height - doc.topMargin - doc.bottomMargin,
+        id="portrait",
+    )
+    landscape_frame = Frame(
+        doc.leftMargin,
+        doc.bottomMargin,
+        landscape_size[0] - doc.leftMargin - doc.rightMargin,
+        landscape_size[1] - doc.topMargin - doc.bottomMargin,
+        id="landscape",
+    )
+    doc.addPageTemplates(
+        [
+            PageTemplate(id=_PORTRAIT_TEMPLATE, frames=[portrait_frame], pagesize=LETTER),
+            PageTemplate(id=_LANDSCAPE_TEMPLATE, frames=[landscape_frame], pagesize=landscape_size),
+        ]
+    )
+
+    content_width = portrait_width - doc.leftMargin - doc.rightMargin
+
+    story: list = [
+        Paragraph(title, styles["Title"]),
+        Spacer(1, 0.2 * inch),
+        Paragraph("Abstract", styles["Heading1"]),
+        Paragraph(abstract, styles["Body"]),
+        Spacer(1, 0.2 * inch),
+        Paragraph("Methods", styles["Heading1"]),
+        Paragraph(methods, styles["Body"]),
+        Spacer(1, 0.25 * inch),
+        Paragraph("Results", styles["Heading1"]),
+        Paragraph("Genome-wide summary", styles["Heading2"]),
+        Paragraph(manhattan_caption, styles["Caption"]),
+    ]
+    if manhattan_svg_path is not None and Path(manhattan_svg_path).exists():
+        drawing = _load_svg_drawing(Path(manhattan_svg_path), content_width)
+        if drawing is not None:
+            story.append(drawing)
+    story.append(Spacer(1, 0.2 * inch))
+
+    if results_table_rows:
+        story.append(NextPageTemplate(_LANDSCAPE_TEMPLATE))
+        story.append(PageBreak())
+        story.append(Paragraph("FDR-significant and honorable-mention genes", styles["Heading2"]))
+        story.append(_generic_table_flowable(results_table_rows, styles))
+        story.append(NextPageTemplate(_PORTRAIT_TEMPLATE))
+        story.append(PageBreak())
+
+    story.append(Paragraph("Gene highlights", styles["Heading2"]))
+    for highlight in gene_highlights:
+        story.append(Paragraph(highlight["heading"], styles["Heading2"]))
+        story.append(Paragraph(highlight["paragraph"], styles["Body"]))
+        figure_path = highlight.get("figure_path")
+        if figure_path is not None and Path(figure_path).exists():
+            drawing = _load_svg_drawing(Path(figure_path), content_width)
+            if drawing is not None:
+                if highlight.get("figure_caption"):
+                    story.append(Paragraph(highlight["figure_caption"], styles["Caption"]))
+                story.append(drawing)
+        if highlight.get("report_note"):
+            story.append(Paragraph(highlight["report_note"], styles["Caption"]))
+        story.append(Spacer(1, 0.15 * inch))
+
+    story.append(Paragraph("Discussion", styles["Heading1"]))
+    for bullet in discussion_bullets:
+        story.append(Paragraph(f"&bull; {bullet}", styles["Body"]))
+        story.append(Spacer(1, 0.05 * inch))
+
+    if appendix_rows:
+        story.append(NextPageTemplate(_LANDSCAPE_TEMPLATE))
+        story.append(PageBreak())
+        story.append(Paragraph("Appendix: per-gene report index", styles["Heading1"]))
+        story.append(_generic_table_flowable(appendix_rows, styles))
+
+    doc.build(story)
+    return output_path
+
+
 def render_pdf_report_for_run_dir(run_dir: str | Path) -> Path:
     """Convenience wrapper: render ``report.pdf`` for an on-disk run directory
     that already has ``results.json`` (and, if present, ``results.tsv`` /

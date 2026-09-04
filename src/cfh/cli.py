@@ -274,7 +274,15 @@ def cohort_scan(
     click.echo(f"FDR-significant genes (q<0.05): {len(result.significant_genes)}")
     for warning in result.warnings:
         click.echo(f"Warning: {warning}", err=True)
-    for kind in ("run_directory", "summary_tsv", "summary_json", "summary_markdown", "summary_pdf"):
+    for kind in (
+        "run_directory",
+        "summary_tsv",
+        "summary_json",
+        "summary_markdown",
+        "summary_pdf",
+        "manuscript_markdown",
+        "manuscript_pdf",
+    ):
         if kind in paths:
             click.echo(f"{kind}: {paths[kind]}")
     for gene_symbol, gene_paths in paths.get("gene_reports", {}).items():
