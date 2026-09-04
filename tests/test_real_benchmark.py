@@ -1,5 +1,6 @@
 import csv
 import json
+import re
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock
@@ -120,6 +121,13 @@ def test_real_benchmark_pipeline_writes_tsv_json_and_markdown(
     report = paths["markdown"].read_text()
     assert "does **not** reproduce" in report
     assert "PF07714 (458-712 aa)" in report
+    svg_paths = sorted(paths["run_directory"].glob("visualizations/*.svg"))
+    assert svg_paths
+    for svg_path in svg_paths:
+        relative_path = svg_path.relative_to(paths["run_directory"]).as_posix()
+        assert re.search(rf"!\[[^]]+\]\({re.escape(relative_path)}\)", report)
+    assert "![Domain retention diagram](visualizations/domain_retention_outliers.svg)" in report
+    assert "![Reference comparison](visualizations/reference_comparison.svg)" in report
 
 
 def test_write_outputs_renders_pdf_report_by_default_and_can_be_disabled(

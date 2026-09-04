@@ -606,7 +606,12 @@ def _format_stat(value: float | int | None) -> str:
     return "unavailable" if value is None or not math.isfinite(value) else f"{value:.6g}"
 
 
-def markdown_summary(run: RealBenchmarkRun) -> str:
+def markdown_summary(
+    run: RealBenchmarkRun,
+    *,
+    domain_svg_path: str = "visualizations/domain_retention_outliers.svg",
+    comparison_svg_path: str = "visualizations/reference_comparison.svg",
+) -> str:
     """Render a concise, checked-in-friendly benchmark report."""
     summary = run.summary
     domain = summary["domain_accession"] or "configured domain"
@@ -641,6 +646,13 @@ def markdown_summary(run: RealBenchmarkRun) -> str:
         f"{_format_stat(summary['permutation_p_value'])}",
         f"- Contingency table `[[retained/in-frame, retained/other], "
         f"[not-retained/in-frame, not-retained/other]]`: `{table}`",
+        "",
+        "### Domain retention and discrepancies",
+        "",
+        f"![Domain retention diagram]({domain_svg_path})",
+        "",
+        "*Domain-retention positions for analyzed fusion events; red outlines mark "
+        "reference discrepancies.*",
         "",
         "## Method",
         "",
@@ -677,6 +689,21 @@ def markdown_summary(run: RealBenchmarkRun) -> str:
                 f"{summary['in_frame_percent']:.1f}% |",
                 f"| Domain retained | {run.reference['domain_retained_percent']:.1f}% | "
                 f"{summary['kinase_retained_percent']:.1f}% |",
+                "",
+                f"![Reference comparison]({comparison_svg_path})",
+                "",
+                "*Published reference percentages compared with this run.*",
+                "",
+            ]
+        )
+    else:
+        lines.extend(
+            [
+                "## Reference comparison",
+                "",
+                f"![Reference comparison]({comparison_svg_path})",
+                "",
+                "*Configured reference percentages compared with this run.*",
                 "",
             ]
         )
@@ -898,7 +925,6 @@ def write_outputs(
         }
     )
     json_path.write_text(json.dumps(payload, indent=2, allow_nan=False) + "\n")
-    markdown_path.write_text(markdown_summary(run))
     discrepancies = _discrepancies(run)
     outliers_path = destination / "outliers.tsv"
     _write_tsv(outliers_path, discrepancies, [
@@ -912,6 +938,13 @@ def write_outputs(
     }
     domain_svg = visualization_dir / "domain_retention_outliers.svg"
     comparison_svg = visualization_dir / "reference_comparison.svg"
+    markdown_path.write_text(
+        markdown_summary(
+            run,
+            domain_svg_path=domain_svg.relative_to(destination).as_posix(),
+            comparison_svg_path=comparison_svg.relative_to(destination).as_posix(),
+        )
+    )
     domain_svg.write_text(_domain_track_svg(run, reference_ids) + "\n")
     comparison_svg.write_text(_comparison_svg(run) + "\n")
     manifest_path = destination / "manifest.json"
