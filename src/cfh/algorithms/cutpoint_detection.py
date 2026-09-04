@@ -21,7 +21,7 @@ from typing import Optional
 from cfh.algorithms.base import Algorithm
 from cfh.algorithms.registry import register
 from cfh.genes.registry import GeneConfig
-from cfh.mapping.genome_nexus_source import GenomeNexusClient, parse_canonical_transcript
+from cfh.mapping.genome_nexus_source import GenomeNexusClient, resolve_domains
 from cfh.model.algorithm_result import AlgorithmResult
 from cfh.model.fusion_event import FusionEvent
 from cfh.model.fusion_feature import FusionFeature
@@ -35,12 +35,21 @@ _DEFAULT_FULL_N_PERMUTATIONS = 10_000
 
 
 def _nearest_boundary_comparison(cutpoint: int, boundaries: list[int]) -> Optional[dict]:
+    """Nearest known domain boundary to ``cutpoint``, with a signed distance.
+
+    Reported unconditionally whenever any ``boundaries`` are known -- including
+    when ``cutpoint`` falls outside every configured domain span (e.g.
+    downstream of the last domain's end), which is itself a meaningful result,
+    not an absence of one. ``distance_aa`` is signed: positive means
+    ``cutpoint`` is C-terminal (higher aa) of the nearest boundary, negative
+    means N-terminal of it. Only ``None`` when no boundaries are known at all.
+    """
     if not boundaries:
         return None
     nearest = min(boundaries, key=lambda boundary: abs(boundary - cutpoint))
     return {
         "nearest_known_domain_boundary_aa": nearest,
-        "distance_aa": abs(nearest - cutpoint),
+        "distance_aa": cutpoint - nearest,
     }
 
 
@@ -50,9 +59,15 @@ def _known_domain_boundaries(gene_config: GeneConfig, params: dict) -> list[int]
     Prefers an explicit ``params["domain_boundaries"]`` list (e.g. sourced
     from a committed fixture) so the benchmark stays reproducible offline.
     Falls back to an optional ``params["genome_nexus_client"]`` -- the same
-    client type ``domain_retention`` already accepts -- to fetch Pfam
-    domain start/end positions for the gene's canonical transcript. Neither
-    is required; with neither supplied the comparison is simply omitted.
+    client type ``domain_retention`` already accepts -- resolved through the
+    same :func:`~cfh.mapping.genome_nexus_source.resolve_domains` Genome
+    Nexus-then-UniProt fallback chain ``domain_retention`` already relies on
+    (via ``params["uniprot_source"]``, primarily for tests), so a gene whose
+    canonical transcript has no Genome Nexus Pfam annotation (observed live
+    for RET) still gets a real boundary comparison instead of silently
+    falling back to no boundaries at all. Neither is required; with neither
+    supplied (and no UniProt accession available either) the comparison is
+    simply omitted.
     """
     explicit = params.get("domain_boundaries")
     if explicit:
@@ -62,10 +77,14 @@ def _known_domain_boundaries(gene_config: GeneConfig, params: dict) -> list[int]
     if client is None or not gene_config.gene_symbol:
         return []
 
-    payload = client.fetch_canonical_transcript(gene_config.gene_symbol)
-    transcript = parse_canonical_transcript(payload)
+    domains = resolve_domains(
+        gene_config.gene_symbol,
+        gene_config.protein_id,
+        genome_nexus_client=client,
+        uniprot_source=params.get("uniprot_source"),
+    )
     boundaries: set[int] = set()
-    for domain in transcript.pfam_domains:
+    for domain in domains:
         boundaries.add(domain.start_aa)
         boundaries.add(domain.end_aa)
     return sorted(boundaries)
@@ -84,7 +103,20 @@ class CutpointDetectionAlgorithm(Algorithm):
         domain_boundaries (list[int]): known domain boundary aa positions to
             compare the inferred cutpoint against.
         genome_nexus_client (GenomeNexusClient): used only as a fallback
-            source for ``domain_boundaries`` when that param is omitted.
+            source for ``domain_boundaries`` when that param is omitted
+            (Genome Nexus first, UniProt second -- see
+            :func:`~cfh.mapping.genome_nexus_source.resolve_domains`).
+        uniprot_source: optional override for the UniProt fallback used by
+            ``genome_nexus_client``-based boundary resolution (mainly for
+            tests); ignored otherwise.
+
+    ``known_domain_boundary_comparison`` in the result ``Summary`` is
+    ``{"nearest_known_domain_boundary_aa": ..., "distance_aa": ...}``
+    whenever any boundary is known -- including when the inferred cutpoint
+    falls outside every configured domain span -- and ``None`` only when no
+    boundaries could be resolved at all. ``distance_aa`` is signed: positive
+    means the cutpoint is C-terminal of the nearest boundary, negative means
+    N-terminal of it.
 
     See :mod:`cfh.stats.adaptive_permutation` for the optional adaptive
     permutation-budget params (``adaptive``, ``n_permutations_small``,

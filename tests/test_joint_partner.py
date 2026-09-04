@@ -65,3 +65,21 @@ def test_pair_config_loads_through_gene_registry():
 
     assert config.gene_pair == ("EML4", "ALK")
     assert config.key_domains == []
+
+
+def test_gene_config_with_no_gene_pair_is_a_clean_noop_not_a_raise():
+    """A gene config lacking the required ``gene_pair`` field (e.g. a real
+    full-cohort run for a single-gene config like RET/BRAF that never opted
+    into this optional pair-enrichment analysis) must produce a no-op
+    result, not an ``Algorithm failed`` warning from a raised exception.
+    """
+    config = load_gene_config("RET")
+
+    result = JointPartnerMode().run([], features=[], gene_config=config, params={})
+
+    assert isinstance(result, AlgorithmResult)
+    assert result.Algorithm == "joint_partner"
+    assert result.Summary == {}
+    assert result.Warnings == [
+        "RET has no gene_pair configured; joint-partner analysis was skipped."
+    ]

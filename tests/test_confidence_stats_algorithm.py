@@ -1,7 +1,6 @@
-import pytest
-
 from cfh.algorithms import registry
 from cfh.algorithms.confidence_stats import ConfidenceStatsAlgorithm
+from cfh.genes.registry import load_gene_config
 from cfh.model.algorithm_result import AlgorithmResult
 from cfh.model.fusion_event import FusionEvent
 
@@ -90,16 +89,48 @@ def test_ttest_only_requested_omits_mle_block():
     assert "mle" not in result.Summary
 
 
-def test_requires_group_field():
+def test_missing_group_field_is_a_clean_noop_not_a_raise():
     events = _make_events()
-    with pytest.raises(ValueError):
-        ConfidenceStatsAlgorithm().run(events, [], None, {"outcome_field": "Is_antisense"})
+
+    result = ConfidenceStatsAlgorithm().run(
+        events, [], None, {"outcome_field": "Is_antisense"}
+    )
+
+    assert isinstance(result, AlgorithmResult)
+    assert result.Algorithm == "confidence_stats"
+    assert result.Summary == {}
+    assert result.Warnings
+    assert "group_field" in result.Warnings[0]
 
 
-def test_requires_at_least_one_of_outcome_or_numeric_field():
+def test_missing_outcome_and_numeric_field_is_a_clean_noop_not_a_raise():
     events = _make_events()
-    with pytest.raises(ValueError):
-        ConfidenceStatsAlgorithm().run(events, [], None, {"group_field": "Is_protein_fusion"})
+
+    result = ConfidenceStatsAlgorithm().run(
+        events, [], None, {"group_field": "Is_protein_fusion"}
+    )
+
+    assert isinstance(result, AlgorithmResult)
+    assert result.Algorithm == "confidence_stats"
+    assert result.Summary == {}
+    assert result.Warnings
+
+
+def test_gene_config_with_no_group_field_configured_is_a_clean_noop():
+    """A gene config lacking the required ``group_field`` param (e.g. a
+    real full-cohort run for a gene that never opted into this optional
+    comparison) must produce a no-op result, not an ``Algorithm failed``
+    warning from a raised exception.
+    """
+    events = _make_events()
+    config = load_gene_config("RET")
+
+    result = ConfidenceStatsAlgorithm().run(events, [], config, {})
+
+    assert result.Summary == {}
+    assert result.Warnings == [
+        "RET has no group_field configured; confidence-stats analysis was skipped."
+    ]
 
 
 def test_result_schema_matches_canonical_algorithm_result_fields():

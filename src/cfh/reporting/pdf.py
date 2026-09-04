@@ -266,12 +266,25 @@ def render_cohort_summary_pdf(
     subtitle: str,
     notes: list[str],
     rows: list[list],
+    extra_tables: list[dict] | None = None,
+    figures_dir: str | Path | None = None,
 ) -> Path:
     """Render a simple, landscape, one-table PDF summarizing every gene in a
     cohort scan, reusing the same table-flowable styling as the per-gene
     ``report.pdf`` (see :func:`_generic_table_flowable`). ``rows`` is a
     header row followed by one row per scanned gene, already
     string-formatted by the caller (no numbers are computed here).
+
+    ``extra_tables``, if given, is a list of ``{"heading", "note", "rows"}``
+    dicts rendered as additional sections after the main table -- e.g. the
+    "honorable mentions" highly ranked non-FDR-significant tier -- each with
+    its own heading, an italic caption, and a header-row-first table exactly
+    like the main one.
+
+    ``figures_dir``, if given, is rendered exactly like the per-gene
+    report's own figures section (see :func:`_figures`) -- e.g. the
+    genome-wide Manhattan/volcano summary SVG written alongside
+    ``summary.pdf`` in the same ``cohort_scan/`` directory.
     """
     output_path = Path(output_path)
     styles = _styles()
@@ -314,6 +327,26 @@ def render_cohort_summary_pdf(
             Paragraph(
                 f"Showing the first {_MAX_TABLE_ROWS} of {len(rows) - 1} scanned genes.",
                 styles["Caption"],
+            )
+        )
+
+    for extra_table in extra_tables or []:
+        story.append(Spacer(1, 0.25 * inch))
+        story.append(Paragraph(extra_table["heading"], styles["Heading1"]))
+        if extra_table.get("note"):
+            story.append(Paragraph(extra_table["note"], styles["Caption"]))
+        story.append(Spacer(1, 0.1 * inch))
+        extra_rows = extra_table["rows"]
+        if extra_rows:
+            story.append(_generic_table_flowable(extra_rows, styles))
+
+    if figures_dir is not None:
+        story.append(PageBreak())
+        story.extend(
+            _figures(
+                Path(figures_dir),
+                styles,
+                landscape_size[0] - doc.leftMargin - doc.rightMargin,
             )
         )
 

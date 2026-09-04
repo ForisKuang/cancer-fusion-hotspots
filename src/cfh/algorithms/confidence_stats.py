@@ -9,6 +9,13 @@ compare a caller-specified numeric field between the two groups with
 Welch's t-test. Domain-specific callers (e.g. the domain-retention module)
 supply the field names via ``params``; this module has no knowledge of what
 those fields mean biologically.
+
+Opt-in via ``params["group_field"]`` (and at least one of
+``params["outcome_field"]``/``params["numeric_field"]``): a gene run without
+these configured produces a no-op result with no statistics computed, the
+same graceful-skip pattern already used by ``exon_retention``/
+``domain_disruption`` for genes that don't configure their respective
+optional fields.
 """
 
 from __future__ import annotations
@@ -131,10 +138,11 @@ def _ttest_block(
 class ConfidenceStatsAlgorithm(Algorithm):
     """Gene-agnostic corroborating-confidence algorithm.
 
-    Expected ``params`` keys:
-        group_field (str, required): boolean/categorical field (on
-            ``FusionEvent`` or ``FusionFeature``) defining the two groups
-            being compared.
+    Expected ``params`` keys (all optional -- a gene run without
+    ``group_field`` set, or without at least one of ``outcome_field``/
+    ``numeric_field``, gets a clean no-op result instead of this analysis):
+        group_field (str): boolean/categorical field (on ``FusionEvent`` or
+            ``FusionFeature``) defining the two groups being compared.
         group_values (list, optional): explicit [value_a, value_b] to use
             for the two groups; defaults to the two distinct non-null
             values observed for ``group_field``.
@@ -158,14 +166,20 @@ class ConfidenceStatsAlgorithm(Algorithm):
         params: dict,
     ) -> AlgorithmResult:
         group_field = params.get("group_field")
-        if not group_field:
-            raise ValueError("params['group_field'] is required")
         outcome_field = params.get("outcome_field")
         numeric_field = params.get("numeric_field")
+        gene_name = (
+            (gene_config.gene_symbol or gene_config.gene_pair) if gene_config else None
+        ) or "This gene"
+        if not group_field:
+            return self._no_op_result(
+                f"{gene_name} has no group_field configured; confidence-stats "
+                "analysis was skipped."
+            )
         if not outcome_field and not numeric_field:
-            raise ValueError(
-                "params must request at least one of 'outcome_field' (MLE/CI) "
-                "or 'numeric_field' (t-test)"
+            return self._no_op_result(
+                f"{gene_name} configured a group_field but no outcome_field or "
+                "numeric_field; confidence-stats analysis was skipped."
             )
 
         confidence = params.get("confidence", 0.95)
@@ -194,5 +208,16 @@ class ConfidenceStatsAlgorithm(Algorithm):
             Algorithm_version=ALGORITHM_VERSION,
             Parameters=params,
             Summary=summary,
+            Created_at=datetime.now(timezone.utc),
+        )
+
+    @staticmethod
+    def _no_op_result(warning: str) -> AlgorithmResult:
+        return AlgorithmResult(
+            Algorithm=ALGORITHM_NAME,
+            Algorithm_version=ALGORITHM_VERSION,
+            Parameters={},
+            Summary={},
+            Warnings=[warning],
             Created_at=datetime.now(timezone.utc),
         )

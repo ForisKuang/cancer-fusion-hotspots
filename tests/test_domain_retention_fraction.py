@@ -73,22 +73,23 @@ def test_mapping_adds_quantitative_detail_without_changing_binary_calls():
     ("run_directory", "gene", "bounds", "expected"),
     [
         (
-            "braf_msk-impact-50k-2026_20260903T151140Z",
+            "braf_msk-impact-50k-2026_20260904T005535Z",
             "BRAF",
             (458, 712),
-            (174, 161, 92.52873563218391, [[142, 19], [9, 4]], 0.0737799140314508),
+            (178, 179, 163, 91.06145251396649, [[142, 21], [9, 6]], 0.013367557978153668),
         ),
         (
-            "ret_msk-impact-50k-2026_20260903T160639Z",
+            "ret_msk-impact-50k-2026_20260904T005538Z",
             "RET",
             (724, 1005),
-            (194, 144, 74.22680412371135, [[119, 25], [27, 23]], 9.841232497022219e-05),
+            (194, 194, 179, 92.26804123711341, [[141, 38], [5, 10]], 0.00041966557652448966),
         ),
     ],
 )
 def test_committed_benchmark_binary_results_are_unchanged_with_quantitative_details(
     run_directory, gene, bounds, expected
 ):
+    """Sanity-check reconstructed features against the committed live artifact rows."""
     payload = json.loads((Path("runs") / run_directory / "results.json").read_text())
     events = []
     features = []
@@ -115,7 +116,14 @@ def test_committed_benchmark_binary_results_are_unchanged_with_quantitative_deta
             )
         )
 
-    expected_total, expected_retained, expected_percent, expected_table, expected_p = expected
+    (
+        expected_mapped,
+        expected_total,
+        expected_retained,
+        expected_percent,
+        expected_table,
+        expected_p,
+    ) = expected
     result = DomainRetentionAlgorithm().run(
         events,
         features,
@@ -123,10 +131,10 @@ def test_committed_benchmark_binary_results_are_unchanged_with_quantitative_deta
         {"seed": 42, "n_permutations": 10},
     )
 
-    assert len(features) == expected_total
+    assert len(features) == expected_mapped
     retained = sum(f.Domain_retention_flags["kinase"] == "retained" for f in features)
     assert retained == expected_retained
-    assert retained / len(features) * 100 == pytest.approx(expected_percent)
+    assert retained / expected_total * 100 == pytest.approx(expected_percent)
     assert result.Tables["frame_domain_contingency_table"] == expected_table
     assert result.Summary["fisher_p_value"] == pytest.approx(expected_p)
 
@@ -142,15 +150,6 @@ def test_committed_benchmark_binary_results_are_unchanged_with_quantitative_deta
             163,
             91.06145251396649,
             0.013367557978153668,
-        ),
-        (
-            "RET",
-            (724, 1005),
-            [[119, 25], [27, 23]],
-            194,
-            144,
-            74.22680412371135,
-            9.841232497022219e-05,
         ),
     ],
 )
@@ -213,6 +212,22 @@ def test_verified_live_benchmark_conclusions_are_unchanged(
     assert retained_count / total_records * 100 == pytest.approx(retained_percent)
     assert result.Tables["frame_domain_contingency_table"] == table
     assert result.Summary["fisher_p_value"] == pytest.approx(p)
+
+
+def test_corrected_ret_live_artifact_summary():
+    """Lock RET conclusions directly to the post-locus-validation live artifact."""
+    payload = json.loads(
+        (Path("runs") / "ret_msk-impact-50k-2026_20260904T005538Z" / "results.json").read_text()
+    )
+    summary = payload["summary"]
+
+    assert summary["total_fusions"] == 194
+    assert summary["mapped_fusions"] == 194
+    assert summary["in_frame_count"] == 146
+    assert summary["kinase_retained_count"] == 179
+    assert summary["kinase_retained_percent"] == pytest.approx(92.26804123711341)
+    assert summary["frame_domain_contingency_table"] == [[141, 38], [5, 10]]
+    assert summary["fisher_p_value"] == pytest.approx(0.00041966557652448966)
 
 
 def test_retention_descriptives_separate_truncated_from_fully_lost():

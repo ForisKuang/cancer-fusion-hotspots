@@ -1,4 +1,10 @@
-"""Joint-partner-dependent fusion-oncogenicity analysis mode."""
+"""Joint-partner-dependent fusion-oncogenicity analysis mode.
+
+Opt-in via ``GeneConfig.gene_pair``: a gene config with no ``gene_pair`` set
+produces a no-op result with no statistics computed, the same graceful-skip
+pattern already used by ``exon_retention``/``domain_disruption`` for genes
+that don't configure their respective optional fields.
+"""
 
 from __future__ import annotations
 
@@ -31,7 +37,18 @@ class JointPartnerMode(Algorithm):
         """Run pair enrichment for ``gene_config.gene_pair``."""
         del features
         if gene_config.gene_pair is None:
-            raise ValueError("joint_partner requires a GeneConfig with gene_pair")
+            return AlgorithmResult(
+                Algorithm="joint_partner",
+                Algorithm_version="0.1.0",
+                Parameters={},
+                Summary={},
+                Tables={},
+                Warnings=[
+                    f"{gene_config.gene_symbol or 'This gene'} has no gene_pair "
+                    "configured; joint-partner analysis was skipped."
+                ],
+                Created_at=datetime.now(timezone.utc),
+            )
 
         gene5, gene3 = gene_config.gene_pair
         enrichment = calculate_pair_enrichment(events, gene5, gene3)

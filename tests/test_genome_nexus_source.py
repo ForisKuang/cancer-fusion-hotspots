@@ -156,6 +156,57 @@ def test_pfam_domains_convert_to_protein_domain_shape(
     assert kinase.source == "genome_nexus"
 
 
+def test_exon_protein_boundaries_are_ordered_and_consistent_with_breakpoint_mapping(
+    genome_nexus_canonical_transcript_fixture_path,
+):
+    """Every real breakpoint mapped inside one exon (via
+    :func:`map_genomic_breakpoint_to_protein_position`) should land inside
+    that same exon's reported protein-residue range from
+    :func:`exon_protein_boundaries` -- both derive from the same
+    coding-interval/codon-rounding arithmetic, so they must agree."""
+    payload = _load(genome_nexus_canonical_transcript_fixture_path)
+    canonical = gns.parse_canonical_transcript(payload)
+    cds_min, cds_max = gns.cds_bounds_from_utrs(canonical.utrs)
+    boundaries = gns.exon_protein_boundaries(
+        canonical.exons, cds_min_genomic=cds_min, cds_max_genomic=cds_max
+    )
+
+    ranks = [b.exon_rank for b in boundaries]
+    assert ranks == sorted(ranks)
+    for boundary in boundaries:
+        assert boundary.start_aa <= boundary.end_aa
+
+    strand = canonical.exons[0].strand
+    for exon in canonical.exons:
+        interval = gns._coding_interval(exon, cds_min, cds_max)
+        if interval is None:
+            continue
+        genomic_midpoint = (interval[0] + interval[1]) // 2
+        mapped = gns.map_genomic_breakpoint_to_protein_position(
+            canonical.exons,
+            genomic_midpoint,
+            strand,
+            cds_min_genomic=cds_min,
+            cds_max_genomic=cds_max,
+        )
+        boundary = next(b for b in boundaries if b.exon_rank == exon.rank)
+        assert boundary.start_aa <= mapped.protein_position <= boundary.end_aa
+
+
+def test_gene_track_from_canonical_transcript_matches_fixture(
+    genome_nexus_canonical_transcript_fixture_path,
+):
+    payload = _load(genome_nexus_canonical_transcript_fixture_path)
+    canonical = gns.parse_canonical_transcript(payload)
+    track = gns.gene_track_from_canonical_transcript(canonical)
+
+    assert track["protein_length"] == 766
+    kinase = next(d for d in track["domains"] if d["accession"] == "PF07714")
+    assert (kinase["start_aa"], kinase["end_aa"]) == (458, 712)
+    assert len(track["exon_boundaries_aa"]) == len(canonical.exons)
+    assert all(b["start_aa"] >= 1 for b in track["exon_boundaries_aa"])
+
+
 def test_cds_offset_breakpoint_mapping_matches_hand_computed_arithmetic(
     genome_nexus_transcript_fixture_path,
 ):

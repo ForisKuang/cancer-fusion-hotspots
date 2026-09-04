@@ -1,5 +1,0 @@
-discrepancy_type	event_id	partner_gene	frame_status	retained_domains	lost_domains	disrupted_domains	source_annotation_text	source_site2_effect_on_frame
-reference_discrepancy	EVT-P-0003502-T01-IM5-19	PJA2	in-frame		Protein kinase domain		NA | Protein fusion: in frame (BRAF-PJA2)	 in frame 
-reference_discrepancy	EVT-P-0004373-T02-IM5-32	MKRN1	unknown		Protein kinase domain		MKRN1 (NM_013446) - BRAF (NM_004333) rearrangement: c.314+4351:MKRN1_c.2232:BRAFdup | Protein fusion: mid-exon (MKRN1-BRAF)	NA
-reference_discrepancy	EVT-P-0010083-T01-IM5-35	PARP12	unknown		Protein kinase domain		c.327-1194:PARP12_c.1140+2871;BRAFinv | Protein fusion: (PARP12-BRAF)	 
-reference_discrepancy	EVT-P-0002197-T01-IM3-44	SND1	in-frame		Protein kinase domain		c.1528-8436:SND1_c.1141-922:BRAFinv | Protein fusion: in frame (BRAF-SND1)	 in frame 
