@@ -1,6 +1,6 @@
 # BRAF real-data fusion benchmark: msk_impact_50k_2026
 
-Retrieved from public cBioPortal and Genome Nexus on 2026-09-03.
+Retrieved from public cBioPortal and Genome Nexus on 2026-09-04.
 
 ## Results
 
@@ -14,6 +14,18 @@ Retrieved from public cBioPortal and Genome Nexus on 2026-09-03.
 - Fisher exact test (one-sided): odds ratio 4.50794, p=0.0133676
 - Breakpoint-permutation empirical p-value: 0.04995
 - Contingency table `[[retained/in-frame, retained/other], [not-retained/in-frame, not-retained/other]]`: `[[142, 21], [9, 6]]`
+
+### Fusion-transcript schematic
+
+![BRAF fusion-transcript schematic](visualizations/fusion_schematic.svg)
+
+*One row per recurrent partner/breakpoint group, sharing one amino-acid x-axis for BRAF's full protein length; the partner-contributed portion is colored per partner, the retained target-gene portion is colored by domain-retention status, and a red line marks the breakpoint.*
+
+### Intragenic-deletion schematic
+
+![BRAF intragenic-deletion schematic](visualizations/intragenic_deletion_schematic.svg)
+
+*Same-gene (Site1==Site2==BRAF) intragenic-deletion-style SV records: a retained N-terminal block, a plain connector line for the deleted span, and a resumed C-terminal block.*
 
 ## Method
 
