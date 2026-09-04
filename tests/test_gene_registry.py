@@ -1,6 +1,7 @@
 import pytest
 
-from cfh.genes.registry import GeneConfig, load_gene_config
+from cfh.genes.registry import GeneConfig, KeyDomain, derive_gene_config_defaults, load_gene_config
+from cfh.mapping.genome_nexus_source import CanonicalTranscript, ExonRecord, PfamDomain
 
 
 def test_loads_braf_yaml_into_validated_gene_config():
@@ -79,3 +80,119 @@ def test_eml4_alk_and_a_synthetic_tmprss2_erg_pair_leave_disruption_domains_unse
 
     tmprss2_erg = GeneConfig(gene_pair=("TMPRSS2", "ERG"))
     assert tmprss2_erg.disruption_required_domains == []
+
+
+def test_derive_defaults_uses_most_n_terminal_key_domain_and_complete_pfam_list():
+    config = GeneConfig(
+        gene_symbol="FAKE",
+        canonical_transcript_id="NM_1",
+        protein_id="P1",
+        key_domains=[
+            KeyDomain(name="later", source="genome_nexus", accession="PF00003"),
+            KeyDomain(name="earlier", source="genome_nexus", accession="PF00002"),
+        ],
+    )
+    canonical = CanonicalTranscript(
+        transcript_id="ENST1",
+        refseq_mrna_id="NM_1",
+        protein_id="P1",
+        protein_length=150,
+        uniprot_id=None,
+        pfam_domains=[
+            PfamDomain("PF00001", 10, 40),
+            PfamDomain("PF00002", 60, 90),
+            PfamDomain("PF00003", 110, 140),
+        ],
+        exons=[
+            ExonRecord("e1", 1, 150, 1, 1),
+            ExonRecord("e2", 151, 300, 2, 1),
+            ExonRecord("e3", 301, 450, 3, 1),
+        ],
+        utrs=[],
+    )
+
+    derived = derive_gene_config_defaults(
+        config,
+        canonical,
+        domain_name_resolver=lambda accession: {"PF00001": "Regulator"}[accession],
+    )
+
+    assert derived.expected_retained_exon_hint == "2"
+    assert [domain.accession for domain in derived.disruption_required_domains] == ["PF00001"]
+    assert derived.disruption_required_domains[0].name == "Regulator"
+
+
+def test_derive_defaults_never_replaces_explicit_values():
+    explicit_domain = KeyDomain(name="Curated", source="curator", accession="PF99999")
+    config = GeneConfig(
+        gene_symbol="FAKE",
+        canonical_transcript_id="NM_1",
+        protein_id="P1",
+        key_domains=[KeyDomain(name="key", source="genome_nexus", accession="PF00002")],
+        disruption_required_domains=[explicit_domain],
+        expected_retained_exon_hint="exon 99",
+    )
+    canonical = CanonicalTranscript(
+        transcript_id="ENST1",
+        refseq_mrna_id="NM_1",
+        protein_id="P1",
+        protein_length=100,
+        uniprot_id=None,
+        pfam_domains=[PfamDomain("PF00001", 10, 20), PfamDomain("PF00002", 40, 80)],
+        exons=[ExonRecord("e1", 1, 300, 1, 1)],
+        utrs=[],
+    )
+
+    derived = derive_gene_config_defaults(config, canonical)
+
+    assert derived.expected_retained_exon_hint == "exon 99"
+    assert derived.disruption_required_domains == [explicit_domain]
+
+
+def test_derive_exon_default_uses_closest_preceding_boundary_when_start_is_in_a_gap():
+    config = GeneConfig(
+        gene_symbol="FAKE",
+        canonical_transcript_id="NM_1",
+        protein_id="P1",
+        key_domains=[KeyDomain(name="key", source="genome_nexus", accession="PF00001")],
+    )
+    canonical = CanonicalTranscript(
+        transcript_id="ENST1",
+        refseq_mrna_id="NM_1",
+        protein_id="P1",
+        protein_length=100,
+        uniprot_id=None,
+        pfam_domains=[PfamDomain("PF00001", 60, 80)],
+        exons=[ExonRecord("e1", 1, 150, 7, 1)],
+        utrs=[],
+    )
+
+    derived = derive_gene_config_defaults(config, canonical)
+
+    assert derived.expected_retained_exon_hint == "7"
+
+
+def test_derive_defaults_respects_explicit_empty_disruption_domain_list():
+    config = GeneConfig.model_validate(
+        {
+            "gene_symbol": "FAKE",
+            "canonical_transcript_id": "NM_1",
+            "protein_id": "P1",
+            "key_domains": [
+                {"name": "key", "source": "genome_nexus", "accession": "PF00002"}
+            ],
+            "disruption_required_domains": [],
+        }
+    )
+    canonical = CanonicalTranscript(
+        transcript_id="ENST1",
+        refseq_mrna_id="NM_1",
+        protein_id="P1",
+        protein_length=100,
+        uniprot_id=None,
+        pfam_domains=[PfamDomain("PF00001", 10, 20), PfamDomain("PF00002", 40, 80)],
+        exons=[],
+        utrs=[],
+    )
+
+    assert derive_gene_config_defaults(config, canonical).disruption_required_domains == []

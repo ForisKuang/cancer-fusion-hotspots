@@ -39,10 +39,20 @@ def test_fallback_with_breakpoint_coordinate_returns_real_overlapping_features()
     gene_config = load_gene_config("braf")
     mock_client = MagicMock()
     mock_client.fetch_protein_features.return_value = [
-        {"type": "protein_feature", "id": "PF07714", "description": "Protein kinase domain",
-         "start": 457, "end": 717},
-        {"type": "protein_feature", "id": "PF00130", "description": "RAS-binding domain",
-         "start": 155, "end": 227},
+        {
+            "type": "protein_feature",
+            "id": "PF07714",
+            "description": "Protein kinase domain",
+            "start": 457,
+            "end": 717,
+        },
+        {
+            "type": "protein_feature",
+            "id": "PF00130",
+            "description": "RAS-binding domain",
+            "start": 155,
+            "end": 227,
+        },
     ]
 
     result = transcript_source.resolve_transcript_mapping(

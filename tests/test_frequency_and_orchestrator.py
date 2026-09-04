@@ -65,9 +65,8 @@ def test_frequency_counts_all_events_and_patient_deduplication_changes_counts():
     all_events = FrequencyAnalysis().run(events, [], config, {"dedup_by_patient": False})
     deduplicated = FrequencyAnalysis().run(events, [], config, {"dedup_by_patient": True})
 
-    assert (
-        sum(row["Event_count"] for row in all_events.Tables["Partner_gene_counts"])
-        == len(events)
+    assert sum(row["Event_count"] for row in all_events.Tables["Partner_gene_counts"]) == len(
+        events
     )
     assert all_events.Tables["Partner_gene_counts"] != deduplicated.Tables["Partner_gene_counts"]
     assert sum(row["Event_count"] for row in deduplicated.Tables["Partner_gene_counts"]) == 3

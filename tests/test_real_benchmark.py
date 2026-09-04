@@ -229,8 +229,7 @@ def test_malformed_fusion_rows_are_warned_and_skipped_without_losing_valid_rows(
     assert run.summary["skipped_fusions"] == 2
     assert [event.Sample_id for event in run.events] == ["VALID"]
     assert any(
-        "BAD-ROLE" in warning and "could not determine" in warning
-        for warning in run.warnings
+        "BAD-ROLE" in warning and "could not determine" in warning for warning in run.warnings
     )
     assert any(
         "NO-BREAKPOINT" in warning and "no genomic breakpoint" in warning
@@ -268,6 +267,27 @@ def test_tcga_fusion_annotation_uses_shared_benchmark_pipeline(
     assert run.summary["mapped_fusions"] == 1
     assert run.events[0].Three_prime_gene == "BRAF"
     assert run.events[0].Frame_status == "in-frame"
+
+
+def test_real_pipeline_derives_target_exon_and_measures_its_retention(
+    genome_nexus_canonical_transcript_fixture_path,
+):
+    client = _genome_nexus_client(genome_nexus_canonical_transcript_fixture_path)
+
+    run = analyze_structural_variant_calls(
+        [_call("SAMPLE-1")],
+        "BRAF",
+        "msk_impact_50k_2026",
+        genome_nexus_client=client,
+        n_permutations=5,
+        algorithm_names=["exon_retention"],
+    )
+
+    result = run.results[0]
+    assert result.Algorithm == "exon_retention"
+    assert result.Summary["target_exon"] == 11
+    assert result.Summary["retained_event_count"] == 1
+    assert result.Summary["retained_fraction"] == 1.0
 
 
 def test_zero_in_frame_records_emit_outputs_with_unavailable_statistics(

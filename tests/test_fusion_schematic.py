@@ -71,9 +71,7 @@ def _event(partner, breakpoint_aa, role, *, status="retained", sample_id=None):
 _UNSET = object()
 
 
-def _payload(
-    events, *, gene_track=_UNSET, intragenic_deletions=None, domain_accession="PF07714"
-):
+def _payload(events, *, gene_track=_UNSET, intragenic_deletions=None, domain_accession="PF07714"):
     return {
         "gene_symbol": "BRAF",
         "summary": {"domain_accession": domain_accession},

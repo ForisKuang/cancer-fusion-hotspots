@@ -35,9 +35,7 @@ def _event_pair(event: FusionEvent) -> tuple[str, str] | None:
     return None
 
 
-def calculate_pair_enrichment(
-    events: list[FusionEvent], gene5: str, gene3: str
-) -> PairEnrichment:
+def calculate_pair_enrichment(events: list[FusionEvent], gene5: str, gene3: str) -> PairEnrichment:
     """Test whether an ordered pair exceeds its marginal-independence expectation.
 
     Events without a complete gene pair are excluded. The Fisher exact test is

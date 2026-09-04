@@ -182,9 +182,7 @@ def test_verified_live_benchmark_conclusions_are_unchanged(
                         Junction_position_aa=breakpoint,
                         Domain_retention_flags={"kinase": status},
                         Domain_retention_details={
-                            "kinase": calculate_domain_retention(
-                                *bounds, breakpoint, "three_prime"
-                            )
+                            "kinase": calculate_domain_retention(*bounds, breakpoint, "three_prime")
                         },
                     )
                 )
@@ -266,6 +264,4 @@ def test_retention_descriptives_separate_truncated_from_fully_lost():
     assert row["Fully_retained_count"] == 1
     assert row["Truncated_count"] == 1
     assert row["Fully_lost_count"] == 1
-    assert row["Mean_retained_fraction_among_non_retained_calls"] == pytest.approx(
-        (143 / 255) / 2
-    )
+    assert row["Mean_retained_fraction_among_non_retained_calls"] == pytest.approx((143 / 255) / 2)

@@ -86,9 +86,7 @@ def _schedule_waves(algorithm_names: Sequence[str]) -> list[list[str]]:
         wave = [
             name
             for name in remaining
-            if all(
-                dep in scheduled or dep not in remaining for dep in _dependencies_for(name)
-            )
+            if all(dep in scheduled or dep not in remaining for dep in _dependencies_for(name))
         ]
         if not wave:
             raise ValueError(
@@ -210,9 +208,7 @@ def run_algorithms(
             algorithm_params = _params_for(name, params, algorithm_names)
             depends_on = _dependencies_for(name)
             if depends_on and "algorithm_results" not in algorithm_params:
-                available = [
-                    results_by_name[dep] for dep in depends_on if dep in results_by_name
-                ]
+                available = [results_by_name[dep] for dep in depends_on if dep in results_by_name]
                 if available:
                     algorithm_params = {**algorithm_params, "algorithm_results": available}
             wave_params[index] = algorithm_params

@@ -137,9 +137,7 @@ def test_ret_real_committed_cutpoint_gets_nearest_boundary_not_null_without_gn_p
     real_ret_uniprot_domains = MagicMock()
     real_ret_uniprot_domains.fetch.return_value = [
         ProteinDomain(name="PF00028", start_aa=173, end_aa=256, source="uniprot"),
-        ProteinDomain(
-            name="Protein kinase domain", start_aa=724, end_aa=1005, source="uniprot"
-        ),
+        ProteinDomain(name="Protein kinase domain", start_aa=724, end_aa=1005, source="uniprot"),
     ]
 
     boundaries = _known_domain_boundaries(
