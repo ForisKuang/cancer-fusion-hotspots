@@ -1,9 +1,9 @@
 gene	study	algorithm	test	raw_p	bh_adjusted_q	significant_at_q_lt_0_05	source
-BRAF	msk_impact_50k_2026	cutpoint_detection	permutation_corrected	0.000999000999000999	0.002664002664002664	y	runs/braf_msk-impact-50k-2026_20260903T193605Z/results.json
-BRAF	msk_impact_50k_2026	domain_disruption	fisher	0.31825218760588625	0.3637167858352986	n	runs/braf_msk-impact-50k-2026_20260903T193605Z/results.json
-BRAF	msk_impact_50k_2026	domain_disruption	permutation	0.656934306569343	0.656934306569343	n	runs/braf_msk-impact-50k-2026_20260903T193605Z/results.json
-BRAF	msk_impact_50k_2026	domain_retention	fisher	0.013367557978153668	0.021388092765045868	y	runs/braf_msk-impact-50k-2026_20260903T193605Z/results.json
-BRAF	msk_impact_50k_2026	domain_retention	permutation	0.04995004995004995	0.06660006660006661	n	runs/braf_msk-impact-50k-2026_20260903T193605Z/results.json
-RET	msk_impact_50k_2026	cutpoint_detection	permutation_corrected	0.000999000999000999	0.002664002664002664	y	runs/ret_msk-impact-50k-2026_20260903T193620Z/results.json
-RET	msk_impact_50k_2026	domain_retention	fisher	9.841232497022219e-05	0.0007872985997617775	y	runs/ret_msk-impact-50k-2026_20260903T193620Z/results.json
-RET	msk_impact_50k_2026	domain_retention	permutation	0.006993006993006993	0.013986013986013986	y	runs/ret_msk-impact-50k-2026_20260903T193620Z/results.json
+BRAF	msk_impact_50k_2026	cutpoint_detection	permutation_corrected	0.03596403596403597	0.052518909661766804	n	runs/braf_msk-impact-50k-2026_20260904T005535Z/results.json
+BRAF	msk_impact_50k_2026	domain_disruption	fisher	0.04170498244265482	0.052518909661766804	n	runs/braf_msk-impact-50k-2026_20260904T005535Z/results.json
+BRAF	msk_impact_50k_2026	domain_disruption	permutation	1.0	1.0	n	runs/braf_msk-impact-50k-2026_20260904T005535Z/results.json
+BRAF	msk_impact_50k_2026	domain_retention	fisher	0.013367557978153668	0.026735115956307336	y	runs/braf_msk-impact-50k-2026_20260904T005535Z/results.json
+BRAF	msk_impact_50k_2026	domain_retention	permutation	0.04595404595404595	0.052518909661766804	n	runs/braf_msk-impact-50k-2026_20260904T005535Z/results.json
+RET	msk_impact_50k_2026	cutpoint_detection	permutation_corrected	0.001998001998001998	0.005328005328005328	y	runs/ret_msk-impact-50k-2026_20260904T005538Z/results.json
+RET	msk_impact_50k_2026	domain_retention	fisher	0.00041966557652448966	0.0033573246121959173	y	runs/ret_msk-impact-50k-2026_20260904T005538Z/results.json
+RET	msk_impact_50k_2026	domain_retention	permutation	0.000999000999000999	0.003996003996003996	y	runs/ret_msk-impact-50k-2026_20260904T005538Z/results.json
