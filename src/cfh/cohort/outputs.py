@@ -64,6 +64,22 @@ _HONORABLE_MENTION_NOTE = (
     "targeted follow-up. This is NOT a claim of statistical significance."
 )
 
+_HONORABLE_MENTION_NOTE_NO_Q = (
+    "No FDR-adjusted q-value was ever computed for this gene (it contributed no "
+    "p-value to the genome-wide Benjamini-Hochberg correction), so whether it "
+    "would have survived multiple-testing correction is unknown -- this is NOT "
+    "a claim about where its (nonexistent) q-value would fall relative to the "
+    "significance threshold. It ranks highly by raw p-value among the "
+    "non-FDR-significant genes and may warrant targeted follow-up. This is NOT "
+    "a claim of statistical significance."
+)
+"""Used in place of :data:`_HONORABLE_MENTION_NOTE` for a candidate gene that
+has a real raw Fisher p-value (so it is eligible for this ranked tier) but
+whose ``min_fdr_adjusted_q_value`` is ``None`` -- i.e. it never actually
+contributed a hypothesis to the BH correction. Asserting the standard note's
+"FDR-adjusted q-value at or above the significance threshold" framing for
+such a gene would invent a verdict about a q-value that was never derived."""
+
 _SUMMARY_FIELDNAMES = [
     "gene_symbol",
     "config_source",
@@ -123,7 +139,14 @@ def build_summary_rows(result: CohortScanResult) -> list[dict]:
                 "fisher_p_value": summary.get("fisher_p_value"),
                 "permutation_p_value": summary.get("permutation_p_value"),
                 "min_fdr_adjusted_q_value": q_value,
-                "fdr_significant": outcome.gene_symbol in significant,
+                # ``None`` (never computed -- this gene contributed no
+                # p-value to the BH correction) is kept distinct from
+                # ``False`` (a real q-value was computed and it was >= the
+                # significance threshold); collapsing the two into a single
+                # ``False`` would let downstream text claim a specific
+                # "did not reach FDR significance" verdict for a gene that
+                # was never actually tested.
+                "fdr_significant": None if q_value is None else outcome.gene_symbol in significant,
                 "top_composite_score": top_score,
                 "top_composite_partner_gene": top_partner,
                 "error": outcome.error,
@@ -170,16 +193,22 @@ def build_honorable_mentions(
     candidates.sort(key=lambda row: (row["fisher_p_value"], row["gene_symbol"]))
     mentions = []
     for rank, row in enumerate(candidates[:limit], start=1):
+        q_value = row["min_fdr_adjusted_q_value"]
         mentions.append(
             {
                 "rank": rank,
                 "gene_symbol": row["gene_symbol"],
                 "fisher_p_value": row["fisher_p_value"],
-                "min_fdr_adjusted_q_value": row["min_fdr_adjusted_q_value"],
+                "min_fdr_adjusted_q_value": q_value,
                 "n_events_analyzed": row["n_events_analyzed"],
                 "in_frame_percent": row["in_frame_percent"],
                 "domain_retention_percent": row["domain_retention_percent"],
-                "note": _HONORABLE_MENTION_NOTE,
+                # A candidate's raw Fisher p-value alone makes it eligible
+                # for this tier; it does not guarantee a q-value was ever
+                # computed for it (see ``_HONORABLE_MENTION_NOTE_NO_Q``).
+                "note": (
+                    _HONORABLE_MENTION_NOTE if q_value is not None else _HONORABLE_MENTION_NOTE_NO_Q
+                ),
             }
         )
     return mentions
@@ -255,6 +284,24 @@ def _write_summary_markdown(
                 "",
             ]
         )
+        no_q_genes = [
+            mention["gene_symbol"]
+            for mention in honorable_mentions
+            if mention["min_fdr_adjusted_q_value"] is None
+        ]
+        if no_q_genes:
+            lines.extend(
+                [
+                    f"Note: {len(no_q_genes)} of the gene(s) above "
+                    f"({', '.join(no_q_genes)}) never had a genome-wide FDR-adjusted "
+                    "q-value computed at all (they contributed no p-value to the "
+                    "Benjamini-Hochberg correction) -- for these genes only, the framing "
+                    'above should be read as "FDR status unknown", not as a confirmed '
+                    "q-value-at-or-above-threshold verdict; see that gene's own note "
+                    "for precise wording.",
+                    "",
+                ]
+            )
         lines.append("| " + " | ".join(_HONORABLE_MENTION_FIELDNAMES) + " |")
         lines.append("|" + "---|" * len(_HONORABLE_MENTION_FIELDNAMES))
         for mention in honorable_mentions:
@@ -311,7 +358,7 @@ def _write_summary_pdf(
                 _format_cell(row["in_frame_percent"]),
                 _format_cell(row["domain_retention_percent"]),
                 _format_cell(row["min_fdr_adjusted_q_value"]),
-                "yes" if row["fdr_significant"] else "no",
+                _format_cell(row["fdr_significant"]),
                 _format_cell(row["top_composite_score"]),
             ]
         )
@@ -698,6 +745,19 @@ def write_cohort_scan_outputs(
 
     rows = build_summary_rows(result)
     honorable_mentions = build_honorable_mentions(rows, limit=honorable_mention_count)
+    # Derived from this run's own results -- never a live import of
+    # ``cfh.algorithms.registry`` -- so it stays correct for a programmatic
+    # run made with a restricted ``algorithm_names`` list, and so
+    # re-rendering this run's summary.json later, after the registry has
+    # changed, still describes what THIS run actually did.
+    algorithms_run = sorted(
+        {
+            algorithm_result.Algorithm
+            for outcome in result.gene_outcomes
+            if outcome.run is not None
+            for algorithm_result in outcome.run.results
+        }
+    )
 
     curated_genes = {
         outcome.gene_symbol
@@ -736,6 +796,7 @@ def write_cohort_scan_outputs(
             "significant_genes": result.significant_genes,
             "significance_level": result.significance_level,
             "generated_at": generated_at,
+            "algorithms_run": algorithms_run,
             "warnings": result.warnings,
             "genes": rows,
             "honorable_mentions": honorable_mentions,
@@ -787,6 +848,7 @@ def write_cohort_scan_outputs(
         "significant_genes": result.significant_genes,
         "significance_level": result.significance_level,
         "generated_at": generated_at,
+        "algorithms_run": algorithms_run,
         "genes": rows,
         "honorable_mentions": honorable_mentions,
     }
