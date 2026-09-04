@@ -52,6 +52,9 @@ from cfh.real_benchmark import analyze_structural_variant_calls
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _RUNS_DIR = _REPO_ROOT / "runs"
+_RET_COMPOSITE_RESULTS = (
+    _RUNS_DIR / "ret_msk-impact-50k-2026_20260904T005538Z" / "results.json"
+)
 _GENOME_NEXUS_BRAF_FIXTURE = (
     Path(__file__).resolve().parents[1]
     / "fixtures"
@@ -295,7 +298,11 @@ def test_composite_score_real_ret_msk_impact_gracefully_degrades():
     domain_disruption (recorded as an explicit skipped result) and
     confidence_stats (a real recorded failure) rather than zero-filling them.
     """
-    results_path = _real_run_results_path("ret_msk-impact-50k-2026")
+    # This benchmark needs the orchestrator result set from PR #27. A newer
+    # ``real-benchmark`` run contains only the algorithms configured for that
+    # command, so selecting the lexicographically latest directory is not a
+    # stable way to identify this fixture.
+    results_path = _RET_COMPOSITE_RESULTS
     payload = json.loads(results_path.read_text())
     committed_results = {item["Algorithm"]: item for item in payload["algorithm_results"]}
     domain_disruption_result = committed_results["domain_disruption"]

@@ -23,6 +23,8 @@ from cfh.mapping.feature_mapper import map_event
 from cfh.mapping.genome_nexus_source import (
     CanonicalTranscript,
     GenomeNexusClient,
+    GenomeNexusGeneNotFound,
+    gene_track_from_canonical_transcript,
     parse_canonical_transcript,
     resolve_domains,
 )
@@ -32,9 +34,18 @@ from cfh.model.fusion_event import FusionEvent
 from cfh.model.fusion_feature import FusionFeature
 from cfh.normalization.event_normalizer import normalize
 from cfh.orchestrator.run import run_algorithms
+from cfh.reporting.fusion_schematic import (
+    render_fusion_schematic_svg,
+    render_intragenic_deletion_schematic_svg,
+)
+from cfh.reporting.palette import BREAKPOINT_COLOR, LOST_COLOR, RETAINED_COLOR, TRUNCATED_COLOR
 from cfh.reporting.pdf import render_pdf_report
 from cfh.stats.breakpoint_tests import build_frame_domain_contingency_table
 from cfh.studies.registry import load_study_config
+
+_DELETION_EVENT_INFO_PATTERN = re.compile(
+    r"deletion of (\d+) exons?\s*:\s*(in frame|out of frame)", re.IGNORECASE
+)
 
 
 class RealBenchmarkError(RuntimeError):
@@ -73,6 +84,17 @@ class RealBenchmarkRun:
     warnings: list[str]
     endpoints: list[str] = field(default_factory=list)
     reference: dict | None = None
+    gene_track: dict | None = None
+    """Gene-agnostic protein-layout summary (protein length, full domain
+    map, exon-to-residue boundaries) for the schematic visualization; see
+    :func:`cfh.mapping.genome_nexus_source.gene_track_from_canonical_transcript`.
+    ``None`` when no canonical-transcript mapping was available for this
+    gene, or there was no target-gene data to visualize."""
+    intragenic_deletions: list[dict] = field(default_factory=list)
+    """Same-gene (Site1==Site2==target) intragenic-deletion-style SV
+    records (e.g. ``"Deletion of N exons"`` annotations), analogous to a
+    panel-C schematic. Distinct from ``events``/``features``: these never
+    feed any algorithm's statistics, they are visualization-only."""
 
 
 class _ResolvedDomainSource:
@@ -192,6 +214,106 @@ def _source_frame_status(text: object) -> str | None:
     if "in-frame" in value or "in frame" in value:
         return "in-frame"
     return None
+
+
+def _pretty_domain_names(config: GeneConfig) -> dict[str, str]:
+    """Map a configured domain's source accession to its human-readable
+    ``name`` (e.g. ``"PF07714" -> "Protein kinase domain"``), for relabeling
+    the raw Pfam-id-keyed domain map in :func:`_build_gene_track`. Domains
+    outside ``key_domains``/``disruption_required_domains`` keep their raw
+    accession as their display name -- this only ever prettifies domains
+    the gene's own config already names, never invents a label.
+    """
+    return {
+        domain.accession: domain.name
+        for domain in [*config.key_domains, *config.disruption_required_domains]
+        if domain.accession
+    }
+
+
+def _build_gene_track(config: GeneConfig, client: GenomeNexusClient) -> dict | None:
+    """Best-effort protein-layout summary for the fusion schematic.
+
+    Reuses the same canonical-transcript endpoint (and, within one run,
+    the same cached ``client``) already used by :func:`resolve_domains`
+    for domain-retention classification -- this adds no additional live
+    network call within a run that already looked up this gene's domains.
+    Returns ``None`` (never raises) when Genome Nexus has no mapping for
+    this gene, matching the existing graceful-degradation pattern used
+    throughout this module.
+    """
+    try:
+        payload = client.fetch_canonical_transcript(config.gene_symbol)
+    except (GenomeNexusGeneNotFound, requests.RequestException):
+        return None
+    canonical = parse_canonical_transcript(payload)
+    track = gene_track_from_canonical_transcript(canonical)
+    pretty_names = _pretty_domain_names(config)
+    for domain in track["domains"]:
+        domain["name"] = pretty_names.get(domain["accession"], domain["name"])
+    return track
+
+
+def _intragenic_deletion_records(
+    raw: pd.DataFrame,
+    config: GeneConfig,
+    client: GenomeNexusClient,
+) -> tuple[list[dict], list[str]]:
+    """Same-gene (``Site1_gene == Site2_gene == target``) intragenic
+    deletion-style SV records, analogous to a paper's panel-C schematic.
+
+    Distinct from the cross-gene fusion pipeline above: these records
+    never pass ``_is_target_protein_fusion`` (no partner gene, no "fusion"
+    in ``Event_Info``) and are visualization-only -- they are never fed to
+    ``normalize()``/``map_event()``/any registered algorithm, so adding
+    this cannot change any existing statistic. Matched generically by the
+    "Deletion of N exons[ ]: in frame|out of frame" annotation convention
+    already used across cBioPortal/MSK-IMPACT SV data (not specific to any
+    one gene).
+    """
+    target = config.gene_symbol.upper()
+    records: list[dict] = []
+    warnings: list[str] = []
+    same_gene = raw[
+        (raw["Site1_Hugo_Symbol"].astype(str).str.upper() == target)
+        & (raw["Site2_Hugo_Symbol"].astype(str).str.upper() == target)
+    ]
+    for _, row in same_gene.iterrows():
+        event_info = str(row.get("Event_Info") or "")
+        match = _DELETION_EVENT_INFO_PATTERN.search(event_info)
+        if match is None:
+            continue
+        try:
+            positions_aa = []
+            for genomic_position in (row.get("Site1_Position"), row.get("Site2_Position")):
+                mapping = resolve_breakpoint_protein_position(
+                    None,
+                    config,
+                    breakpoint_genomic=int(genomic_position),
+                    genome_nexus_client=client,
+                )
+                if mapping.breakpoint_protein_position is None:
+                    raise ValueError("Genome Nexus returned no protein position")
+                positions_aa.append(mapping.breakpoint_protein_position)
+        except Exception as exc:  # noqa: BLE001 - best-effort, visualization-only
+            warnings.append(
+                f"Skipped intragenic-deletion record for sample "
+                f"{row.get('Sample_Id')}: {type(exc).__name__}: {exc}"
+            )
+            continue
+        retained_up_to_aa, resumed_from_aa = sorted(positions_aa)
+        records.append(
+            {
+                "sample_id": row.get("Sample_Id"),
+                "annotation": row.get("Annotation"),
+                "event_info": event_info,
+                "n_exons_deleted": int(match.group(1)),
+                "frame_status": match.group(2).lower().replace(" ", "-"),
+                "retained_up_to_aa": retained_up_to_aa,
+                "resumed_from_aa": resumed_from_aa,
+            }
+        )
+    return records, warnings
 
 
 def _load_benchmark_config(gene_symbol: str) -> GeneConfig:
@@ -361,6 +483,15 @@ def analyze_structural_variant_calls_with_config(
     else:
         target_locus = None
     domain_source = _ResolvedDomainSource(domains)
+
+    gene_track: dict | None = None
+    intragenic_deletions: list[dict] = []
+    if len(raw):
+        gene_track = _build_gene_track(config, client)
+        deletion_records, deletion_warnings = _intragenic_deletion_records(raw, config, client)
+        intragenic_deletions = deletion_records
+        warnings.extend(deletion_warnings)
+
     events: list[FusionEvent] = []
     features: list[FusionFeature] = []
     rows: list[dict] = []
@@ -579,6 +710,8 @@ def analyze_structural_variant_calls_with_config(
         reference=(
             config.benchmark_reference.model_dump() if config.benchmark_reference else None
         ),
+        gene_track=gene_track,
+        intragenic_deletions=intragenic_deletions,
     )
 
 
@@ -689,8 +822,19 @@ def markdown_summary(
     *,
     domain_svg_path: str = "visualizations/domain_retention_outliers.svg",
     comparison_svg_path: str = "visualizations/reference_comparison.svg",
+    fusion_schematic_svg_path: str | None = None,
+    intragenic_deletion_svg_path: str | None = None,
 ) -> str:
-    """Render a concise, checked-in-friendly benchmark report."""
+    """Render a concise, checked-in-friendly benchmark report.
+
+    ``fusion_schematic_svg_path``/``intragenic_deletion_svg_path`` are the
+    report-relative paths of the SVGs :func:`write_outputs` already wrote
+    to ``visualizations/`` (or ``None`` when a schematic wasn't produced,
+    e.g. no ``gene_track`` was resolvable, or -- for the deletion schematic
+    -- this run has no intragenic-deletion-style records at all); when
+    ``None`` the corresponding section is simply omitted, never rendered
+    with a broken image link.
+    """
     summary = run.summary
     domain = summary["domain_accession"] or "configured domain"
     results_by_name = {result.Algorithm: result for result in run.results}
@@ -733,29 +877,62 @@ def markdown_summary(
         "*Domain-retention positions for analyzed fusion events; red outlines mark "
         "reference discrepancies.*",
         "",
-        "## Method",
-        "",
-        f"The cBioPortal `{run.molecular_profile_id}` structural-variant profile was "
-        "queried by the configured Entrez gene ID. Fusion-annotated records were "
-        "adapted to the production SV schema and normalized; when "
-        "`site2EffectOnFrame=NA`, frame status was resolved from `Event_Info`, not "
-        "copied into `FusionEvent.Frame_status`.",
-        "",
-        f"{run.gene_symbol} genomic breakpoints were mapped against the Genome Nexus "
-        f"canonical transcript, and retention was classified against its returned {domain} "
-        "coordinates. Counts are event-level with no patient deduplication. The "
-        "Fisher comparison's `other` column combines out-of-frame and unknown-frame "
-        "events, as pre-specified by the domain-retention algorithm.",
-        "",
-        "For each fusion, breakpoint selection preferred the Genome Nexus canonical "
-        "transcript's exon-spanned target locus over cBioPortal site labels; malformed "
-        "rows with no unambiguous target-locus coordinate were skipped and listed in Warnings.",
-        "",
-        "## Full-suite highlights",
-        "",
-        "- Registered algorithms executed: "
-        + ", ".join(result.Algorithm for result in run.results),
     ]
+    if fusion_schematic_svg_path:
+        lines.extend(
+            [
+                "### Fusion-transcript schematic",
+                "",
+                f"![{run.gene_symbol} fusion-transcript schematic]({fusion_schematic_svg_path})",
+                "",
+                "*One row per recurrent partner/breakpoint group, sharing one amino-acid "
+                f"x-axis for {run.gene_symbol}'s full protein length; the partner-contributed "
+                "portion is colored per partner, the retained target-gene portion is "
+                "colored by domain-retention status, and a red line marks the breakpoint.*",
+                "",
+            ]
+        )
+    if intragenic_deletion_svg_path:
+        lines.extend(
+            [
+                "### Intragenic-deletion schematic",
+                "",
+                f"![{run.gene_symbol} intragenic-deletion schematic]"
+                f"({intragenic_deletion_svg_path})",
+                "",
+                "*Same-gene (Site1==Site2=="
+                f"{run.gene_symbol}) intragenic-deletion-style SV records: a retained "
+                "N-terminal block, a plain connector line for the deleted span, and a "
+                "resumed C-terminal block.*",
+                "",
+            ]
+        )
+    lines.extend(
+        [
+            "## Method",
+            "",
+            f"The cBioPortal `{run.molecular_profile_id}` structural-variant profile was "
+            "queried by the configured Entrez gene ID. Fusion-annotated records were "
+            "adapted to the production SV schema and normalized; when "
+            "`site2EffectOnFrame=NA`, frame status was resolved from `Event_Info`, not "
+            "copied into `FusionEvent.Frame_status`.",
+            "",
+            f"{run.gene_symbol} genomic breakpoints were mapped against the Genome Nexus "
+            f"canonical transcript, and retention was classified against its returned {domain} "
+            "coordinates. Counts are event-level with no patient deduplication. The "
+            "Fisher comparison's `other` column combines out-of-frame and unknown-frame "
+            "events, as pre-specified by the domain-retention algorithm.",
+            "",
+            "For each fusion, breakpoint selection preferred the Genome Nexus canonical "
+            "transcript's exon-spanned target locus over cBioPortal site labels; malformed "
+            "rows with no unambiguous target-locus coordinate were skipped and listed in Warnings.",
+            "",
+            "## Full-suite highlights",
+            "",
+            "- Registered algorithms executed: "
+            + ", ".join(result.Algorithm for result in run.results),
+        ]
+    )
     cutpoint = results_by_name.get("cutpoint_detection")
     if cutpoint and cutpoint.Summary.get("determinable"):
         cutpoint_summary = cutpoint.Summary
@@ -781,10 +958,10 @@ def markdown_summary(
     lines.extend(
         [
             "",
-        "## Partners",
-        "",
-        partners or "None",
-        "",
+            "## Partners",
+            "",
+            partners or "None",
+            "",
         ]
     )
     if run.warnings:
@@ -955,14 +1132,14 @@ def _domain_track_svg(run: RealBenchmarkRun, outlier_ids: set[str]) -> str:
         fraction = row.get("domain_retained_fraction")
         status = row.get("domain_status")
         if row.get("domain_is_truncated") or status == "disrupted":
-            color = "#f2a93b"
+            color = TRUNCATED_COLOR
         elif fraction == 0.0 or status == "lost":
-            color = "#777777"
+            color = LOST_COLOR
         elif fraction == 1.0 or status == "retained":
-            color = "#2878b5"
+            color = RETAINED_COLOR
         else:
             color = "#aaaaaa"
-        stroke = "#d62728" if row["event_id"] in outlier_ids else "none"
+        stroke = BREAKPOINT_COLOR if row["event_id"] in outlier_ids else "none"
         stroke_width = "1.5" if row["event_id"] in outlier_ids else "0"
         y = 100 + (index % 5) * 7
         dots.append(
@@ -979,13 +1156,14 @@ def _domain_track_svg(run: RealBenchmarkRun, outlier_ids: set[str]) -> str:
         f'width="{max(2, (end-start)*scale):.1f}" height="28" '
         'fill="#62b36f" opacity="0.55"/>',
         *dots,
-        '<circle cx="60" cy="150" r="4" fill="#2878b5"/>'
+        f'<circle cx="60" cy="150" r="4" fill="{RETAINED_COLOR}"/>'
         '<text x="70" y="155" font-family="sans-serif" font-size="12">fully retained</text>',
-        '<circle cx="180" cy="150" r="4" fill="#f2a93b"/>'
+        f'<circle cx="180" cy="150" r="4" fill="{TRUNCATED_COLOR}"/>'
         '<text x="190" y="155" font-family="sans-serif" font-size="12">truncated</text>',
-        '<circle cx="275" cy="150" r="4" fill="#777777"/>'
+        f'<circle cx="275" cy="150" r="4" fill="{LOST_COLOR}"/>'
         '<text x="285" y="155" font-family="sans-serif" font-size="12">fully lost</text>',
-        '<circle cx="365" cy="150" r="4" fill="white" stroke="#d62728" stroke-width="1.5"/>'
+        f'<circle cx="365" cy="150" r="4" fill="white" stroke="{BREAKPOINT_COLOR}" '
+        'stroke-width="1.5"/>'
         '<text x="375" y="155" font-family="sans-serif" font-size="12">'
         'reference discrepancy</text>',
         '</svg>',
@@ -1016,7 +1194,8 @@ def _comparison_svg(run: RealBenchmarkRun) -> str:
             f'<rect x="140" y="{y-14}" width="{ref_value*3.8:.1f}" height="16" fill="#999"/>',
             f'<text x="530" y="{y}" font-family="sans-serif" font-size="12">'
             f'reference {ref_value:.1f}%</text>',
-            f'<rect x="140" y="{y+10}" width="{run_value*3.8:.1f}" height="16" fill="#2878b5"/>',
+            f'<rect x="140" y="{y+10}" width="{run_value*3.8:.1f}" height="16" '
+            f'fill="{RETAINED_COLOR}"/>',
             f'<text x="530" y="{y+24}" font-family="sans-serif" font-size="12">'
             f'run {run_value:.1f}%</text>',
         ]
@@ -1064,9 +1243,24 @@ def write_outputs(
             "events": run.rows,
             "algorithm_results": algorithm_results,
             "reference": run.reference,
+            "gene_track": run.gene_track,
+            "intragenic_deletions": run.intragenic_deletions,
         }
     )
     json_path.write_text(json.dumps(payload, indent=2, allow_nan=False) + "\n")
+
+    fusion_schematic_svg = None
+    schematic_markup = render_fusion_schematic_svg(payload)
+    if schematic_markup is not None:
+        fusion_schematic_svg = visualization_dir / "fusion_schematic.svg"
+        fusion_schematic_svg.write_text(schematic_markup + "\n")
+
+    intragenic_deletion_svg = None
+    deletion_markup = render_intragenic_deletion_schematic_svg(payload)
+    if deletion_markup is not None:
+        intragenic_deletion_svg = visualization_dir / "intragenic_deletion_schematic.svg"
+        intragenic_deletion_svg.write_text(deletion_markup + "\n")
+
     discrepancies = _discrepancies(run)
     outliers_path = destination / "outliers.tsv"
     _write_tsv(outliers_path, discrepancies, [
@@ -1085,6 +1279,16 @@ def write_outputs(
             run,
             domain_svg_path=domain_svg.relative_to(destination).as_posix(),
             comparison_svg_path=comparison_svg.relative_to(destination).as_posix(),
+            fusion_schematic_svg_path=(
+                fusion_schematic_svg.relative_to(destination).as_posix()
+                if fusion_schematic_svg
+                else None
+            ),
+            intragenic_deletion_svg_path=(
+                intragenic_deletion_svg.relative_to(destination).as_posix()
+                if intragenic_deletion_svg
+                else None
+            ),
         )
     )
     domain_svg.write_text(_domain_track_svg(run, reference_ids) + "\n")
@@ -1108,6 +1312,10 @@ def write_outputs(
         "domain_svg": domain_svg,
         "comparison_svg": comparison_svg,
     }
+    if fusion_schematic_svg:
+        paths["fusion_schematic_svg"] = fusion_schematic_svg
+    if intragenic_deletion_svg:
+        paths["intragenic_deletion_svg"] = intragenic_deletion_svg
     if pdf:
         pdf_path = destination / "report.pdf"
         render_pdf_report(

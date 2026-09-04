@@ -15,6 +15,12 @@ Retrieved from public cBioPortal and Genome Nexus on 2026-09-04.
 - Breakpoint-permutation empirical p-value: 0.045954
 - Contingency table `[[retained/in-frame, retained/other], [not-retained/in-frame, not-retained/other]]`: `[[142, 21], [9, 6]]`
 
+### Domain retention and discrepancies
+
+![Domain retention diagram](visualizations/domain_retention_outliers.svg)
+
+*Domain-retention positions for analyzed fusion events; red outlines mark reference discrepancies.*
+
 ### Fusion-transcript schematic
 
 ![BRAF fusion-transcript schematic](visualizations/fusion_schematic.svg)
@@ -37,9 +43,7 @@ For each fusion, breakpoint selection preferred the Genome Nexus canonical trans
 
 ## Full-suite highlights
 
-- Registered algorithms executed: composite_score, confidence_stats, cutpoint_detection, domain_disruption, domain_retention, exon_retention, frequency, joint_partner
-- Cutpoint detection: inferred breakpoint 327 aa; corrected permutation p=0.019802.
-- Top composite score: AGK (14 events), 0.227344.
+- Registered algorithms executed: domain_retention, frequency
 
 ## Partners
 
@@ -55,6 +59,10 @@ ABCC1 (1), ABCC2 (1), AGAP3 (6), AGK (14), AKAP9 (2), ATF7 (1), CAPZA2 (1), CARM
 |---|---:|---:|
 | In-frame | 100.0% | 84.4% |
 | Domain retained | 100.0% | 91.1% |
+
+![Reference comparison](visualizations/reference_comparison.svg)
+
+*Published reference percentages compared with this run.*
 
 ## Interpretation
 

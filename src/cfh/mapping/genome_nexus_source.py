@@ -311,6 +311,81 @@ def _coding_interval(
     return start, end
 
 
+@dataclass
+class ExonProteinBoundary:
+    exon_rank: int
+    start_aa: int
+    end_aa: int
+
+
+def exon_protein_boundaries(
+    exons: list[ExonRecord],
+    *,
+    cds_min_genomic: int | None = None,
+    cds_max_genomic: int | None = None,
+) -> list[ExonProteinBoundary]:
+    """Convert a transcript's exon structure into per-exon protein-residue
+    ranges, ordered 5'->3' by rank.
+
+    Reuses the same coding-interval clipping (:func:`_coding_interval`) and
+    nucleotide-to-codon rounding (``ceil(nt / 3)``) arithmetic as
+    :func:`map_genomic_breakpoint_to_protein_position`, so an exon boundary
+    reported here is consistent with any individual breakpoint mapped
+    against the same transcript. An exon entirely outside the CDS (e.g. a
+    pure-UTR exon) contributes no boundary, same as that function's
+    per-exon coding-interval clipping.
+    """
+    ordered = sorted(exons, key=lambda e: e.rank)
+    boundaries: list[ExonProteinBoundary] = []
+    cds_nt_cursor = 0
+    for exon in ordered:
+        interval = _coding_interval(exon, cds_min_genomic, cds_max_genomic)
+        if interval is None:
+            continue
+        start, end = interval
+        length_nt = end - start + 1
+        start_aa = math.ceil((cds_nt_cursor + 1) / 3)
+        cds_nt_cursor += length_nt
+        end_aa = math.ceil(cds_nt_cursor / 3)
+        boundaries.append(
+            ExonProteinBoundary(exon_rank=exon.rank, start_aa=start_aa, end_aa=end_aa)
+        )
+    return boundaries
+
+
+def gene_track_from_canonical_transcript(canonical: CanonicalTranscript) -> dict:
+    """Build a JSON-serializable, gene-agnostic protein-layout summary
+    (protein length, full domain map, exon-to-residue boundaries) from an
+    already-fetched :class:`CanonicalTranscript`.
+
+    Every field here comes from the same canonical-transcript payload
+    already fetched for domain resolution elsewhere in the pipeline (see
+    :func:`resolve_domains`); this is purely a different projection of
+    that same response, not a new data source.
+    """
+    cds_min_genomic, cds_max_genomic = cds_bounds_from_utrs(canonical.utrs)
+    domains = pfam_domains_to_protein_domains(canonical)
+    boundaries = exon_protein_boundaries(
+        canonical.exons, cds_min_genomic=cds_min_genomic, cds_max_genomic=cds_max_genomic
+    )
+    return {
+        "protein_length": canonical.protein_length,
+        "domains": [
+            {
+                "name": domain.name,
+                "accession": domain.accession,
+                "start_aa": domain.start_aa,
+                "end_aa": domain.end_aa,
+            }
+            for domain in domains
+        ],
+        "exon_boundaries_aa": [
+            {"exon_rank": b.exon_rank, "start_aa": b.start_aa, "end_aa": b.end_aa}
+            for b in boundaries
+        ],
+    }
+
+
 def map_genomic_breakpoint_to_protein_position(
     exons: list[ExonRecord],
     breakpoint_genomic: int,
