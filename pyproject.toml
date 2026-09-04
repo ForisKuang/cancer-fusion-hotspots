@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cfh"
+version = "0.1.0"
+description = "Cancer Fusion Hotspots: detect gene-fusion breakpoint/domain-retention hotspots"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+authors = [{ name = "Cancer Fusion Hotspots contributors" }]
+dependencies = [
+    "pandas>=2.0",
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "requests>=2.28",
+    "pydantic>=2.0",
+    "click>=8.1",
+    "pyyaml>=6.0",
+    "reportlab>=4.0",
+    "svglib>=1.5",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "ruff>=0.4",
+    "pypdf>=4.0",
+]
+
+[project.scripts]
+cfh = "cfh.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"cfh.genes" = ["configs/*.yaml"]
+"cfh.studies" = ["configs/*.yaml"]
+
+[tool.pytest.ini_options]
+markers = [
+    "network: tests that make real outbound network calls (excluded by default)",
+]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]

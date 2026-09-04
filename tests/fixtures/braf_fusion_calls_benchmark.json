@@ -1,0 +1,18 @@
+{
+  "events": [
+    {"event_id": "BRAF-001", "fusion_name": "CDK5RAP2-BRAF", "frame_status": "in-frame", "is_protein_fusion": true, "junction_position_aa": 420, "kinase_status": "retained"},
+    {"event_id": "BRAF-002", "fusion_name": "AGK-BRAF", "frame_status": "in-frame", "is_protein_fusion": true, "junction_position_aa": 430, "kinase_status": "retained"},
+    {"event_id": "BRAF-003", "fusion_name": "KIAA1549-BRAF", "frame_status": "in-frame", "is_protein_fusion": true, "junction_position_aa": 440, "kinase_status": "retained"},
+    {"event_id": "BRAF-004", "fusion_name": "PJA2-BRAF", "frame_status": "in-frame", "is_protein_fusion": true, "junction_position_aa": 445, "kinase_status": "retained"},
+    {"event_id": "BRAF-005", "fusion_name": "GIPC2-BRAF", "frame_status": "in-frame", "is_protein_fusion": true, "junction_position_aa": 450, "kinase_status": "retained"},
+    {"event_id": "BRAF-006", "fusion_name": "SND1-BRAF", "frame_status": "in-frame", "is_protein_fusion": true, "junction_position_aa": 455, "kinase_status": "retained"},
+    {"event_id": "BRAF-007", "fusion_name": "SYNTH1-BRAF", "frame_status": "out-of-frame", "is_protein_fusion": true, "junction_position_aa": 500, "kinase_status": "disrupted"},
+    {"event_id": "BRAF-008", "fusion_name": "SYNTH2-BRAF", "frame_status": "out-of-frame", "is_protein_fusion": true, "junction_position_aa": 535, "kinase_status": "disrupted"},
+    {"event_id": "BRAF-009", "fusion_name": "SYNTH3-BRAF", "frame_status": "out-of-frame", "is_protein_fusion": true, "junction_position_aa": 580, "kinase_status": "disrupted"},
+    {"event_id": "BRAF-010", "fusion_name": "SYNTH4-BRAF", "frame_status": "out-of-frame", "is_protein_fusion": true, "junction_position_aa": 620, "kinase_status": "disrupted"},
+    {"event_id": "BRAF-011", "fusion_name": "SYNTH5-BRAF", "frame_status": "out-of-frame", "is_protein_fusion": true, "junction_position_aa": 700, "kinase_status": "disrupted"},
+    {"event_id": "BRAF-012", "fusion_name": "SYNTH6-BRAF", "frame_status": "out-of-frame", "is_protein_fusion": true, "junction_position_aa": 725, "kinase_status": "lost"},
+    {"event_id": "BRAF-013", "fusion_name": "SYNTH7-BRAF", "frame_status": "out-of-frame", "is_protein_fusion": true, "junction_position_aa": 740, "kinase_status": "lost"},
+    {"event_id": "BRAF-014", "fusion_name": "SYNTH8-BRAF", "frame_status": "unknown", "is_protein_fusion": false, "junction_position_aa": 760, "kinase_status": "lost"}
+  ]
+}

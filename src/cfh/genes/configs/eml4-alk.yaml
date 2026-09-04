@@ -1,0 +1,5 @@
+gene_pair:
+  - EML4
+  - ALK
+analysis_modes:
+  - joint_partner_dependency

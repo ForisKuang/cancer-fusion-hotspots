@@ -1,0 +1,31 @@
+gene_symbol: BRAF
+canonical_transcript_id: NM_004333
+protein_id: P15056
+entrez_gene_id: 673
+key_domains:
+  - name: "Protein kinase domain"
+    source: genome_nexus
+    key: kinase
+    accession: PF07714
+disruption_required_domains:
+  - name: "RAS-binding domain"
+    source: genome_nexus
+    key: ras_binding
+    accession: PF02196
+  - name: "Cysteine-rich domain"
+    source: genome_nexus
+    key: cysteine_rich
+    accession: PF00130
+autoinhibitory_domains:
+  - "RAS-binding domain"
+  - "Cysteine-rich domain"
+expected_retained_exon_hint: null
+analysis_modes:
+  - breakpoint_hotspot
+  - domain_retention
+  - domain_disruption
+benchmark_reference:
+  citation: "PMC5461196"
+  fusion_count: 33
+  in_frame_percent: 100.0
+  domain_retained_percent: 100.0
