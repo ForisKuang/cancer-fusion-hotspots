@@ -37,11 +37,15 @@ from cfh.reporting.pdf import render_cohort_summary_pdf
 _MANHATTAN_SVG_FILENAME = "manhattan.svg"
 
 DEFAULT_HONORABLE_MENTION_COUNT = 15
-"""Default size of the "honorable mentions" / near-significant tier: the top
-N genes by raw Fisher p-value among genes that did NOT survive genome-wide
-FDR correction. Configurable via ``write_cohort_scan_outputs``'s
+"""Default size of the "honorable mentions" / highly ranked non-FDR-significant
+tier: the top N genes by raw Fisher p-value among genes that did NOT survive
+genome-wide FDR correction. Configurable via ``write_cohort_scan_outputs``'s
 ``honorable_mention_count`` (and the ``cfh cohort-scan
 --honorable-mention-count`` CLI flag)."""
+
+_HONORABLE_MENTION_HEADING = (
+    "Honorable mentions: highly ranked non-FDR-significant genes worth human review"
+)
 
 _HONORABLE_MENTION_NOTE = (
     "Did not survive genome-wide multiple-testing correction (FDR-adjusted "
@@ -132,16 +136,21 @@ def build_summary_rows(result: CohortScanResult) -> list[dict]:
 def build_honorable_mentions(
     rows: list[dict], *, limit: int = DEFAULT_HONORABLE_MENTION_COUNT
 ) -> list[dict]:
-    """The "honorable mentions" / near-significant tier: the top ``limit``
-    genes by raw Fisher p-value among genes that are NOT FDR-significant.
+    """The "honorable mentions" / highly ranked non-FDR-significant tier: the
+    top ``limit`` genes by raw Fisher p-value among genes that are NOT
+    FDR-significant.
 
     This is a distinct, additive ranking -- never a claim that any of these
-    genes IS significant. A run can genuinely have only one FDR-significant
-    gene (a strict, correct genome-wide multiple-testing result) while still
-    having a real, biologically sensible second tier of genes that rank
-    highly on raw p-value but did not survive correction; without this,
-    that tier is invisible to a human reviewer skimming a binary
-    significant/not-significant summary.
+    genes IS significant, or even that it is close to significant (a run's
+    544 genes can rank from a raw p-value of 0.0004 down to 0.9, and this
+    tier surfaces the top of that non-significant ranking regardless of how
+    far any individual gene actually sits from the threshold). A run can
+    genuinely have only one FDR-significant gene (a strict, correct
+    genome-wide multiple-testing result) while still having a real,
+    biologically sensible second tier of genes that rank highly on raw
+    p-value but did not survive correction; without this, that tier is
+    invisible to a human reviewer skimming a binary significant/not-significant
+    summary.
     """
     candidates = [
         row
@@ -225,7 +234,7 @@ def _write_summary_markdown(
     if honorable_mentions:
         lines.extend(
             [
-                "## Honorable mentions: near-significant genes worth human review",
+                f"## {_HONORABLE_MENTION_HEADING}",
                 "",
                 f"The following {len(honorable_mentions)} gene(s) **did not survive genome-wide "
                 "multiple-testing correction** (FDR-adjusted q-value at or above the "
@@ -322,7 +331,7 @@ def _write_summary_pdf(
         ]
         extra_tables.append(
             {
-                "heading": "Honorable mentions: near-significant genes worth human review",
+                "heading": _HONORABLE_MENTION_HEADING,
                 "note": (
                     "Did NOT survive genome-wide FDR correction -- ranked by raw Fisher "
                     "p-value among non-significant genes. Not a claim of significance."

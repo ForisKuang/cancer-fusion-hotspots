@@ -48,7 +48,7 @@ same underlying breakpoint events. Left unweighted, filling the label budget
 by raw q-value alone lets those partner-gene rows crowd out hand-curated
 driver genes and top near-miss genes from the limited label slots. Callers
 should therefore pass ``priority_genes`` (hand-curated genes plus the
-"honorable mentions" near-significant tier -- see
+"honorable mentions" highly ranked non-FDR-significant tier -- see
 :func:`cfh.cohort.outputs.build_honorable_mentions`) so those genes' labels
 are filled first, ahead of any other non-significant gene, regardless of
 where they land in the raw q-value ranking. Each point's underlying

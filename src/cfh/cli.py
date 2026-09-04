@@ -228,8 +228,8 @@ def analyze(
     type=click.IntRange(min=0),
     default=DEFAULT_HONORABLE_MENTION_COUNT,
     show_default=True,
-    help="Size of the 'honorable mentions' near-significant tier: the top N genes by raw "
-    "Fisher p-value among genes that did NOT survive genome-wide FDR correction.",
+    help="Size of the 'honorable mentions' highly ranked non-FDR-significant tier: the top N "
+    "genes by raw Fisher p-value among genes that did NOT survive genome-wide FDR correction.",
 )
 def cohort_scan(
     study_id: str,

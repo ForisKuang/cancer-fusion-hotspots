@@ -1,4 +1,4 @@
-"""Unit tests for the "honorable mentions" near-significant tier
+"""Unit tests for the "honorable mentions" highly ranked non-FDR-significant tier
 (:func:`cfh.cohort.outputs.build_honorable_mentions`) and the curated-gene
 full-report selection (:func:`cfh.cohort.scan.genes_needing_full_report`),
 plus a real-data check against the already-committed

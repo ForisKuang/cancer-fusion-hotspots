@@ -277,8 +277,9 @@ def render_cohort_summary_pdf(
 
     ``extra_tables``, if given, is a list of ``{"heading", "note", "rows"}``
     dicts rendered as additional sections after the main table -- e.g. the
-    "honorable mentions" near-significant tier -- each with its own heading,
-    an italic caption, and a header-row-first table exactly like the main one.
+    "honorable mentions" highly ranked non-FDR-significant tier -- each with
+    its own heading, an italic caption, and a header-row-first table exactly
+    like the main one.
 
     ``figures_dir``, if given, is rendered exactly like the per-gene
     report's own figures section (see :func:`_figures`) -- e.g. the

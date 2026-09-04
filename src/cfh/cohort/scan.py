@@ -336,9 +336,10 @@ def genes_needing_full_report(
     result: CohortScanResult, honorable_mention_genes: "frozenset[str] | set[str]" = frozenset()
 ) -> list[str]:
     """Every hand-curated gene, every FDR-significant gene, and every
-    ``honorable_mention_genes`` (the near-significant "second tier" a human
-    reviewer should still see a full report for) -- the genes a cohort scan
-    generates a full per-gene report for (everything else stays summary-only).
+    ``honorable_mention_genes`` (the highly ranked non-FDR-significant "second
+    tier" a human reviewer should still see a full report for) -- the genes a
+    cohort scan generates a full per-gene report for (everything else stays
+    summary-only).
 
     Curated genes are derived from each outcome's own ``config_source``
     rather than a hardcoded gene list: a hardcoded list silently goes stale
