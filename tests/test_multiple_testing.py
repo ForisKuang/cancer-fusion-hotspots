@@ -21,9 +21,7 @@ def test_benjamini_hochberg_matches_hand_computed_textbook_example():
 
 def test_benjamini_hochberg_handles_empty_input_and_tied_p_values():
     assert benjamini_hochberg([]) == []
-    adjusted = benjamini_hochberg(
-        [("GENE_A", "method", 0.5), ("GENE_B", "method", 0.5)]
-    )
+    adjusted = benjamini_hochberg([("GENE_A", "method", 0.5), ("GENE_B", "method", 0.5)])
     assert [row[3] for row in adjusted] == [0.5, 0.5]
 
 

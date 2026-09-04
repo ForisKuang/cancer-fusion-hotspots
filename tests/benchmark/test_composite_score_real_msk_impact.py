@@ -52,9 +52,7 @@ from cfh.real_benchmark import analyze_structural_variant_calls
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _RUNS_DIR = _REPO_ROOT / "runs"
-_RET_COMPOSITE_RESULTS = (
-    _RUNS_DIR / "ret_msk-impact-50k-2026_20260904T005538Z" / "results.json"
-)
+_RET_COMPOSITE_RESULTS = _RUNS_DIR / "ret_msk-impact-50k-2026_20260904T005538Z" / "results.json"
 _GENOME_NEXUS_BRAF_FIXTURE = (
     Path(__file__).resolve().parents[1]
     / "fixtures"

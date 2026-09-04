@@ -28,14 +28,12 @@ def test_braf_kinase_retention_in_real_msk_impact_2017():
     assert len(run.events) == len(run.features) > 0
     assert run.summary["mapped_fusions"] > 0
     assert any(event.Frame_status == "in-frame" for event in run.events)
-    assert all(
-        feature.Domain_retention_flags["kinase"] != "unknown"
-        for feature in run.features
-    )
+    assert all(feature.Domain_retention_flags["kinase"] != "unknown" for feature in run.features)
     assert 0 <= run.summary["fisher_p_value"] <= 1
-    assert sum(
-        row["Event_count"] for row in run.summary["partner_counts"]
-    ) == run.summary["total_fusions"]
+    assert (
+        sum(row["Event_count"] for row in run.summary["partner_counts"])
+        == run.summary["total_fusions"]
+    )
     print(
         json.dumps(
             {

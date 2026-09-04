@@ -1,5 +1,7 @@
 # fusion-hotspots (cfh)
 
+[![CI](https://github.com/genome-nexus/fusion-hotspots/actions/workflows/ci.yml/badge.svg)](https://github.com/genome-nexus/fusion-hotspots/actions/workflows/ci.yml)
+
 `cfh` detects gene-fusion breakpoint and domain-retention hotspots from
 structural-variant calls in cancer sequencing cohorts. Milestone 1 targets
 **BRAF** fusions in the public MSK-IMPACT 50k cohort on cBioPortal, using a

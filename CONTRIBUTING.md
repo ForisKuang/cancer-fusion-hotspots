@@ -14,13 +14,26 @@ pip install -e ".[dev]"
 
 ```bash
 ruff check .
+ruff format --check .
+mypy src
 pytest -m "not network"
+```
+
+The same lint and formatting checks can run automatically before each commit:
+
+```bash
+pre-commit install
+pre-commit run --all-files
 ```
 
 Tests marked `@pytest.mark.network` make real calls to external services
 (cBioPortal, Ensembl, UniProt, InterPro) and are excluded from the default
-test run. CI never runs them; run them locally only when you need to
-validate against a live upstream API.
+test run. A weekly and manually dispatchable workflow runs them against the
+live services. To run them locally, opt in explicitly:
+
+```bash
+CFH_RUN_NETWORK_TESTS=1 pytest -m network
+```
 
 ## Adding support for a new gene
 
@@ -40,5 +53,6 @@ name.
 ## Pull requests
 
 - Keep changes focused and covered by tests.
-- Run `ruff check .` and `pytest -m "not network"` before opening a PR.
+- Run `pre-commit run --all-files`, `mypy src`, and
+  `pytest -m "not network"` before opening a PR.
 - Describe what changed and how it was verified.

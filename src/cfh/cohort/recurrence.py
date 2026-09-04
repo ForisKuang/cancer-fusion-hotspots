@@ -107,9 +107,7 @@ def gate_genes_by_recurrence(
             f"min_distinct_patients must be non-negative; got {min_distinct_patients!r}"
         )
 
-    passing = [
-        gene for gene in recurrence if gene.distinct_patient_count >= min_distinct_patients
-    ]
+    passing = [gene for gene in recurrence if gene.distinct_patient_count >= min_distinct_patients]
     filtered_out = [
         gene for gene in recurrence if gene.distinct_patient_count < min_distinct_patients
     ]

@@ -607,12 +607,14 @@ def analyze_structural_variant_calls_with_config(
                 events,
                 features,
                 config,
-                {"domain_retention": {
-                    "seed": 42,
-                    "n_permutations": n_permutations,
-                    "genome_nexus_client": client,
-                    **algorithm_params.get("domain_retention", {}),
-                }},
+                {
+                    "domain_retention": {
+                        "seed": 42,
+                        "n_permutations": n_permutations,
+                        "genome_nexus_client": client,
+                        **algorithm_params.get("domain_retention", {}),
+                    }
+                },
             )[0]
         except requests.RequestException as exc:
             raise RealBenchmarkNetworkError(
@@ -659,8 +661,7 @@ def analyze_structural_variant_calls_with_config(
     in_frame_count = sum(event.Frame_status == "in-frame" for event in selected_events)
     retained_count = sum(row["domain_status"] == "retained" for row in rows)
     in_frame_retained_count = sum(
-        row["frame_status"] == "in-frame" and row["domain_status"] == "retained"
-        for row in rows
+        row["frame_status"] == "in-frame" and row["domain_status"] == "retained" for row in rows
     )
     domain_definition = (
         next(
@@ -716,9 +717,7 @@ def analyze_structural_variant_calls_with_config(
         "fisher_odds_ratio": domain_result.Summary["fisher_odds_ratio"],
         "fisher_p_value": domain_result.Summary["fisher_p_value"],
         "permutation_p_value": domain_result.Summary["permutation_empirical_p_value"],
-        "frame_domain_contingency_table": domain_result.Tables[
-            "frame_domain_contingency_table"
-        ],
+        "frame_domain_contingency_table": domain_result.Tables["frame_domain_contingency_table"],
         "partner_counts": partner_counts,
         "domain_accession": config.key_domains[0].accession if has_key_domain else None,
         "domain_start_aa": domain_definition.start_aa if domain_definition else None,
@@ -742,9 +741,7 @@ def analyze_structural_variant_calls_with_config(
             f"{getattr(client, 'base_url', 'https://www.genomenexus.org')}"
             f"/ensembl/canonical-transcript/hgnc/{config.gene_symbol}",
         ],
-        reference=(
-            config.benchmark_reference.model_dump() if config.benchmark_reference else None
-        ),
+        reference=(config.benchmark_reference.model_dump() if config.benchmark_reference else None),
         gene_track=gene_track,
         intragenic_deletions=intragenic_deletions,
     )
@@ -796,9 +793,7 @@ def run_real_benchmark(
     )
     genome_nexus_client = GenomeNexusClient(
         base_url=(
-            study_config.genome_nexus_base_url
-            if study_config
-            else "https://www.genomenexus.org"
+            study_config.genome_nexus_base_url if study_config else "https://www.genomenexus.org"
         )
     )
     try:
@@ -1210,9 +1205,7 @@ def _domain_track_svg(run: RealBenchmarkRun, outlier_ids: set[str]) -> str:
     axis_width = 800.0
     key_domains = _domain_track_key_domains(run)
     positions = [
-        row["breakpoint_protein_position"]
-        for row in run.rows
-        if row["breakpoint_protein_position"]
+        row["breakpoint_protein_position"] for row in run.rows if row["breakpoint_protein_position"]
     ]
     protein_length = (run.gene_track or {}).get("protein_length")
     domain_ends = [d["end_aa"] for d in key_domains if d.get("end_aa") is not None]
@@ -1317,33 +1310,35 @@ def _domain_track_svg(run: RealBenchmarkRun, outlier_ids: set[str]) -> str:
     legend_y = exon_tick_y + exon_tick_label_height + 15.0
     height = legend_y + 15.0
 
-    return "\n".join([
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="920" height="{height:.0f}" '
-        f'viewBox="0 0 920 {height:.0f}">',
-        f'<rect width="920" height="{height:.0f}" fill="white"/>',
-        f'<text x="60" y="28" font-family="sans-serif" font-size="16">'
-        f'{run.gene_symbol} domain-retention track</text>',
-        *domain_elements,
-        f'<line x1="{axis_left:.1f}" y1="{backbone_y:.1f}" x2="{axis_left + axis_width:.1f}" '
-        f'y2="{backbone_y:.1f}" stroke="#444" stroke-width="4"/>',
-        *dots,
-        *position_axis_elements,
-        *exon_tick_elements,
-        f'<circle cx="60" cy="{legend_y:.1f}" r="4" fill="{RETAINED_COLOR}"/>'
-        f'<text x="70" y="{legend_y + 5:.1f}" font-family="sans-serif" font-size="12">'
-        'fully retained</text>',
-        f'<circle cx="180" cy="{legend_y:.1f}" r="4" fill="{TRUNCATED_COLOR}"/>'
-        f'<text x="190" y="{legend_y + 5:.1f}" font-family="sans-serif" font-size="12">'
-        'truncated</text>',
-        f'<circle cx="275" cy="{legend_y:.1f}" r="4" fill="{LOST_COLOR}"/>'
-        f'<text x="285" y="{legend_y + 5:.1f}" font-family="sans-serif" font-size="12">'
-        'fully lost</text>',
-        f'<circle cx="365" cy="{legend_y:.1f}" r="4" fill="white" stroke="{BREAKPOINT_COLOR}" '
-        'stroke-width="1.5"/>'
-        f'<text x="375" y="{legend_y + 5:.1f}" font-family="sans-serif" font-size="12">'
-        'reference discrepancy</text>',
-        '</svg>',
-    ])
+    return "\n".join(
+        [
+            f'<svg xmlns="http://www.w3.org/2000/svg" width="920" height="{height:.0f}" '
+            f'viewBox="0 0 920 {height:.0f}">',
+            f'<rect width="920" height="{height:.0f}" fill="white"/>',
+            f'<text x="60" y="28" font-family="sans-serif" font-size="16">'
+            f"{run.gene_symbol} domain-retention track</text>",
+            *domain_elements,
+            f'<line x1="{axis_left:.1f}" y1="{backbone_y:.1f}" x2="{axis_left + axis_width:.1f}" '
+            f'y2="{backbone_y:.1f}" stroke="#444" stroke-width="4"/>',
+            *dots,
+            *position_axis_elements,
+            *exon_tick_elements,
+            f'<circle cx="60" cy="{legend_y:.1f}" r="4" fill="{RETAINED_COLOR}"/>'
+            f'<text x="70" y="{legend_y + 5:.1f}" font-family="sans-serif" font-size="12">'
+            "fully retained</text>",
+            f'<circle cx="180" cy="{legend_y:.1f}" r="4" fill="{TRUNCATED_COLOR}"/>'
+            f'<text x="190" y="{legend_y + 5:.1f}" font-family="sans-serif" font-size="12">'
+            "truncated</text>",
+            f'<circle cx="275" cy="{legend_y:.1f}" r="4" fill="{LOST_COLOR}"/>'
+            f'<text x="285" y="{legend_y + 5:.1f}" font-family="sans-serif" font-size="12">'
+            "fully lost</text>",
+            f'<circle cx="365" cy="{legend_y:.1f}" r="4" fill="white" stroke="{BREAKPOINT_COLOR}" '
+            'stroke-width="1.5"/>'
+            f'<text x="375" y="{legend_y + 5:.1f}" font-family="sans-serif" font-size="12">'
+            "reference discrepancy</text>",
+            "</svg>",
+        ]
+    )
 
 
 def _comparison_svg(run: RealBenchmarkRun) -> str:
@@ -1357,24 +1352,25 @@ def _comparison_svg(run: RealBenchmarkRun) -> str:
         ),
     ]
     elements = [
-        '<svg xmlns="http://www.w3.org/2000/svg" width="620" height="210" '
-        'viewBox="0 0 620 210">',
+        '<svg xmlns="http://www.w3.org/2000/svg" width="620" height="210" viewBox="0 0 620 210">',
         '<rect width="620" height="210" fill="white"/>',
         f'<text x="20" y="25" font-family="sans-serif" font-size="16">'
-        f'Reference vs {run.study_id}</text>',
+        f"Reference vs {run.study_id}</text>",
     ]
     for index, (label, ref_value, run_value) in enumerate(metrics):
         y = 55 + index * 70
-        elements.extend([
-            f'<text x="20" y="{y}" font-family="sans-serif" font-size="12">{label}</text>',
-            f'<rect x="140" y="{y-14}" width="{ref_value*3.8:.1f}" height="16" fill="#999"/>',
-            f'<text x="530" y="{y}" font-family="sans-serif" font-size="12">'
-            f'reference {ref_value:.1f}%</text>',
-            f'<rect x="140" y="{y+10}" width="{run_value*3.8:.1f}" height="16" '
-            f'fill="{RETAINED_COLOR}"/>',
-            f'<text x="530" y="{y+24}" font-family="sans-serif" font-size="12">'
-            f'run {run_value:.1f}%</text>',
-        ]
+        elements.extend(
+            [
+                f'<text x="20" y="{y}" font-family="sans-serif" font-size="12">{label}</text>',
+                f'<rect x="140" y="{y - 14}" width="{ref_value * 3.8:.1f}" '
+                'height="16" fill="#999"/>',
+                f'<text x="530" y="{y}" font-family="sans-serif" font-size="12">'
+                f"reference {ref_value:.1f}%</text>",
+                f'<rect x="140" y="{y + 10}" width="{run_value * 3.8:.1f}" height="16" '
+                f'fill="{RETAINED_COLOR}"/>',
+                f'<text x="530" y="{y + 24}" font-family="sans-serif" font-size="12">'
+                f"run {run_value:.1f}%</text>",
+            ]
         )
     elements.append("</svg>")
     return "\n".join(elements)
@@ -1439,13 +1435,24 @@ def write_outputs(
 
     discrepancies = _discrepancies(run)
     outliers_path = destination / "outliers.tsv"
-    _write_tsv(outliers_path, discrepancies, [
-        "discrepancy_type", "event_id", "partner_gene", "frame_status",
-        "retained_domains", "lost_domains", "disrupted_domains",
-        "source_annotation_text", "source_site2_effect_on_frame",
-    ])
+    _write_tsv(
+        outliers_path,
+        discrepancies,
+        [
+            "discrepancy_type",
+            "event_id",
+            "partner_gene",
+            "frame_status",
+            "retained_domains",
+            "lost_domains",
+            "disrupted_domains",
+            "source_annotation_text",
+            "source_site2_effect_on_frame",
+        ],
+    )
     reference_ids = {
-        row["event_id"] for row in discrepancies
+        row["event_id"]
+        for row in discrepancies
         if row["discrepancy_type"] == "reference_discrepancy"
     }
     domain_svg = visualization_dir / "domain_retention_outliers.svg"
@@ -1470,14 +1477,20 @@ def write_outputs(
     domain_svg.write_text(_domain_track_svg(run, reference_ids) + "\n")
     comparison_svg.write_text(_comparison_svg(run) + "\n")
     manifest_path = destination / "manifest.json"
-    manifest_path.write_text(json.dumps({
-        "gene": run.gene_symbol,
-        "study_id": run.study_id,
-        "endpoints_used": run.endpoints,
-        "git_sha": _git_sha(),
-        "cli_args": cli_args or [],
-        "timestamp": run.retrieved_at.isoformat(),
-    }, indent=2) + "\n")
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "gene": run.gene_symbol,
+                "study_id": run.study_id,
+                "endpoints_used": run.endpoints,
+                "git_sha": _git_sha(),
+                "cli_args": cli_args or [],
+                "timestamp": run.retrieved_at.isoformat(),
+            },
+            indent=2,
+        )
+        + "\n"
+    )
     paths = {
         "run_directory": destination,
         "manifest": manifest_path,

@@ -219,9 +219,7 @@ def _domain_disruption_paragraph(result: dict, payload: dict) -> str:
     fisher_p = summary.get("fisher_p_value")
     if _finite(fisher_p) is None:
         reason = (
-            warnings[0]
-            if warnings
-            else "no disruption-required domain is configured for this gene"
+            warnings[0] if warnings else "no disruption-required domain is configured for this gene"
         )
         return f"Domain-disruption analysis was skipped: {reason}"
 
@@ -260,8 +258,7 @@ def _cutpoint_detection_paragraph(result: dict, payload: dict) -> str:
     if not summary.get("determinable"):
         reason = summary.get("reason") or "insufficient data"
         return (
-            "Cutpoint detection could not determine a breakpoint boundary for this run: "
-            f"{reason}"
+            f"Cutpoint detection could not determine a breakpoint boundary for this run: {reason}"
         )
 
     n = summary.get("n_events_analyzed")
@@ -301,7 +298,7 @@ def _confidence_stats_paragraph(result: dict, payload: dict) -> str:
     n_b = summary.get("n_group_b")
     sentences = [
         f'Corroborating confidence statistics compared {group_field} groups "{a_label}" '
-        f"(n={n_a}) and \"{b_label}\" (n={n_b})."
+        f'(n={n_a}) and "{b_label}" (n={n_b}).'
     ]
 
     mle = summary.get("mle")

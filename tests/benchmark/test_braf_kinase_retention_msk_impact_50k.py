@@ -201,9 +201,7 @@ def test_braf_kinase_retention_in_real_msk_impact_50k():
     assert any(event.Frame_status == "in-frame" for event in events)
     assert all(feature.Domain_retention_flags["kinase"] != "unknown" for feature in features)
     assert 0 <= result.Summary["fisher_p_value"] <= 1
-    assert sum(row["Event_count"] for row in frequency.Tables["Partner_gene_counts"]) == len(
-        events
-    )
+    assert sum(row["Event_count"] for row in frequency.Tables["Partner_gene_counts"]) == len(events)
     print(
         json.dumps(
             {
@@ -211,8 +209,7 @@ def test_braf_kinase_retention_in_real_msk_impact_50k():
                 "protein_fusions": len(events),
                 "in_frame": sum(event.Frame_status == "in-frame" for event in events),
                 "kinase_retained": sum(
-                    feature.Domain_retention_flags["kinase"] == "retained"
-                    for feature in features
+                    feature.Domain_retention_flags["kinase"] == "retained" for feature in features
                 ),
                 "fisher_p_value": result.Summary["fisher_p_value"],
             },

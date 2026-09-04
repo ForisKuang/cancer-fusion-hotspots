@@ -168,9 +168,7 @@ def test_domain_listed_in_both_key_and_disruption_domains_is_not_double_processe
         gene_symbol="FAKE3",
         canonical_transcript_id="NM_000003",
         protein_id="P00003",
-        key_domains=[
-            KeyDomain(name="Shared domain (retention copy)", source="test", key="shared")
-        ],
+        key_domains=[KeyDomain(name="Shared domain (retention copy)", source="test", key="shared")],
         disruption_required_domains=[
             KeyDomain(name="Shared domain (disruption copy)", source="test", key="shared")
         ],
@@ -202,9 +200,7 @@ def test_default_domain_source_is_shared_across_calls_without_explicit_source(
     """The real call path (no manually-shared domain_source) must still cache."""
     gene_config = load_gene_config("braf")
     mock_session = MagicMock()
-    mock_session.get.return_value.json.return_value = json.loads(
-        uniprot_fixture_path.read_text()
-    )
+    mock_session.get.return_value.json.return_value = json.loads(uniprot_fixture_path.read_text())
     mock_session.get.return_value.raise_for_status.return_value = None
 
     shared_source = UniProtDomainSource(session=mock_session)

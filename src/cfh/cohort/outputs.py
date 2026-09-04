@@ -153,9 +153,7 @@ def build_honorable_mentions(
     summary.
     """
     candidates = [
-        row
-        for row in rows
-        if not row["fdr_significant"] and row.get("fisher_p_value") is not None
+        row for row in rows if not row["fdr_significant"] and row.get("fisher_p_value") is not None
     ]
     candidates.sort(key=lambda row: (row["fisher_p_value"], row["gene_symbol"]))
     mentions = []
