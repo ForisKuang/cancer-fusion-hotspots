@@ -357,3 +357,43 @@ def test_genome_nexus_client_accepts_injected_session_for_testing():
     assert client.session is not None
     _fetch = cbioportal_api.fetch_structural_variants  # exercised via run_cohort_scan above
     assert callable(_fetch)
+
+
+def test_manhattan_svg_is_wired_into_all_three_cohort_scan_outputs(mock_session, tmp_path):
+    """The genome-wide Manhattan/volcano SVG is written to
+    ``cohort_scan/manhattan.svg``, embedded via Markdown image syntax in
+    ``summary.md``, and embedded (not just linked) as a figure in
+    ``summary.pdf`` -- for whatever genes actually scanned in this run, no
+    gene names hardcoded here."""
+    result = run_cohort_scan(
+        _STUDY_ID,
+        min_distinct_patients=5,
+        n_permutations=50,
+        adaptive=True,
+        n_permutations_small=10,
+        cache_dir=tmp_path / "cache",
+        session=mock_session,
+    )
+    paths = write_cohort_scan_outputs(result, tmp_path / "runs", pdf=True)
+
+    manhattan_svg_path = paths["manhattan_svg"]
+    assert manhattan_svg_path.exists()
+    assert manhattan_svg_path.name == "manhattan.svg"
+    assert manhattan_svg_path.parent == paths["summary_markdown"].parent
+    svg_text = manhattan_svg_path.read_text()
+    assert svg_text.startswith("<svg")
+    # BRAF and RET both produced FDR-tested p-values in this fixture (see
+    # the module-level FDR assertions above), so both must appear as
+    # plotted, gene-attributed points.
+    assert 'data-gene="BRAF"' in svg_text
+    assert 'data-gene="RET"' in svg_text
+
+    markdown_text = paths["summary_markdown"].read_text()
+    assert "![Genome-wide fusion-hotspot summary plot](manhattan.svg)" in markdown_text
+
+    from pypdf import PdfReader
+
+    pdf_text = "".join(
+        page.extract_text() or "" for page in PdfReader(str(paths["summary_pdf"])).pages
+    )
+    assert "manhattan" in pdf_text
