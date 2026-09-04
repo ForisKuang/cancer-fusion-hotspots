@@ -530,9 +530,11 @@ def _write_manuscript_markdown(
     ]
     significant_rows = sorted(
         (rows_by_gene[gene] for gene in significant_genes if gene in rows_by_gene),
-        key=lambda row: row.get("min_fdr_adjusted_q_value")
-        if row.get("min_fdr_adjusted_q_value") is not None
-        else 1.0,
+        key=lambda row: (
+            row.get("min_fdr_adjusted_q_value")
+            if row.get("min_fdr_adjusted_q_value") is not None
+            else 1.0
+        ),
     )
     if significant_rows or honorable_mentions:
         lines.extend(["### FDR-significant and honorable-mention genes", ""])
@@ -643,9 +645,11 @@ def _write_manuscript_pdf(
     results_table_rows = [table_header]
     significant_rows = sorted(
         (rows_by_gene[gene] for gene in significant_genes if gene in rows_by_gene),
-        key=lambda row: row.get("min_fdr_adjusted_q_value")
-        if row.get("min_fdr_adjusted_q_value") is not None
-        else 1.0,
+        key=lambda row: (
+            row.get("min_fdr_adjusted_q_value")
+            if row.get("min_fdr_adjusted_q_value") is not None
+            else 1.0
+        ),
     )
     for row in significant_rows:
         results_table_rows.append(

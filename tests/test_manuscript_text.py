@@ -338,9 +338,7 @@ def test_manuscript_methods_p_value_correction_count_matches_q_bearing_genes_not
     methods = render_manuscript_methods(payload)
     caption = render_manhattan_caption(payload)
 
-    n_with_q = sum(
-        1 for row in payload["genes"] if row.get("min_fdr_adjusted_q_value") is not None
-    )
+    n_with_q = sum(1 for row in payload["genes"] if row.get("min_fdr_adjusted_q_value") is not None)
     assert n_with_q == 359
     assert f"across the {n_with_q} genes that produced at least one computable p-value" in methods
     # Never claims correction was applied across all 544 scanned genes.

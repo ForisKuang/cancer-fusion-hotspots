@@ -128,9 +128,7 @@ def _retained_exon_ranks(
     )
     if role == "five_prime":
         return [
-            boundary.exon_rank
-            for boundary in boundaries
-            if boundary.end_aa <= junction_position_aa
+            boundary.exon_rank for boundary in boundaries if boundary.end_aa <= junction_position_aa
         ]
     if role == "three_prime":
         return [

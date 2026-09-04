@@ -149,8 +149,7 @@ def render_manuscript_abstract(payload: dict) -> str:
             )
         else:
             lead = (
-                f"All {counts['n_scanned']} gated gene{_plural(counts['n_scanned'])} were "
-                "attempted"
+                f"All {counts['n_scanned']} gated gene{_plural(counts['n_scanned'])} were attempted"
             )
         sentences.append(
             f"{lead}: {_count_display(curated)} using hand-curated gene configs and "
@@ -262,8 +261,7 @@ def render_manuscript_methods(payload: dict) -> str:
             )
         else:
             lead = (
-                f"All {counts['n_scanned']} gated gene{_plural(counts['n_scanned'])} were "
-                "attempted"
+                f"All {counts['n_scanned']} gated gene{_plural(counts['n_scanned'])} were attempted"
             )
         sentences.append(
             f"{lead}: {_count_display(curated)} using hand-curated gene configs and "
