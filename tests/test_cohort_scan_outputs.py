@@ -25,7 +25,7 @@ REPO_ROOT = Path(__file__).parent.parent
 REAL_COHORT_SCAN_SUMMARY_JSON = (
     REPO_ROOT
     / "runs"
-    / "cohort-scan_msk_impact_50k_2026_20260904T005352Z"
+    / "cohort-scan_msk_impact_50k_2026_20260904T144201Z"
     / "cohort_scan"
     / "summary.json"
 )
