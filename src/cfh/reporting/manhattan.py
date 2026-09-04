@@ -113,11 +113,7 @@ def _label_indices(
         reverse=True,
     )
     other_idx = sorted(
-        (
-            index
-            for index in remaining
-            if points[index]["gene_symbol"] not in priority_gene_symbols
-        ),
+        (index for index in remaining if points[index]["gene_symbol"] not in priority_gene_symbols),
         key=by_neg_log_q,
         reverse=True,
     )
@@ -219,8 +215,8 @@ def render_manhattan_svg(
         )
         if point["partner_gene"]:
             title = _escape_xml_text(
-                f'{point["gene_symbol"]}: top composite-evidence partner gene '
-                f'{point["partner_gene"]}'
+                f"{point['gene_symbol']}: top composite-evidence partner gene "
+                f"{point['partner_gene']}"
             )
             elements.append(f"<circle {circle_attrs}><title>{title}</title></circle>")
         else:
