@@ -132,6 +132,24 @@ def test_fusion_schematic_partner_labels_match_real_partner_names():
     assert labels[0].startswith("KIAA1549")
 
 
+def test_fusion_schematic_shows_real_exon_numbers_from_the_canonical_transcript():
+    payload = _payload()
+    exon_ranks = sorted(
+        {b["exon_rank"] for b in payload["gene_track"]["exon_boundaries_aa"]}
+    )
+    assert exon_ranks  # the real BRAF canonical transcript has exon boundaries
+    svg = render_fusion_schematic_svg(payload)
+    for rank in exon_ranks:
+        assert f">E{rank}<" in svg
+
+
+def test_fusion_schematic_shows_real_domain_names_not_just_colors():
+    payload = _payload()
+    real_domain_names = {d["name"] for d in payload["gene_track"]["domains"] if d.get("name")}
+    svg = render_fusion_schematic_svg(payload)
+    assert any(name in svg for name in real_domain_names)
+
+
 def test_intragenic_deletion_schematic_row_count_and_bounds():
     payload = _payload()
     protein_length = payload["gene_track"]["protein_length"]
