@@ -228,6 +228,32 @@ def normalize(
         source_row_number = row.get("Source_row_number")
         event_id = f"EVT-{sample_id or 'UNKNOWN'}-{source_row_number}"
 
+        paired_end_read_support = _as_int(row.get("Tumor_Paired_End_Read_Count"))
+        split_read_support = _as_int(row.get("Tumor_Split_Read_Count"))
+        tumor_variant_count = _as_int(row.get("Tumor_Variant_Count"))
+        # cBioPortal uses negative counts (normally -1) as an
+        # unavailable-value sentinel, not as biological measurements.
+        paired_end_read_support = (
+            paired_end_read_support
+            if paired_end_read_support is not None and paired_end_read_support >= 0
+            else None
+        )
+        split_read_support = (
+            split_read_support
+            if split_read_support is not None and split_read_support >= 0
+            else None
+        )
+        tumor_variant_count = (
+            tumor_variant_count
+            if tumor_variant_count is not None and tumor_variant_count >= 0
+            else None
+        )
+        read_support_values = [
+            value
+            for value in (paired_end_read_support, split_read_support)
+            if value is not None
+        ]
+
         events.append(
             FusionEvent(
                 Event_id=event_id,
@@ -246,9 +272,10 @@ def normalize(
                 Is_protein_fusion=classification["Is_protein_fusion"],
                 Is_antisense=_is_antisense(row),
                 Confidence_class=_confidence_class(row),
-                Paired_end_read_support=_as_int(row.get("Tumor_Paired_End_Read_Count")),
-                Split_read_support=_as_int(row.get("Tumor_Split_Read_Count")),
-                Tumor_variant_count=None,
+                Paired_end_read_support=paired_end_read_support,
+                Split_read_support=split_read_support,
+                Total_read_support=(sum(read_support_values) if read_support_values else None),
+                Tumor_variant_count=tumor_variant_count,
                 Site1_description=(
                     f"{gene1}:{row.get('Site1_Chromosome')}:{row.get('Site1_Position')}"
                     if gene1

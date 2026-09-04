@@ -21,6 +21,7 @@ FUSION_EVENT_FIELDS = {
     "Confidence_class",
     "Paired_end_read_support",
     "Split_read_support",
+    "Total_read_support",
     "Tumor_variant_count",
     "Site1_description",
     "Site2_description",

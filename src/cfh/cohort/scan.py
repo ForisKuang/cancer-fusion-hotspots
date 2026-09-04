@@ -19,6 +19,7 @@ from pathlib import Path
 
 import requests
 
+from cfh.algorithms.confidence_stats import default_confidence_stats_params
 from cfh.algorithms.registry import list_algorithms
 from cfh.cohort.auto_config import (
     DEFAULT_GENOME_NEXUS_BASE_URL,
@@ -253,7 +254,10 @@ def run_cohort_scan(
                 genome_nexus_client=genome_nexus_client,
                 n_permutations=n_permutations,
                 algorithm_names=algorithm_names,
-                algorithm_params=algorithm_params,
+                algorithm_params={
+                    **algorithm_params,
+                    "confidence_stats": default_confidence_stats_params(config),
+                },
             )
             p_value_rows = collect_p_values_from_algorithm_results(
                 symbol, study_id, run.results, source=f"cohort_scan:{symbol}"

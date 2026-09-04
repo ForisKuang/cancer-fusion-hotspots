@@ -26,6 +26,7 @@ class FusionEvent(BaseModel):
     Confidence_class: Optional[str] = None
     Paired_end_read_support: Optional[int] = None
     Split_read_support: Optional[int] = None
+    Total_read_support: Optional[int] = None
     Tumor_variant_count: Optional[int] = None
     Site1_description: Optional[str] = None
     Site2_description: Optional[str] = None

@@ -91,6 +91,7 @@ def test_structural_variant_api_rows_are_adapted_to_production_normalizer_schema
                 "site2Position": 140493152,
                 "site2EffectOnFrame": "NA",
                 "connectionType": "3to3",
+                "tumorVariantCount": 35,
                 "eventInfo": "Protein Fusion: in frame  {KIAA1549:BRAF}",
                 "patientId": "PATIENT-001",
             }
@@ -101,6 +102,7 @@ def test_structural_variant_api_rows_are_adapted_to_production_normalizer_schema
     assert rows.loc[0, "Site2_Effect_On_Frame"] == "NA"
     assert rows.loc[0, "Event_Info"] == "Protein Fusion: in frame  {KIAA1549:BRAF}"
     assert rows.loc[0, "Source_row_number"] == 1
+    assert rows.loc[0, "Tumor_Variant_Count"] == 35
     assert rows.loc[0, "Extra_fields"]["patientId"] == "PATIENT-001"
 
 

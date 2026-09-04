@@ -34,6 +34,7 @@ _API_TO_NORMALIZED_COLUMNS = {
     "site2EffectOnFrame": "Site2_Effect_On_Frame",
     "tumorSplitReadCount": "Tumor_Split_Read_Count",
     "tumorPairedEndReadCount": "Tumor_Paired_End_Read_Count",
+    "tumorVariantCount": "Tumor_Variant_Count",
     "svStatus": "SV_Status",
     "ncbiBuild": "NCBI_Build",
     "connectionType": "Connection_Type",
@@ -112,6 +113,19 @@ def fetch_structural_variant_genes(
     return response.json()
 
 
+_API_OUTPUT_COLUMNS = [
+    *dict.fromkeys([*OUTPUT_COLUMNS, *_API_TO_NORMALIZED_COLUMNS.values()])
+]
+"""``OUTPUT_COLUMNS`` plus every API field the live fetch path can supply.
+
+``tumorVariantCount`` (unlike the split/paired-end read counts) has no
+column in the offline ``data_sv.txt`` schema that ``sv_parser.OUTPUT_COLUMNS``
+describes, so it must be added here rather than in ``sv_parser`` -- adding it
+there would make every offline SV fixture missing that column (all of them)
+warn about it.
+"""
+
+
 def structural_variants_to_dataframe(calls: Iterable[dict]) -> pd.DataFrame:
     """Adapt cBioPortal camelCase API objects to the production SV schema."""
     records = []
@@ -126,4 +140,4 @@ def structural_variants_to_dataframe(calls: Iterable[dict]) -> pd.DataFrame:
         record["Source_row_number"] = row_number
         record["Parse_warnings"] = None
         records.append(record)
-    return pd.DataFrame.from_records(records, columns=OUTPUT_COLUMNS)
+    return pd.DataFrame.from_records(records, columns=_API_OUTPUT_COLUMNS)

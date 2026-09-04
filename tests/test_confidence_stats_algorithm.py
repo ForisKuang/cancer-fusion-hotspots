@@ -1,8 +1,13 @@
 from cfh.algorithms import registry
-from cfh.algorithms.confidence_stats import ConfidenceStatsAlgorithm
+from cfh.algorithms.confidence_stats import (
+    ConfidenceStatsAlgorithm,
+    default_confidence_stats_params,
+    resolve_confidence_stats_params,
+)
 from cfh.genes.registry import load_gene_config
 from cfh.model.algorithm_result import AlgorithmResult
 from cfh.model.fusion_event import FusionEvent
+from cfh.model.fusion_feature import FusionFeature
 
 
 def _make_events() -> list[FusionEvent]:
@@ -35,6 +40,52 @@ def _make_events() -> list[FusionEvent]:
 def test_algorithm_registered():
     assert registry.get("confidence_stats") is ConfidenceStatsAlgorithm
     assert "confidence_stats" in registry.list_algorithms()
+
+
+def test_real_pipeline_defaults_collapse_domain_states_and_use_tumor_variant_count():
+    config = load_gene_config("RET")
+    params = default_confidence_stats_params(config)
+    events = [
+        FusionEvent(
+            Event_id=f"e{i}",
+            Cohort="cohort1",
+            Is_protein_fusion=True,
+            Tumor_variant_count=count,
+        )
+        for i, count in enumerate((30, 32, 4, 6, 8, 10))
+    ]
+    statuses = ("retained", "retained", "lost", "lost", "disrupted", "disrupted")
+    features = [
+        FusionFeature(
+            Event_id=event.Event_id,
+            Gene="RET",
+            Domain_retention_flags={"kinase": status},
+        )
+        for event, status in zip(events, statuses, strict=True)
+    ]
+
+    result = ConfidenceStatsAlgorithm().run(events, features, config, params)
+
+    assert result.Summary["group_a_label"] == "retained"
+    assert result.Summary["group_b_label"] == "not_retained"
+    assert result.Summary["n_group_a"] == 2
+    assert result.Summary["n_group_b"] == 4
+    assert result.Summary["mle"]["groups"]["retained"]["point_estimate"] == 1.0
+    assert result.Summary["ttest"]["numeric_field"] == "Tumor_variant_count"
+    assert result.Summary["ttest"]["p_value"] < 0.05
+
+
+def test_default_params_can_be_overridden_by_real_pipeline_caller():
+    custom = resolve_confidence_stats_params(
+        load_gene_config("BRAF"),
+        {"group_field": "Frame_status", "numeric_field": "Tumor_variant_count"},
+    )
+
+    assert custom["group_field"] == "Frame_status"
+    assert "group_key" not in custom
+    assert "group_value_map" not in custom
+    assert "group_values" not in custom
+    assert custom["numeric_field"] == "Tumor_variant_count"
 
 
 def test_both_mle_and_ttest_requested():

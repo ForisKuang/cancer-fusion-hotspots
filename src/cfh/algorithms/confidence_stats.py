@@ -36,6 +36,60 @@ ALGORITHM_NAME = "confidence_stats"
 ALGORITHM_VERSION = "1.0.0"
 
 
+def default_confidence_stats_params(gene_config: GeneConfig) -> dict[str, Any]:
+    """Return working, gene-agnostic defaults for a mapped fusion run.
+
+    ``Domain_retention_flags`` is a mapping because one feature can carry
+    several domain classifications.  The primary configured key merely
+    selects which existing value to compare; no gene symbol or gene-specific
+    statistical behavior is encoded here.  The algorithm is binary, so the
+    biologically equivalent ``lost`` and ``disrupted`` states are explicitly
+    collapsed into ``not_retained``.
+
+    All records reaching the real benchmark are selected protein fusions.
+    Their ``Is_protein_fusion`` MLE therefore quantifies the sample-size-driven
+    certainty of that selection in each retention group.  The numeric field
+    defaults to ``Tumor_variant_count`` rather than ``Total_read_support``: on
+    the live cBioPortal structural-variant API, ``tumorSplitReadCount`` /
+    ``tumorPairedEndReadCount`` come back as the unavailable-value sentinel
+    (``-1``, normalized to ``None``) for essentially every record, while
+    ``tumorVariantCount`` is populated for the vast majority -- so it's the
+    numeric field that actually lets the Welch comparison run on real data.
+    """
+    if not gene_config.key_domains:
+        return {}
+    primary_domain = gene_config.key_domains[0]
+    domain_key = primary_domain.key or primary_domain.name
+    return {
+        "group_field": "Domain_retention_flags",
+        "group_key": domain_key,
+        "group_value_map": {
+            "retained": "retained",
+            "lost": "not_retained",
+            "disrupted": "not_retained",
+            "unknown": None,
+        },
+        "group_values": ["retained", "not_retained"],
+        "outcome_field": "Is_protein_fusion",
+        "numeric_field": "Tumor_variant_count",
+    }
+
+
+def resolve_confidence_stats_params(
+    gene_config: GeneConfig, overrides: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    """Merge caller overrides without retaining incompatible group defaults."""
+    defaults = default_confidence_stats_params(gene_config)
+    overrides = overrides or {}
+    if overrides.get("group_field", defaults.get("group_field")) != defaults.get(
+        "group_field"
+    ):
+        for key in ("group_key", "group_value_map", "group_values"):
+            if key not in overrides:
+                defaults.pop(key, None)
+    return {**defaults, **overrides}
+
+
 def _build_rows(events: list[FusionEvent], features: list[FusionFeature]) -> list[dict]:
     """Join events and features on ``Event_id`` into flat field-name -> value dicts.
 
@@ -72,15 +126,25 @@ def _split_groups(
     rows: list[dict],
     group_field: str,
     group_values: Optional[list] = None,
+    group_key: str | None = None,
+    group_value_map: dict[Any, Any] | None = None,
 ) -> tuple[tuple[Any, list[dict]], tuple[Any, list[dict]]]:
     """Split rows into two groups by the distinct values of ``group_field``."""
+    def group_value(row: dict) -> Any:
+        value = row.get(group_field)
+        if group_key is not None:
+            value = value.get(group_key) if isinstance(value, dict) else None
+        if group_value_map is not None:
+            value = group_value_map.get(value, value)
+        return value
+
     if group_values is not None:
         if len(group_values) != 2:
             raise ValueError("group_values must contain exactly two values")
         val_a, val_b = group_values
     else:
         distinct = sorted(
-            {row.get(group_field) for row in rows if row.get(group_field) is not None},
+            {group_value(row) for row in rows if group_value(row) is not None},
             key=str,
         )
         if len(distinct) != 2:
@@ -90,8 +154,8 @@ def _split_groups(
             )
         val_a, val_b = distinct
 
-    group_a = [row for row in rows if row.get(group_field) == val_a]
-    group_b = [row for row in rows if row.get(group_field) == val_b]
+    group_a = [row for row in rows if group_value(row) == val_a]
+    group_b = [row for row in rows if group_value(row) == val_b]
     return (val_a, group_a), (val_b, group_b)
 
 
@@ -109,7 +173,13 @@ def _mle_block(
         outcomes = [row.get(outcome_field) for row in rows if row.get(outcome_field) is not None]
         n = len(outcomes)
         successes = sum(1 for value in outcomes if bool(value))
-        ci = binomial_mle_confidence_interval(successes, n, confidence=confidence, method=method)
+        ci = (
+            binomial_mle_confidence_interval(
+                successes, n, confidence=confidence, method=method
+            )
+            if n
+            else {"point_estimate": None, "ci_low": None, "ci_high": None, "method": method}
+        )
         groups[str(label)] = {"n": n, "successes": successes, **ci}
     return {"outcome_field": outcome_field, "groups": groups}
 
@@ -123,7 +193,17 @@ def _ttest_block(
     label_b, rows_b = group_b
     values_a = [row.get(numeric_field) for row in rows_a if row.get(numeric_field) is not None]
     values_b = [row.get(numeric_field) for row in rows_b if row.get(numeric_field) is not None]
-    result = welch_t_test(values_a, values_b)
+    result = (
+        welch_t_test(values_a, values_b)
+        if len(values_a) >= 2 and len(values_b) >= 2
+        else {
+            "t_statistic": None,
+            "p_value": None,
+            "df": None,
+            "mean_a": sum(values_a) / len(values_a) if values_a else None,
+            "mean_b": sum(values_b) / len(values_b) if values_b else None,
+        }
+    )
     return {
         "numeric_field": numeric_field,
         "group_a_label": str(label_a),
@@ -146,6 +226,10 @@ class ConfidenceStatsAlgorithm(Algorithm):
         group_values (list, optional): explicit [value_a, value_b] to use
             for the two groups; defaults to the two distinct non-null
             values observed for ``group_field``.
+        group_key (str, optional): when ``group_field`` contains a mapping,
+            compare the value at this key.
+        group_value_map (dict, optional): map observed group values before
+            splitting, for example to collapse several states into one.
         outcome_field (str, optional): boolean field whose per-group
             proportion is estimated via binomial MLE/CI. Omit to skip the
             MLE block entirely.
@@ -185,9 +269,13 @@ class ConfidenceStatsAlgorithm(Algorithm):
         confidence = params.get("confidence", 0.95)
         mle_method = params.get("mle_method", "wilson")
         group_values = params.get("group_values")
+        group_key = params.get("group_key")
+        group_value_map = params.get("group_value_map")
 
         rows = _build_rows(events, features)
-        group_a, group_b = _split_groups(rows, group_field, group_values)
+        group_a, group_b = _split_groups(
+            rows, group_field, group_values, group_key, group_value_map
+        )
 
         summary: dict = {
             "group_field": group_field,
@@ -200,14 +288,21 @@ class ConfidenceStatsAlgorithm(Algorithm):
         if outcome_field:
             summary["mle"] = _mle_block(group_a, group_b, outcome_field, confidence, mle_method)
 
+        warnings: list[str] = []
         if numeric_field:
             summary["ttest"] = _ttest_block(group_a, group_b, numeric_field)
+            if summary["ttest"]["p_value"] is None:
+                warnings.append(
+                    f"Welch's t-test for {numeric_field!r} was not applicable; "
+                    "each group requires at least two non-null observations."
+                )
 
         return AlgorithmResult(
             Algorithm=ALGORITHM_NAME,
             Algorithm_version=ALGORITHM_VERSION,
             Parameters=params,
             Summary=summary,
+            Warnings=warnings,
             Created_at=datetime.now(timezone.utc),
         )
 
