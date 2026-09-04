@@ -35,6 +35,10 @@ from cfh.stats.ttest import welch_t_test
 ALGORITHM_NAME = "confidence_stats"
 ALGORITHM_VERSION = "1.0.0"
 
+_NO_SUCCESS_VALUE = object()
+"""Sentinel distinguishing "no ``outcome_success_value`` given" from a
+caller legitimately passing ``None`` as the success value."""
+
 
 def default_confidence_stats_params(gene_config: GeneConfig) -> dict[str, Any]:
     """Return working, gene-agnostic defaults for a mapped fusion run.
@@ -46,15 +50,30 @@ def default_confidence_stats_params(gene_config: GeneConfig) -> dict[str, Any]:
     biologically equivalent ``lost`` and ``disrupted`` states are explicitly
     collapsed into ``not_retained``.
 
-    All records reaching the real benchmark are selected protein fusions.
-    Their ``Is_protein_fusion`` MLE therefore quantifies the sample-size-driven
-    certainty of that selection in each retention group.  The numeric field
-    defaults to ``Tumor_variant_count`` rather than ``Total_read_support``: on
-    the live cBioPortal structural-variant API, ``tumorSplitReadCount`` /
-    ``tumorPairedEndReadCount`` come back as the unavailable-value sentinel
-    (``-1``, normalized to ``None``) for essentially every record, while
-    ``tumorVariantCount`` is populated for the vast majority -- so it's the
-    numeric field that actually lets the Welch comparison run on real data.
+    The MLE outcome defaults to ``Frame_status == "in-frame"`` (via
+    ``outcome_success_value``), *not* ``Is_protein_fusion``: every event
+    reaching the real benchmark has already been filtered to
+    ``Is_protein_fusion is True`` upstream (see
+    ``real_benchmark._is_target_protein_fusion``), so an MLE over
+    ``Is_protein_fusion`` would be tautological -- guaranteed 100% success in
+    every non-empty group, always, regardless of gene or cohort. That
+    would feed a fixed, content-free CI width straight into
+    ``composite_score``'s ``confidence_certainty`` sub-score, making larger
+    groups look spuriously more "certain" for no biological reason.
+    ``Frame_status`` is *not* filtered upstream and genuinely varies
+    ("in-frame"/"out-of-frame"/"unknown"), so its per-group in-frame rate is
+    a real, non-tautological quantity -- how often the retained-domain group
+    is in-frame vs. how often the not-retained group is. ``unknown`` is
+    excluded from the denominator via ``outcome_valid_values`` rather than
+    counted as a failure, since it means "undetermined," not "out-of-frame".
+
+    The numeric field defaults to ``Tumor_variant_count`` rather than
+    ``Total_read_support``: on the live cBioPortal structural-variant API,
+    ``tumorSplitReadCount``/``tumorPairedEndReadCount`` come back as the
+    unavailable-value sentinel (``-1``, normalized to ``None``) for
+    essentially every record, while ``tumorVariantCount`` is populated for
+    the vast majority -- so it's the numeric field that actually lets the
+    Welch comparison run on real data.
     """
     if not gene_config.key_domains:
         return {}
@@ -70,7 +89,9 @@ def default_confidence_stats_params(gene_config: GeneConfig) -> dict[str, Any]:
             "unknown": None,
         },
         "group_values": ["retained", "not_retained"],
-        "outcome_field": "Is_protein_fusion",
+        "outcome_field": "Frame_status",
+        "outcome_success_value": "in-frame",
+        "outcome_valid_values": ["in-frame", "out-of-frame"],
         "numeric_field": "Tumor_variant_count",
     }
 
@@ -78,13 +99,19 @@ def default_confidence_stats_params(gene_config: GeneConfig) -> dict[str, Any]:
 def resolve_confidence_stats_params(
     gene_config: GeneConfig, overrides: dict[str, Any] | None = None
 ) -> dict[str, Any]:
-    """Merge caller overrides without retaining incompatible group defaults."""
+    """Merge caller overrides without retaining incompatible group/outcome defaults."""
     defaults = default_confidence_stats_params(gene_config)
     overrides = overrides or {}
     if overrides.get("group_field", defaults.get("group_field")) != defaults.get(
         "group_field"
     ):
         for key in ("group_key", "group_value_map", "group_values"):
+            if key not in overrides:
+                defaults.pop(key, None)
+    if overrides.get("outcome_field", defaults.get("outcome_field")) != defaults.get(
+        "outcome_field"
+    ):
+        for key in ("outcome_success_value", "outcome_valid_values"):
             if key not in overrides:
                 defaults.pop(key, None)
     return {**defaults, **overrides}
@@ -165,23 +192,47 @@ def _mle_block(
     outcome_field: str,
     confidence: float,
     method: str,
-) -> dict:
+    outcome_success_value: Any = _NO_SUCCESS_VALUE,
+    outcome_valid_values: Optional[list] = None,
+) -> tuple[dict, list[str]]:
+    """Compute the per-group binomial MLE/CI for ``outcome_field``.
+
+    Success is ``value == outcome_success_value`` when that's given;
+    otherwise falls back to ``bool(value)`` for a plain boolean field. A
+    caller-facing string field (e.g. ``Frame_status``) is truthy for *every*
+    non-empty value, so without ``outcome_success_value`` an MLE over such a
+    field would silently compare the wrong thing rather than error --
+    callers using a non-boolean ``outcome_field`` must pass it explicitly.
+
+    ``outcome_valid_values``, when given, restricts the denominator to those
+    values (e.g. excluding an "unknown"/undetermined state from counting as
+    a failure) in addition to excluding ``None``.
+    """
     label_a, rows_a = group_a
     label_b, rows_b = group_b
     groups = {}
+    warnings: list[str] = []
     for label, rows in ((label_a, rows_a), (label_b, rows_b)):
         outcomes = [row.get(outcome_field) for row in rows if row.get(outcome_field) is not None]
+        if outcome_valid_values is not None:
+            outcomes = [value for value in outcomes if value in outcome_valid_values]
         n = len(outcomes)
-        successes = sum(1 for value in outcomes if bool(value))
-        ci = (
-            binomial_mle_confidence_interval(
+        if outcome_success_value is not _NO_SUCCESS_VALUE:
+            successes = sum(1 for value in outcomes if value == outcome_success_value)
+        else:
+            successes = sum(1 for value in outcomes if bool(value))
+        if n:
+            ci = binomial_mle_confidence_interval(
                 successes, n, confidence=confidence, method=method
             )
-            if n
-            else {"point_estimate": None, "ci_low": None, "ci_high": None, "method": method}
-        )
+        else:
+            ci = {"point_estimate": None, "ci_low": None, "ci_high": None, "method": method}
+            warnings.append(
+                f"MLE binomial CI for {outcome_field!r} was not applicable for group "
+                f"{label!r}; it had no valid non-null observations."
+            )
         groups[str(label)] = {"n": n, "successes": successes, **ci}
-    return {"outcome_field": outcome_field, "groups": groups}
+    return {"outcome_field": outcome_field, "groups": groups}, warnings
 
 
 def _ttest_block(
@@ -230,9 +281,18 @@ class ConfidenceStatsAlgorithm(Algorithm):
             compare the value at this key.
         group_value_map (dict, optional): map observed group values before
             splitting, for example to collapse several states into one.
-        outcome_field (str, optional): boolean field whose per-group
+        outcome_field (str, optional): field whose per-group success
             proportion is estimated via binomial MLE/CI. Omit to skip the
             MLE block entirely.
+        outcome_success_value (any, optional): value that counts as
+            "success" for ``outcome_field``. Required for a non-boolean
+            ``outcome_field`` (e.g. a string like ``Frame_status``) --
+            without it, every non-empty string is truthy and the MLE would
+            silently compare the wrong thing. Omit only for a genuinely
+            boolean ``outcome_field``, where it falls back to ``bool(value)``.
+        outcome_valid_values (list, optional): restrict the MLE denominator
+            to these ``outcome_field`` values, excluding e.g. an "unknown"/
+            undetermined state from counting as a failure.
         confidence (float, optional): confidence level for the MLE
             interval, default 0.95.
         mle_method (str, optional): ``"wilson"`` (default) or
@@ -271,6 +331,8 @@ class ConfidenceStatsAlgorithm(Algorithm):
         group_values = params.get("group_values")
         group_key = params.get("group_key")
         group_value_map = params.get("group_value_map")
+        outcome_success_value = params.get("outcome_success_value", _NO_SUCCESS_VALUE)
+        outcome_valid_values = params.get("outcome_valid_values")
 
         rows = _build_rows(events, features)
         group_a, group_b = _split_groups(
@@ -285,10 +347,19 @@ class ConfidenceStatsAlgorithm(Algorithm):
             "n_group_b": len(group_b[1]),
         }
 
-        if outcome_field:
-            summary["mle"] = _mle_block(group_a, group_b, outcome_field, confidence, mle_method)
-
         warnings: list[str] = []
+        if outcome_field:
+            summary["mle"], mle_warnings = _mle_block(
+                group_a,
+                group_b,
+                outcome_field,
+                confidence,
+                mle_method,
+                outcome_success_value,
+                outcome_valid_values,
+            )
+            warnings.extend(mle_warnings)
+
         if numeric_field:
             summary["ttest"] = _ttest_block(group_a, group_b, numeric_field)
             if summary["ttest"]["p_value"] is None:

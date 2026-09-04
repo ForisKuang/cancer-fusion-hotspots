@@ -2,7 +2,7 @@
   "gene_symbol": "BRAF",
   "study_id": "msk_impact_50k_2026",
   "molecular_profile_id": "msk_impact_50k_2026_structural_variants",
-  "retrieved_at": "2026-09-04T16:14:01.952197+00:00",
+  "retrieved_at": "2026-09-04T17:27:38.180896+00:00",
   "summary": {
     "raw_structural_variant_count": 251,
     "total_fusions": 179,
@@ -4079,7 +4079,7 @@
         "domain_retention_p_value_used": 0.04595404595404595,
         "domain_disruption_p_value_used": 1.0,
         "inferred_cutpoint_aa": 327,
-        "Runtime_seconds": 0.0005887079751119018
+        "Runtime_seconds": 0.0003382079885341227
       },
       "Tables": {
         "composite_evidence_ranking": [
@@ -4090,7 +4090,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.9846938775510204,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4098,7 +4098,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.2932642795865671,
+            "Composite_score": 0.2792922449674053,
             "Rank": 1
           },
           {
@@ -4108,7 +4108,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 1.0,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4116,7 +4116,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.2737724884567074,
+            "Composite_score": 0.2598004538375456,
             "Rank": 2
           },
           {
@@ -4126,7 +4126,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 1.0,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4134,7 +4134,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.2737724884567074,
+            "Composite_score": 0.2598004538375456,
             "Rank": 3
           },
           {
@@ -4144,7 +4144,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 1.0,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4152,7 +4152,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.2737724884567074,
+            "Composite_score": 0.2598004538375456,
             "Rank": 4
           },
           {
@@ -4162,7 +4162,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 1.0,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4170,7 +4170,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.2737724884567074,
+            "Composite_score": 0.2598004538375456,
             "Rank": 5
           },
           {
@@ -4180,7 +4180,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 1.0,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4188,7 +4188,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.2737724884567074,
+            "Composite_score": 0.2598004538375456,
             "Rank": 6
           },
           {
@@ -4198,7 +4198,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 1.0,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4206,7 +4206,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.2737724884567074,
+            "Composite_score": 0.2598004538375456,
             "Rank": 7
           },
           {
@@ -4216,7 +4216,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 1.0,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4224,7 +4224,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.2737724884567074,
+            "Composite_score": 0.2598004538375456,
             "Rank": 8
           },
           {
@@ -4234,7 +4234,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 1.0,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4242,7 +4242,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.2737724884567074,
+            "Composite_score": 0.2598004538375456,
             "Rank": 9
           },
           {
@@ -4252,7 +4252,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.436046511627907,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4260,7 +4260,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.25957052665340735,
+            "Composite_score": 0.24559849203424552,
             "Rank": 10
           },
           {
@@ -4270,7 +4270,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.7589285714285714,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4278,7 +4278,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.23928775182462436,
+            "Composite_score": 0.22531571720546253,
             "Rank": 11
           },
           {
@@ -4288,7 +4288,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.6428571428571428,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4296,7 +4296,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.22020105988527877,
+            "Composite_score": 0.20622902526611697,
             "Rank": 12
           },
           {
@@ -4306,7 +4306,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.5249999999999999,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4314,7 +4314,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.20922639907123247,
+            "Composite_score": 0.19525436445207067,
             "Rank": 13
           },
           {
@@ -4324,7 +4324,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.3897058823529411,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4332,7 +4332,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.20904401326774907,
+            "Composite_score": 0.19507197864858727,
             "Rank": 14
           },
           {
@@ -4342,7 +4342,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.5178571428571428,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4350,7 +4350,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.20480301519254135,
+            "Composite_score": 0.19083098057337952,
             "Rank": 15
           },
           {
@@ -4360,7 +4360,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.5267857142857143,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4368,7 +4368,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.20446632325319578,
+            "Composite_score": 0.19049428863403395,
             "Rank": 16
           },
           {
@@ -4378,7 +4378,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.5267857142857143,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4386,7 +4386,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.20446632325319578,
+            "Composite_score": 0.19049428863403395,
             "Rank": 17
           },
           {
@@ -4396,7 +4396,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.5223214285714286,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4404,7 +4404,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.20379668039605292,
+            "Composite_score": 0.18982464577689112,
             "Rank": 18
           },
           {
@@ -4414,7 +4414,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.5178571428571428,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4422,7 +4422,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.20312703753891004,
+            "Composite_score": 0.18915500291974824,
             "Rank": 19
           },
           {
@@ -4432,7 +4432,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.5267857142857143,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4440,7 +4440,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.2027903455995645,
+            "Composite_score": 0.1888183109804027,
             "Rank": 20
           },
           {
@@ -4450,7 +4450,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.5267857142857143,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4458,7 +4458,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.2027903455995645,
+            "Composite_score": 0.1888183109804027,
             "Rank": 21
           },
           {
@@ -4468,7 +4468,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.5267857142857143,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4476,7 +4476,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.2027903455995645,
+            "Composite_score": 0.1888183109804027,
             "Rank": 22
           },
           {
@@ -4486,7 +4486,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.5267857142857143,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4494,7 +4494,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.2027903455995645,
+            "Composite_score": 0.1888183109804027,
             "Rank": 23
           },
           {
@@ -4504,7 +4504,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.5267857142857143,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4512,7 +4512,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.2027903455995645,
+            "Composite_score": 0.1888183109804027,
             "Rank": 24
           },
           {
@@ -4522,7 +4522,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.5267857142857143,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4530,7 +4530,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.2027903455995645,
+            "Composite_score": 0.1888183109804027,
             "Rank": 25
           },
           {
@@ -4540,7 +4540,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.5267857142857143,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4548,7 +4548,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.2027903455995645,
+            "Composite_score": 0.1888183109804027,
             "Rank": 26
           },
           {
@@ -4558,7 +4558,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.5267857142857143,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4566,7 +4566,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.2027903455995645,
+            "Composite_score": 0.1888183109804027,
             "Rank": 27
           },
           {
@@ -4576,7 +4576,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.5267857142857143,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4584,7 +4584,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.2027903455995645,
+            "Composite_score": 0.1888183109804027,
             "Rank": 28
           },
           {
@@ -4594,7 +4594,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.5267857142857143,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4602,7 +4602,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.2027903455995645,
+            "Composite_score": 0.1888183109804027,
             "Rank": 29
           },
           {
@@ -4612,7 +4612,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.4419642857142857,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4620,7 +4620,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.2017989748892692,
+            "Composite_score": 0.18782694027010738,
             "Rank": 30
           },
           {
@@ -4630,7 +4630,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.5178571428571428,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4638,7 +4638,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.20145105988527878,
+            "Composite_score": 0.18747902526611696,
             "Rank": 31
           },
           {
@@ -4648,7 +4648,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.5178571428571428,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4656,7 +4656,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.20145105988527878,
+            "Composite_score": 0.18747902526611696,
             "Rank": 32
           },
           {
@@ -4666,7 +4666,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.5178571428571428,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4674,7 +4674,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.20145105988527878,
+            "Composite_score": 0.18747902526611696,
             "Rank": 33
           },
           {
@@ -4684,7 +4684,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.5178571428571428,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4692,7 +4692,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.20145105988527878,
+            "Composite_score": 0.18747902526611696,
             "Rank": 34
           },
           {
@@ -4702,7 +4702,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.5178571428571428,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4710,7 +4710,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.20145105988527878,
+            "Composite_score": 0.18747902526611696,
             "Rank": 35
           },
           {
@@ -4720,7 +4720,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.5178571428571428,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4728,7 +4728,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.20145105988527878,
+            "Composite_score": 0.18747902526611696,
             "Rank": 36
           },
           {
@@ -4738,7 +4738,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.4196428571428571,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4746,7 +4746,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.19509880529629234,
+            "Composite_score": 0.1811267706771305,
             "Rank": 37
           },
           {
@@ -4756,7 +4756,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.4642857142857143,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4764,7 +4764,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.19509132325319578,
+            "Composite_score": 0.18111928863403398,
             "Rank": 38
           },
           {
@@ -4774,7 +4774,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.4107142857142857,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4782,7 +4782,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.18873158662111278,
+            "Composite_score": 0.17475955200195098,
             "Rank": 39
           },
           {
@@ -4792,7 +4792,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.37797619047619047,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4800,7 +4800,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.18549684998902977,
+            "Composite_score": 0.17152481536986797,
             "Rank": 40
           },
           {
@@ -4810,7 +4810,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.4107142857142857,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4818,7 +4818,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.1853796313138502,
+            "Composite_score": 0.1714075966946884,
             "Rank": 41
           },
           {
@@ -4828,7 +4828,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.4107142857142857,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4836,7 +4836,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.1853796313138502,
+            "Composite_score": 0.1714075966946884,
             "Rank": 42
           },
           {
@@ -4846,7 +4846,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.4107142857142857,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4854,7 +4854,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.1853796313138502,
+            "Composite_score": 0.1714075966946884,
             "Rank": 43
           },
           {
@@ -4864,7 +4864,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.4107142857142857,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4872,7 +4872,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.1853796313138502,
+            "Composite_score": 0.1714075966946884,
             "Rank": 44
           },
           {
@@ -4882,7 +4882,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.4107142857142857,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4890,7 +4890,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.1853796313138502,
+            "Composite_score": 0.1714075966946884,
             "Rank": 45
           },
           {
@@ -4900,7 +4900,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.4107142857142857,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4908,7 +4908,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.1853796313138502,
+            "Composite_score": 0.1714075966946884,
             "Rank": 46
           },
           {
@@ -4918,7 +4918,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.4107142857142857,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4926,7 +4926,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.1853796313138502,
+            "Composite_score": 0.1714075966946884,
             "Rank": 47
           },
           {
@@ -4936,7 +4936,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.4107142857142857,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4944,7 +4944,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.1853796313138502,
+            "Composite_score": 0.1714075966946884,
             "Rank": 48
           },
           {
@@ -4954,7 +4954,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.4107142857142857,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4962,7 +4962,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.1853796313138502,
+            "Composite_score": 0.1714075966946884,
             "Rank": 49
           },
           {
@@ -4972,7 +4972,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.4107142857142857,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4980,7 +4980,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.1853796313138502,
+            "Composite_score": 0.1714075966946884,
             "Rank": 50
           },
           {
@@ -4990,7 +4990,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.4107142857142857,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -4998,7 +4998,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.1853796313138502,
+            "Composite_score": 0.1714075966946884,
             "Rank": 51
           },
           {
@@ -5008,7 +5008,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.4107142857142857,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -5016,7 +5016,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.1853796313138502,
+            "Composite_score": 0.1714075966946884,
             "Rank": 52
           },
           {
@@ -5026,7 +5026,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.4107142857142857,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -5034,7 +5034,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.1853796313138502,
+            "Composite_score": 0.1714075966946884,
             "Rank": 53
           },
           {
@@ -5044,7 +5044,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.4107142857142857,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -5052,7 +5052,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.1853796313138502,
+            "Composite_score": 0.1714075966946884,
             "Rank": 54
           },
           {
@@ -5062,7 +5062,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.4107142857142857,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -5070,7 +5070,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.1853796313138502,
+            "Composite_score": 0.1714075966946884,
             "Rank": 55
           },
           {
@@ -5080,7 +5080,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.4107142857142857,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -5088,7 +5088,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.1853796313138502,
+            "Composite_score": 0.1714075966946884,
             "Rank": 56
           },
           {
@@ -5098,7 +5098,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.4107142857142857,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -5106,7 +5106,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.1853796313138502,
+            "Composite_score": 0.1714075966946884,
             "Rank": 57
           },
           {
@@ -5116,7 +5116,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.3660714285714286,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -5124,7 +5124,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.1837111357033155,
+            "Composite_score": 0.1697391010841537,
             "Rank": 58
           },
           {
@@ -5134,7 +5134,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.0625,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -5142,7 +5142,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.14823128733938892,
+            "Composite_score": 0.1342592527202271,
             "Rank": 59
           },
           {
@@ -5152,7 +5152,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.008928571428571397,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -5160,7 +5160,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.12511177417099306,
+            "Composite_score": 0.11113973955183125,
             "Rank": 60
           },
           {
@@ -5170,7 +5170,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.008928571428571397,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -5178,7 +5178,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.12511177417099306,
+            "Composite_score": 0.11113973955183125,
             "Rank": 61
           },
           {
@@ -5188,7 +5188,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.008928571428571397,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -5196,7 +5196,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.12511177417099306,
+            "Composite_score": 0.11113973955183125,
             "Rank": 62
           },
           {
@@ -5206,7 +5206,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.008928571428571397,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -5214,7 +5214,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.12511177417099306,
+            "Composite_score": 0.11113973955183125,
             "Rank": 63
           },
           {
@@ -5224,7 +5224,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.0,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -5232,7 +5232,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.12377248845670735,
+            "Composite_score": 0.10980045383754554,
             "Rank": 64
           },
           {
@@ -5242,7 +5242,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.0,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -5250,7 +5250,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.12377248845670735,
+            "Composite_score": 0.10980045383754554,
             "Rank": 65
           },
           {
@@ -5260,7 +5260,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.0,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -5268,7 +5268,7 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.12377248845670735,
+            "Composite_score": 0.10980045383754554,
             "Rank": 66
           },
           {
@@ -5278,7 +5278,7 @@
             "Domain_retention_score": 0.13376762457977448,
             "Domain_disruption_score": 0.0,
             "Cutpoint_proximity_score": 0.0,
-            "Confidence_certainty_score": 0.8865460465813244,
+            "Confidence_certainty_score": 0.7468257003897063,
             "Components_applicable": [
               "confidence_certainty",
               "cutpoint_proximity",
@@ -5286,13 +5286,13 @@
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.12377248845670735,
+            "Composite_score": 0.10980045383754554,
             "Rank": 67
           }
         ]
       },
       "Warnings": [],
-      "Created_at": "2026-09-04T16:14:01.951685Z",
+      "Created_at": "2026-09-04T17:27:38.180639Z",
       "Input_fingerprint": "c7b588b29b09ec0bc9f587b98d04217ae798505ff8cfd4494328a0ffa9934dfe"
     },
     {
@@ -5311,7 +5311,12 @@
           "retained",
           "not_retained"
         ],
-        "outcome_field": "Is_protein_fusion",
+        "outcome_field": "Frame_status",
+        "outcome_success_value": "in-frame",
+        "outcome_valid_values": [
+          "in-frame",
+          "out-of-frame"
+        ],
         "numeric_field": "Tumor_variant_count"
       },
       "Summary": {
@@ -5321,22 +5326,22 @@
         "n_group_a": 163,
         "n_group_b": 15,
         "mle": {
-          "outcome_field": "Is_protein_fusion",
+          "outcome_field": "Frame_status",
           "groups": {
             "retained": {
-              "n": 163,
-              "successes": 163,
-              "point_estimate": 1.0,
-              "ci_low": 0.9769753941984973,
-              "ci_high": 1.0,
+              "n": 152,
+              "successes": 142,
+              "point_estimate": 0.9342105263157895,
+              "ci_low": 0.883139465672805,
+              "ci_high": 0.9638751926786334,
               "method": "wilson"
             },
             "not_retained": {
-              "n": 15,
-              "successes": 15,
-              "point_estimate": 1.0,
-              "ci_low": 0.7961166989641515,
-              "ci_high": 1.0,
+              "n": 11,
+              "successes": 9,
+              "point_estimate": 0.8181818181818182,
+              "ci_low": 0.523019438039156,
+              "ci_high": 0.9486323102539149,
               "method": "wilson"
             }
           }
@@ -5353,11 +5358,11 @@
           "mean_a": 52.07361963190184,
           "mean_b": 36.4
         },
-        "Runtime_seconds": 0.004138499993132427
+        "Runtime_seconds": 0.002702167024835944
       },
       "Tables": null,
       "Warnings": [],
-      "Created_at": "2026-09-04T16:13:55.358832Z",
+      "Created_at": "2026-09-04T17:27:34.230882Z",
       "Input_fingerprint": "c7b588b29b09ec0bc9f587b98d04217ae798505ff8cfd4494328a0ffa9934dfe"
     },
     {
@@ -5381,7 +5386,7 @@
           "nearest_known_domain_boundary_aa": 280,
           "distance_aa": 47
         },
-        "Runtime_seconds": 3.1275703749852255
+        "Runtime_seconds": 1.9087961670011282
       },
       "Tables": {
         "cutpoint_scan": [
@@ -5488,7 +5493,7 @@
         ]
       },
       "Warnings": [],
-      "Created_at": "2026-09-04T16:13:58.508181Z",
+      "Created_at": "2026-09-04T17:27:36.145208Z",
       "Input_fingerprint": "c7b588b29b09ec0bc9f587b98d04217ae798505ff8cfd4494328a0ffa9934dfe"
     },
     {
@@ -5504,7 +5509,7 @@
         "fisher_p_value": 0.04170498244265482,
         "permutation_empirical_p_value": 1.0,
         "observed_in_frame_disruption_rate": 0.9403973509933775,
-        "Runtime_seconds": 6.577614583016839
+        "Runtime_seconds": 3.9411348330031615
       },
       "Tables": {
         "frame_domain_contingency_table": [
@@ -15541,7 +15546,7 @@
         ]
       },
       "Warnings": [],
-      "Created_at": "2026-09-04T16:14:01.944988Z",
+      "Created_at": "2026-09-04T17:27:38.176829Z",
       "Input_fingerprint": "c7b588b29b09ec0bc9f587b98d04217ae798505ff8cfd4494328a0ffa9934dfe"
     },
     {
@@ -15557,7 +15562,7 @@
         "fisher_p_value": 0.013367557978153668,
         "permutation_empirical_p_value": 0.04595404595404595,
         "observed_in_frame_retention_rate": 0.9403973509933775,
-        "Runtime_seconds": 1.6264169170171954
+        "Runtime_seconds": 1.0072747090016492
       },
       "Tables": {
         "frame_domain_contingency_table": [
@@ -15587,7 +15592,7 @@
         }
       },
       "Warnings": [],
-      "Created_at": "2026-09-04T16:13:55.345622Z",
+      "Created_at": "2026-09-04T17:27:34.215323Z",
       "Input_fingerprint": "d7ec18324903d3ad072a1b5a63a016cb4f2918054c4a74797c8396ab9e5e2943"
     },
     {
@@ -15596,7 +15601,7 @@
       "Parameters": {},
       "Summary": {
         "retained_fraction": null,
-        "Runtime_seconds": 4.14160022046417e-05
+        "Runtime_seconds": 3.079100861214101e-05
       },
       "Tables": {
         "Exon_retention": []
@@ -15604,7 +15609,7 @@
       "Warnings": [
         "No target exon was supplied in params or GeneConfig."
       ],
-      "Created_at": "2026-09-04T16:13:55.372303Z",
+      "Created_at": "2026-09-04T17:27:34.279456Z",
       "Input_fingerprint": "c7b588b29b09ec0bc9f587b98d04217ae798505ff8cfd4494328a0ffa9934dfe"
     },
     {
@@ -15617,7 +15622,7 @@
         "input_event_count": 179,
         "analyzed_event_count": 179,
         "unique_partner_gene_count": 67,
-        "Runtime_seconds": 0.00016166598652489483
+        "Runtime_seconds": 0.0001142919936683029
       },
       "Tables": {
         "Partner_gene_counts": [
@@ -15892,7 +15897,7 @@
         ]
       },
       "Warnings": [],
-      "Created_at": "2026-09-04T16:13:55.399535Z",
+      "Created_at": "2026-09-04T17:27:34.317401Z",
       "Input_fingerprint": "c7b588b29b09ec0bc9f587b98d04217ae798505ff8cfd4494328a0ffa9934dfe"
     },
     {
@@ -15900,13 +15905,13 @@
       "Algorithm_version": "0.1.0",
       "Parameters": {},
       "Summary": {
-        "Runtime_seconds": 3.9875012589618564e-05
+        "Runtime_seconds": 2.3500004317611456e-05
       },
       "Tables": {},
       "Warnings": [
         "BRAF has no gene_pair configured; joint-partner analysis was skipped."
       ],
-      "Created_at": "2026-09-04T16:13:55.431843Z",
+      "Created_at": "2026-09-04T17:27:34.378230Z",
       "Input_fingerprint": "c7b588b29b09ec0bc9f587b98d04217ae798505ff8cfd4494328a0ffa9934dfe"
     }
   ],

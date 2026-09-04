@@ -45,16 +45,32 @@ def test_algorithm_registered():
 def test_real_pipeline_defaults_collapse_domain_states_and_use_tumor_variant_count():
     config = load_gene_config("RET")
     params = default_confidence_stats_params(config)
+
+    # Regression guard: every event reaching the real pipeline has ALREADY
+    # been filtered to Is_protein_fusion is True upstream (see
+    # real_benchmark._is_target_protein_fusion), so an MLE default of
+    # "Is_protein_fusion" is tautological -- guaranteed 100% success in
+    # every non-empty group, always. It must never be the default outcome.
+    assert params["outcome_field"] != "Is_protein_fusion"
+    assert params["outcome_field"] == "Frame_status"
+    assert params["outcome_success_value"] == "in-frame"
+
+    statuses = ("retained", "retained", "lost", "lost", "disrupted", "disrupted")
+    # Frame_status varies within each domain-retention group (including an
+    # "unknown" that outcome_valid_values must exclude, not count as a
+    # failure) precisely so the MLE below is a real, non-tautological
+    # quantity, unlike the old Is_protein_fusion-based default.
+    frame_statuses = ("in-frame", "out-of-frame", "in-frame", "out-of-frame", "in-frame", "unknown")
     events = [
         FusionEvent(
             Event_id=f"e{i}",
             Cohort="cohort1",
             Is_protein_fusion=True,
+            Frame_status=frame_status,
             Tumor_variant_count=count,
         )
-        for i, count in enumerate((30, 32, 4, 6, 8, 10))
+        for i, (count, frame_status) in enumerate(zip((30, 32, 4, 6, 8, 10), frame_statuses))
     ]
-    statuses = ("retained", "retained", "lost", "lost", "disrupted", "disrupted")
     features = [
         FusionFeature(
             Event_id=event.Event_id,
@@ -70,7 +86,16 @@ def test_real_pipeline_defaults_collapse_domain_states_and_use_tumor_variant_cou
     assert result.Summary["group_b_label"] == "not_retained"
     assert result.Summary["n_group_a"] == 2
     assert result.Summary["n_group_b"] == 4
-    assert result.Summary["mle"]["groups"]["retained"]["point_estimate"] == 1.0
+    assert result.Summary["mle"]["outcome_field"] == "Frame_status"
+    # 1 of 2 retained events is in-frame -- a real proportion, not the
+    # guaranteed-1.0 the old Is_protein_fusion default always produced.
+    assert result.Summary["mle"]["groups"]["retained"]["n"] == 2
+    assert result.Summary["mle"]["groups"]["retained"]["successes"] == 1
+    assert result.Summary["mle"]["groups"]["retained"]["point_estimate"] != 1.0
+    # The "unknown" not_retained event is excluded from the denominator
+    # (3, not 4): it's undetermined, not a frame-status failure.
+    assert result.Summary["mle"]["groups"]["not_retained"]["n"] == 3
+    assert result.Summary["mle"]["groups"]["not_retained"]["successes"] == 2
     assert result.Summary["ttest"]["numeric_field"] == "Tumor_variant_count"
     assert result.Summary["ttest"]["p_value"] < 0.05
 
@@ -86,6 +111,94 @@ def test_default_params_can_be_overridden_by_real_pipeline_caller():
     assert "group_value_map" not in custom
     assert "group_values" not in custom
     assert custom["numeric_field"] == "Tumor_variant_count"
+
+
+def test_overriding_outcome_field_drops_incompatible_default_outcome_settings():
+    """Overriding ``outcome_field`` away from the default ``Frame_status``
+    must not silently keep the default's ``outcome_success_value``/
+    ``outcome_valid_values`` -- those are meaningless (or actively
+    misleading) for an unrelated field."""
+    custom = resolve_confidence_stats_params(
+        load_gene_config("BRAF"),
+        {"outcome_field": "Is_antisense"},
+    )
+
+    assert custom["outcome_field"] == "Is_antisense"
+    assert "outcome_success_value" not in custom
+    assert "outcome_valid_values" not in custom
+
+
+def test_outcome_success_value_required_for_a_non_boolean_field():
+    """Without ``outcome_success_value``, a non-boolean ``outcome_field``
+    (like a status string) falls back to ``bool(value)``, which is truthy
+    for every non-empty value -- both "in-frame" and "out-of-frame" would
+    register as "success". This is the bug the real default now avoids by
+    always passing ``outcome_success_value`` explicitly."""
+    events = [
+        FusionEvent(Event_id="e0", Cohort="c", Frame_status="in-frame"),
+        FusionEvent(Event_id="e1", Cohort="c", Frame_status="out-of-frame"),
+        FusionEvent(Event_id="e2", Cohort="c", Frame_status="in-frame"),
+        FusionEvent(Event_id="e3", Cohort="c", Frame_status="out-of-frame"),
+    ]
+    params_without_success_value = {
+        "group_field": "Event_id",
+        "group_values": ["e0", "e1"],
+        "outcome_field": "Frame_status",
+    }
+    result = ConfidenceStatsAlgorithm().run(events, [], None, params_without_success_value)
+    # Both "in-frame" and "out-of-frame" are truthy strings.
+    assert result.Summary["mle"]["groups"]["e0"]["successes"] == 1
+    assert result.Summary["mle"]["groups"]["e1"]["successes"] == 1
+
+    params_with_success_value = {
+        **params_without_success_value,
+        "outcome_success_value": "in-frame",
+    }
+    result = ConfidenceStatsAlgorithm().run(events, [], None, params_with_success_value)
+    assert result.Summary["mle"]["groups"]["e0"]["successes"] == 1
+    assert result.Summary["mle"]["groups"]["e1"]["successes"] == 0
+
+
+def test_outcome_valid_values_excludes_undetermined_observations_from_denominator():
+    events = [
+        FusionEvent(Event_id="e0", Cohort="c", Frame_status="in-frame"),
+        FusionEvent(Event_id="e1", Cohort="c", Frame_status="unknown"),
+        FusionEvent(Event_id="e2", Cohort="c", Frame_status="out-of-frame"),
+    ]
+    params = {
+        "group_field": "Cohort",
+        "group_values": ["c", "no-such-group"],
+        "outcome_field": "Frame_status",
+        "outcome_success_value": "in-frame",
+        "outcome_valid_values": ["in-frame", "out-of-frame"],
+    }
+
+    result = ConfidenceStatsAlgorithm().run(events, [], None, params)
+
+    group = result.Summary["mle"]["groups"]["c"]
+    assert group["n"] == 2  # "unknown" excluded, not counted as a failure
+    assert group["successes"] == 1
+
+
+def test_mle_empty_group_emits_a_warning_matching_the_welch_skip_style():
+    events = [
+        FusionEvent(Event_id="e0", Cohort="c", Is_protein_fusion=True, Frame_status=None),
+        FusionEvent(Event_id="e1", Cohort="other", Is_protein_fusion=True, Frame_status=None),
+    ]
+    params = {
+        "group_field": "Cohort",
+        "group_values": ["c", "other"],
+        "outcome_field": "Frame_status",
+        "outcome_success_value": "in-frame",
+    }
+
+    result = ConfidenceStatsAlgorithm().run(events, [], None, params)
+
+    assert result.Summary["mle"]["groups"]["c"]["n"] == 0
+    assert result.Summary["mle"]["groups"]["c"]["point_estimate"] is None
+    assert any(
+        "MLE" in warning and "Frame_status" in warning for warning in result.Warnings
+    ), result.Warnings
 
 
 def test_both_mle_and_ttest_requested():

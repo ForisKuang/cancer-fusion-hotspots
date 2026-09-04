@@ -248,6 +248,10 @@ def normalize(
             if tumor_variant_count is not None and tumor_variant_count >= 0
             else None
         )
+        # A partial sum when only one of the two components is available
+        # (e.g. paired-end present but split absent) still gets summed here
+        # -- Total_read_support is "whatever read-support evidence exists,"
+        # not a guarantee both components contributed.
         read_support_values = [
             value
             for value in (paired_end_read_support, split_read_support)

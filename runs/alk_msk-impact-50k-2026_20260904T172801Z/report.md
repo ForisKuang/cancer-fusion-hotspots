@@ -45,7 +45,7 @@ For each fusion, breakpoint selection preferred the Genome Nexus canonical trans
 
 - Registered algorithms executed: composite_score, confidence_stats, cutpoint_detection, domain_disruption, domain_retention, exon_retention, frequency, joint_partner
 - Cutpoint detection: inferred breakpoint 972 aa; corrected permutation p=0.000999001.
-- Top composite score: EML4 (221 events), 0.671434.
+- Top composite score: EML4 (221 events), 0.650354.
 
 ## Partners
 
