@@ -27,7 +27,10 @@ from cfh.cohort.scan import (
     per_gene_min_q_value,
 )
 from cfh.real_benchmark import write_outputs
+from cfh.reporting.manhattan import render_manhattan_svg
 from cfh.reporting.pdf import render_cohort_summary_pdf
+
+_MANHATTAN_SVG_FILENAME = "manhattan.svg"
 
 _SUMMARY_FIELDNAMES = [
     "gene_symbol",
@@ -148,6 +151,19 @@ def _write_summary_markdown(result: CohortScanResult, rows: list[dict], path: Pa
         lines.extend(["## Warnings", ""])
         lines.extend(f"- {warning}" for warning in result.warnings)
         lines.append("")
+    lines.extend(
+        [
+            "## Genome-wide summary plot",
+            "",
+            f"One point per scanned gene with an FDR-adjusted q-value: x-axis is genes "
+            "ranked by composite evidence score (descending), y-axis is "
+            "-log10(FDR-adjusted q-value), with a dashed line at the "
+            f"q={result.significance_level:g} significance threshold.",
+            "",
+            f"![Genome-wide fusion-hotspot summary plot]({_MANHATTAN_SVG_FILENAME})",
+            "",
+        ]
+    )
     lines.extend(["## Scanned genes (sorted by significance)", ""])
     lines.append("| " + " | ".join(_SUMMARY_FIELDNAMES) + " |")
     lines.append("|" + "---|" * len(_SUMMARY_FIELDNAMES))
@@ -195,6 +211,7 @@ def _write_summary_pdf(result: CohortScanResult, rows: list[dict], path: Path) -
         ),
         notes=[f"Generated {datetime.now(timezone.utc).isoformat()}"],
         rows=table_rows,
+        figures_dir=path.parent,
     )
 
 
@@ -213,6 +230,11 @@ def write_cohort_scan_outputs(
     destination.mkdir(parents=True, exist_ok=True)
 
     rows = build_summary_rows(result)
+
+    manhattan_svg_path = destination / _MANHATTAN_SVG_FILENAME
+    manhattan_svg_path.write_text(
+        render_manhattan_svg(rows, significance_level=result.significance_level) + "\n"
+    )
 
     tsv_path = destination / "summary.tsv"
     with tsv_path.open("w", newline="") as handle:
@@ -247,6 +269,7 @@ def write_cohort_scan_outputs(
         "summary_tsv": tsv_path,
         "summary_json": json_path,
         "summary_markdown": markdown_path,
+        "manhattan_svg": manhattan_svg_path,
     }
 
     if pdf:
