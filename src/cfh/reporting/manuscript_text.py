@@ -192,9 +192,12 @@ def render_manhattan_caption(payload: dict) -> str:
 
 
 def render_gene_highlight(row: dict, *, honorable_mention_note: str | None = None) -> str:
-    """Render the 2-4 sentence templated highlight paragraph for one
+    """Render the 2-5 sentence templated highlight paragraph for one
     highlighted gene's summary row: gene name, event count, in-frame%,
-    domain-retention%, and Fisher/FDR-adjusted p-values, following the same
+    domain-retention%, and Fisher/FDR-adjusted p-values -- each in its own
+    sentence, explicitly labeled with the statistic (raw p vs. BH-adjusted
+    q) its significance verdict describes, since a gene's raw p-value can be
+    significant while its genome-wide q-value is not -- following the same
     omission-over-invention discipline as
     :func:`cfh.reporting.text.render_abstract`. ``honorable_mention_note``,
     if given, is the gene's own already-established honorable-mentions note
@@ -219,11 +222,31 @@ def render_gene_highlight(row: dict, *, honorable_mention_note: str | None = Non
     if fisher_display != "unavailable":
         sig = significance_clause(fisher_p)
         sentence = f"Domain-retention Fisher's exact test p={fisher_display}"
+        sentence += f" (raw {sig})." if sig else "."
+        sentences.append(sentence)
+
         q_display = format_stat(row.get("min_fdr_adjusted_q_value"))
         if q_display != "unavailable":
-            sentence += f", genome-wide BH-adjusted q={q_display}"
-        sentence += f" ({sig})." if sig else "."
-        sentences.append(sentence)
+            # ``fdr_significant`` is the same precomputed BH-correction verdict
+            # used for this gene's badge/tier elsewhere (see
+            # ``cfh.cohort.outputs._gene_badges``) -- reusing it here (rather
+            # than re-deriving a threshold check on q) guarantees this clause
+            # can never drift from, or be confused with, the raw p-value's own
+            # significance clause above. A gene's raw Fisher p-value can be
+            # significant while its genome-wide BH-adjusted q-value is not
+            # (that is the entire point of multiple-testing correction), so
+            # these two verdicts are stated in separate sentences, each
+            # explicitly labeled with the statistic it describes.
+            fdr_significant = row.get("fdr_significant")
+            if fdr_significant is True:
+                q_clause = "reaches genome-wide FDR significance"
+            elif fdr_significant is False:
+                q_clause = "does not reach genome-wide FDR significance"
+            else:
+                q_clause = None
+            q_sentence = f"Genome-wide BH-adjusted q={q_display}"
+            q_sentence += f" ({q_clause})." if q_clause else "."
+            sentences.append(q_sentence)
     else:
         sentences.append(
             f"No domain-retention statistical test could be computed for {gene} in this scan."

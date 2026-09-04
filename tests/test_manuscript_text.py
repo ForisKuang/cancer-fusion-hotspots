@@ -192,8 +192,9 @@ def test_gene_highlight_significant_gene_matches_exact_text():
 
     assert paragraph == (
         "ETV6 was analyzed across 90 fusion events, 71.1% in-frame and 75.6% domain-retained. "
-        "Domain-retention Fisher's exact test p=5.12326e-06, genome-wide BH-adjusted "
-        "q=0.00433427 (statistically significant at alpha=0.05)."
+        "Domain-retention Fisher's exact test p=5.12326e-06 (raw statistically significant at "
+        "alpha=0.05). Genome-wide BH-adjusted q=0.00433427 (reaches genome-wide FDR "
+        "significance)."
     )
 
 
@@ -205,11 +206,32 @@ def test_gene_highlight_honorable_mention_appends_note_verbatim():
 
     assert paragraph.endswith(mention["note"])
     # RET's raw Fisher p-value (0.00042) is significant at alpha=0.05 even
-    # though its FDR-adjusted q-value (0.12) is not -- the significance
-    # clause is about the raw p-value, exactly like
-    # cfh.reporting.text._domain_retention_paragraph already does.
-    assert "statistically significant at alpha=0.05" in paragraph
-    assert "not statistically significant" not in paragraph
+    # though its FDR-adjusted q-value (0.12) is not -- exact text below
+    # pins down that each verdict is stated in its own sentence, explicitly
+    # labeled with the statistic (raw p vs. BH-adjusted q) it describes, so
+    # neither verdict can be misread as describing the other statistic.
+    assert (
+        "Domain-retention Fisher's exact test p=0.000419666 (raw statistically significant "
+        "at alpha=0.05). Genome-wide BH-adjusted q=0.119762 (does not reach genome-wide FDR "
+        "significance)."
+    ) in paragraph
+
+
+def test_gene_highlight_never_labels_an_fdr_nonsignificant_q_value_as_significant():
+    """Regression test: previously the raw p-value's significance clause was
+    appended directly after the q-value with no statistic label, so a gene
+    with a significant raw p-value but a non-significant FDR-adjusted
+    q-value (RET: p=0.00042 < 0.05 <= q=0.12) rendered as
+    '...q=0.119762 (statistically significant at alpha=0.05)' -- misreadable
+    as claiming the *q-value* was significant, which is false and
+    contradicts genome-wide FDR significance semantics.
+    """
+    row = PAYLOAD_WITH_SIGNIFICANT_AND_HONORABLE_MENTIONS["genes"][1]
+    paragraph = render_gene_highlight(row)
+
+    assert "q=0.119762 (statistically significant" not in paragraph
+    assert "q=0.119762 (does not reach genome-wide FDR significance)" in paragraph
+    assert "p=0.000419666 (raw statistically significant at alpha=0.05)" in paragraph
 
 
 def test_gene_highlight_states_missing_data_explicitly_not_invented():
@@ -222,6 +244,20 @@ def test_gene_highlight_states_missing_data_explicitly_not_invented():
     )
     # Never invents a p-value/q-value that isn't there.
     assert "p=unavailable" not in paragraph
+
+
+def test_gene_highlight_omits_fdr_verdict_when_fdr_significant_flag_is_absent():
+    """Never invents an FDR-significance verdict for q from the q-value's
+    own magnitude when the precomputed ``fdr_significant`` flag isn't in the
+    row -- omission over invention, same discipline as everywhere else."""
+    row = {
+        **PAYLOAD_WITH_SIGNIFICANT_AND_HONORABLE_MENTIONS["genes"][1],
+        "fdr_significant": None,
+    }
+    paragraph = render_gene_highlight(row)
+
+    assert "Genome-wide BH-adjusted q=0.119762." in paragraph
+    assert "reach genome-wide FDR significance" not in paragraph
 
 
 def test_discussion_bullets_are_gated_on_real_fields():
