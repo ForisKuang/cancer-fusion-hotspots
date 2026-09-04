@@ -12,18 +12,20 @@ requires-python = ">=3.10"
 authors = [{ name = "Cancer Fusion Hotspots contributors" }]
 dependencies = [
     "pandas>=2.0",
-    "numpy>=1.24",
+    "numpy>=2.2.6",
     "scipy>=1.10",
     "requests>=2.28",
     "pydantic>=2.0",
     "click>=8.1",
-    "pyyaml>=6.0",
+    "pyyaml>=6.0.3",
     "reportlab>=4.0",
     "svglib>=1.5",
 ]
 
 [project.optional-dependencies]
 dev = [
+    "mypy>=1.10",
+    "pre-commit>=4.6.2",
     "pytest>=7.4",
     "ruff>=0.4",
     "pypdf>=4.0",
@@ -51,3 +53,32 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
+
+[tool.mypy]
+files = ["src"]
+check_untyped_defs = true
+ignore_missing_imports = true
+pretty = true
+show_error_codes = true
+warn_unused_ignores = true
+
+# These modules contain pre-existing typing debt. Keep the rest of src/ under
+# mypy now, then remove entries as the affected modules are tightened up.
+[[tool.mypy.overrides]]
+module = [
+    "cfh.algorithms.confidence_stats",
+    "cfh.algorithms.domain_disruption",
+    "cfh.algorithms.domain_retention",
+    "cfh.algorithms.exon_retention",
+    "cfh.algorithms.frequency",
+    "cfh.cli",
+    "cfh.cohort.outputs",
+    "cfh.ingestion.sv_parser",
+    "cfh.mapping.feature_mapper",
+    "cfh.mapping.genome_nexus_source",
+    "cfh.mapping.transcript_source",
+    "cfh.real_benchmark",
+    "cfh.reporting.fusion_schematic",
+    "cfh.stats.breakpoint_tests",
+]
+ignore_errors = true

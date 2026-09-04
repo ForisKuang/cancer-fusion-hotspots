@@ -11,7 +11,7 @@ everything else in this module is plain, mockable request-building logic.
 from __future__ import annotations
 
 import time
-from typing import Iterable
+from typing import Any, Iterable
 
 import pandas as pd
 import requests
@@ -63,7 +63,7 @@ def fetch_structural_variants(
     """
     session = session or requests.Session()
     url = f"{base_url.rstrip('/')}/structural-variant/fetch"
-    body = {
+    body: dict[str, Any] = {
         "entrezGeneIds": list(entrez_gene_ids),
         "molecularProfileIds": list(molecular_profile_ids),
     }

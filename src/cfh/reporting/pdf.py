@@ -222,9 +222,7 @@ def render_pdf_report(
     doc.addPageTemplates(
         [
             PageTemplate(id=_PORTRAIT_TEMPLATE, frames=[portrait_frame], pagesize=LETTER),
-            PageTemplate(
-                id=_LANDSCAPE_TEMPLATE, frames=[landscape_frame], pagesize=landscape_size
-            ),
+            PageTemplate(id=_LANDSCAPE_TEMPLATE, frames=[landscape_frame], pagesize=landscape_size),
         ]
     )
 

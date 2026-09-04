@@ -173,8 +173,7 @@ class ConfidenceStatsAlgorithm(Algorithm):
         ) or "This gene"
         if not group_field:
             return self._no_op_result(
-                f"{gene_name} has no group_field configured; confidence-stats "
-                "analysis was skipped."
+                f"{gene_name} has no group_field configured; confidence-stats analysis was skipped."
             )
         if not outcome_field and not numeric_field:
             return self._no_op_result(

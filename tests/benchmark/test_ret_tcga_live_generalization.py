@@ -21,10 +21,7 @@ def _assert_live_run(run, expected_domain_bounds: tuple[int, int]) -> None:
     assert run.raw_structural_variant_count > 0
     assert len(run.events) == len(run.features) > 0
     assert run.summary["mapped_fusions"] > 0
-    assert all(
-        feature.Domain_retention_flags["kinase"] != "unknown"
-        for feature in run.features
-    )
+    assert all(feature.Domain_retention_flags["kinase"] != "unknown" for feature in run.features)
     assert (
         run.summary["domain_start_aa"],
         run.summary["domain_end_aa"],

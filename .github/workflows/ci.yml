@@ -14,7 +14,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
 
       - name: Install package
         run: pip install -e ".[dev]"
@@ -22,5 +22,15 @@ jobs:
       - name: Lint
         run: ruff check .
 
+      - name: Check formatting
+        run: ruff format --check .
+
+      - name: Type check
+        run: mypy src
+
       - name: Test
         run: pytest -m "not network"
+
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]

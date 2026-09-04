@@ -125,10 +125,7 @@ def collect_p_values(run_artifacts: list[Path]) -> list[dict[str, Any]]:
 def compare_gene_runs(run_artifacts: list[Path]) -> list[dict[str, Any]]:
     """Collect and BH-adjust all applicable p-values as one hypothesis family."""
     rows = collect_p_values(run_artifacts)
-    hypotheses = [
-        (row["gene"], f"{row['algorithm']}:{row['test']}", row["raw_p"])
-        for row in rows
-    ]
+    hypotheses = [(row["gene"], f"{row['algorithm']}:{row['test']}", row["raw_p"]) for row in rows]
     adjusted = benjamini_hochberg(hypotheses)
     for row, (_, _, _, q_value) in zip(rows, adjusted, strict=True):
         row["bh_adjusted_q"] = q_value

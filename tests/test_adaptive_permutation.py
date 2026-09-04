@@ -256,7 +256,9 @@ def test_cutpoint_detection_adaptive_skips_escalation_when_indeterminable():
     events = [FusionEvent(Event_id="E-0", Cohort="test")]
     features = [
         FusionFeature(
-            Event_id="E-0", Gene="BRAF", Junction_position_aa=100,
+            Event_id="E-0",
+            Gene="BRAF",
+            Junction_position_aa=100,
             Domain_retention_flags={"kinase": "retained"},
         )
     ]

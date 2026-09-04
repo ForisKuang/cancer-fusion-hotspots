@@ -301,9 +301,7 @@ def test_real_committed_manhattan_svg_labels_near_miss_curated_genes_not_partner
         )
 
     # Partner-gene context is preserved as a tooltip rather than lost outright.
-    braf_circle = re.search(
-        r'<circle[^>]*data-gene="BRAF"[^>]*>.*?</circle>', svg, re.DOTALL
-    )
+    braf_circle = re.search(r'<circle[^>]*data-gene="BRAF"[^>]*>.*?</circle>', svg, re.DOTALL)
     assert braf_circle and "<title>" in braf_circle.group(0)
 
 

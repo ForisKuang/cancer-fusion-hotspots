@@ -92,9 +92,7 @@ def test_ttest_only_requested_omits_mle_block():
 def test_missing_group_field_is_a_clean_noop_not_a_raise():
     events = _make_events()
 
-    result = ConfidenceStatsAlgorithm().run(
-        events, [], None, {"outcome_field": "Is_antisense"}
-    )
+    result = ConfidenceStatsAlgorithm().run(events, [], None, {"outcome_field": "Is_antisense"})
 
     assert isinstance(result, AlgorithmResult)
     assert result.Algorithm == "confidence_stats"
@@ -106,9 +104,7 @@ def test_missing_group_field_is_a_clean_noop_not_a_raise():
 def test_missing_outcome_and_numeric_field_is_a_clean_noop_not_a_raise():
     events = _make_events()
 
-    result = ConfidenceStatsAlgorithm().run(
-        events, [], None, {"group_field": "Is_protein_fusion"}
-    )
+    result = ConfidenceStatsAlgorithm().run(events, [], None, {"group_field": "Is_protein_fusion"})
 
     assert isinstance(result, AlgorithmResult)
     assert result.Algorithm == "confidence_stats"
