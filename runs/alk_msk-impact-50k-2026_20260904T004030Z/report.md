@@ -21,11 +21,13 @@ The cBioPortal `msk_impact_50k_2026_structural_variants` structural-variant prof
 
 ALK genomic breakpoints were mapped against the Genome Nexus canonical transcript, and retention was classified against its returned PF07714 coordinates. Counts are event-level with no patient deduplication. The Fisher comparison's `other` column combines out-of-frame and unknown-frame events, as pre-specified by the domain-retention algorithm.
 
+For each fusion, breakpoint selection preferred the Genome Nexus canonical transcript's exon-spanned target locus over cBioPortal site labels; malformed rows with no unambiguous target-locus coordinate were skipped and listed in Warnings.
+
 ## Full-suite highlights
 
 - Registered algorithms executed: composite_score, confidence_stats, cutpoint_detection, domain_disruption, domain_retention, exon_retention, frequency, joint_partner
-- Cutpoint detection: inferred breakpoint 1 aa; corrected permutation p=0.016983.
-- Top composite score: EML4 (221 events), 0.548891.
+- Cutpoint detection: inferred breakpoint 972 aa; corrected permutation p=0.000999001.
+- Top composite score: EML4 (221 events), 0.645356.
 
 ## Partners
 

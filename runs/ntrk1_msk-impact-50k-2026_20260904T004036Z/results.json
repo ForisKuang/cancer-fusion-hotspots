@@ -2,7 +2,7 @@
   "gene_symbol": "NTRK1",
   "study_id": "msk_impact_50k_2026",
   "molecular_profile_id": "msk_impact_50k_2026_structural_variants",
-  "retrieved_at": "2026-09-04T00:21:21.055205+00:00",
+  "retrieved_at": "2026-09-04T00:40:36.190185+00:00",
   "summary": {
     "raw_structural_variant_count": 118,
     "total_fusions": 78,
@@ -10,20 +10,20 @@
     "skipped_fusions": 2,
     "in_frame_count": 32,
     "in_frame_percent": 41.02564102564103,
-    "kinase_retained_count": 56,
-    "kinase_retained_percent": 71.7948717948718,
-    "in_frame_kinase_retained_count": 29,
-    "fisher_odds_ratio": 6.08641975308642,
-    "fisher_p_value": 0.003634638414060191,
+    "kinase_retained_count": 64,
+    "kinase_retained_percent": 82.05128205128206,
+    "in_frame_kinase_retained_count": 30,
+    "fisher_odds_ratio": 4.411764705882353,
+    "fisher_p_value": 0.04826275446570913,
     "permutation_p_value": 0.000999000999000999,
     "frame_domain_contingency_table": [
       [
-        29,
-        27
+        30,
+        34
       ],
       [
-        3,
-        17
+        2,
+        10
       ]
     ],
     "partner_counts": [
@@ -259,15 +259,15 @@
       "partner_gene": "ARHGEF11",
       "frame_status": "out-of-frame",
       "target_role": "three_prime",
-      "breakpoint_genomic": 157013603,
-      "breakpoint_exon": 17,
-      "breakpoint_protein_position": 797,
+      "breakpoint_genomic": 156845502,
+      "breakpoint_exon": 12,
+      "breakpoint_protein_position": 501,
       "is_intronic_breakpoint": true,
-      "domain_status": "lost",
-      "domain_retained_fraction": 0.0,
+      "domain_status": "retained",
+      "domain_retained_fraction": 1.0,
       "domain_is_truncated": false,
-      "retained_domains": "",
-      "lost_domains": "Protein kinase domain",
+      "retained_domains": "Protein kinase domain",
+      "lost_domains": "",
       "disrupted_domains": "",
       "source_annotation_text": "ARHGEF11 (NM_198236) - NTRK1 (NM_002529) fusion: c.32+488:ARHGEF11_c.1501+44:NTRK1inv | Protein Fusion: out of frame  {ARHGEF11:NTRK1}",
       "source_site2_effect_on_frame": "NA"
@@ -322,16 +322,16 @@
       "partner_gene": "COP1",
       "frame_status": "in-frame",
       "target_role": "three_prime",
-      "breakpoint_genomic": 175937617,
+      "breakpoint_genomic": 156851106,
       "breakpoint_exon": 17,
-      "breakpoint_protein_position": 797,
+      "breakpoint_protein_position": 736,
       "is_intronic_breakpoint": true,
-      "domain_status": "lost",
-      "domain_retained_fraction": 0.0,
-      "domain_is_truncated": false,
+      "domain_status": "disrupted",
+      "domain_retained_fraction": 0.17037037037037037,
+      "domain_is_truncated": true,
       "retained_domains": "",
-      "lost_domains": "Protein kinase domain",
-      "disrupted_domains": "",
+      "lost_domains": "",
+      "disrupted_domains": "Protein kinase domain",
       "source_annotation_text": "RFWD2 (NM_022457) - NTRK1 (NM_002529) rearrangement: c.2133+18462:RFWD2_c.2206-143:NTRK1inv | Protein Fusion: in frame  {RFWD2:NTRK1}",
       "source_site2_effect_on_frame": "NA"
     },
@@ -784,15 +784,15 @@
       "partner_gene": "NOS1AP",
       "frame_status": "unknown",
       "target_role": "three_prime",
-      "breakpoint_genomic": 162336479,
-      "breakpoint_exon": 17,
-      "breakpoint_protein_position": 797,
-      "is_intronic_breakpoint": true,
-      "domain_status": "lost",
-      "domain_retained_fraction": 0.0,
+      "breakpoint_genomic": 156843455,
+      "breakpoint_exon": 8,
+      "breakpoint_protein_position": 294,
+      "is_intronic_breakpoint": false,
+      "domain_status": "retained",
+      "domain_retained_fraction": 1.0,
       "domain_is_truncated": false,
-      "retained_domains": "",
-      "lost_domains": "Protein kinase domain",
+      "retained_domains": "Protein kinase domain",
+      "lost_domains": "",
       "disrupted_domains": "",
       "source_annotation_text": "NOS1AP (NM_014697) - NTRK1 (NM_002529) fusion: c.1106-363:NOS1AP_c.881:NTRK1dup | Protein Fusion: mid-exon  {NOS1AP:NTRK1}",
       "source_site2_effect_on_frame": "NA"
@@ -973,9 +973,9 @@
       "partner_gene": "NELFCD",
       "frame_status": "out-of-frame",
       "target_role": "five_prime",
-      "breakpoint_genomic": 57565762,
-      "breakpoint_exon": 1,
-      "breakpoint_protein_position": 1,
+      "breakpoint_genomic": 156843148,
+      "breakpoint_exon": 8,
+      "breakpoint_protein_position": 284,
       "is_intronic_breakpoint": true,
       "domain_status": "lost",
       "domain_retained_fraction": 0.0,
@@ -1078,9 +1078,9 @@
       "partner_gene": "RAB25",
       "frame_status": "out-of-frame",
       "target_role": "five_prime",
-      "breakpoint_genomic": 156032830,
-      "breakpoint_exon": 1,
-      "breakpoint_protein_position": 1,
+      "breakpoint_genomic": 156844458,
+      "breakpoint_exon": 10,
+      "breakpoint_protein_position": 417,
       "is_intronic_breakpoint": true,
       "domain_status": "lost",
       "domain_retained_fraction": 0.0,
@@ -1120,9 +1120,9 @@
       "partner_gene": "SEMA4A",
       "frame_status": "out-of-frame",
       "target_role": "five_prime",
-      "breakpoint_genomic": 156127591,
-      "breakpoint_exon": 1,
-      "breakpoint_protein_position": 1,
+      "breakpoint_genomic": 156841963,
+      "breakpoint_exon": 7,
+      "breakpoint_protein_position": 284,
       "is_intronic_breakpoint": true,
       "domain_status": "lost",
       "domain_retained_fraction": 0.0,
@@ -1309,15 +1309,15 @@
       "partner_gene": "SLAMF6",
       "frame_status": "out-of-frame",
       "target_role": "three_prime",
-      "breakpoint_genomic": 160468020,
-      "breakpoint_exon": 17,
-      "breakpoint_protein_position": 797,
+      "breakpoint_genomic": 156836411,
+      "breakpoint_exon": 4,
+      "breakpoint_protein_position": 120,
       "is_intronic_breakpoint": true,
-      "domain_status": "lost",
-      "domain_retained_fraction": 0.0,
+      "domain_status": "retained",
+      "domain_retained_fraction": 1.0,
       "domain_is_truncated": false,
-      "retained_domains": "",
-      "lost_domains": "Protein kinase domain",
+      "retained_domains": "Protein kinase domain",
+      "lost_domains": "",
       "disrupted_domains": "",
       "source_annotation_text": "SLAMF6 (NM_052931) - NTRK1 (NM_002529) fusion: c.50-1837:SLAMF6_c.360-291:NTRK1inv | Protein Fusion: out of frame  {SLAMF6:NTRK1}",
       "source_site2_effect_on_frame": "NA"
@@ -1330,15 +1330,15 @@
       "partner_gene": "SLAMF6",
       "frame_status": "out-of-frame",
       "target_role": "three_prime",
-      "breakpoint_genomic": 160468022,
-      "breakpoint_exon": 17,
-      "breakpoint_protein_position": 797,
+      "breakpoint_genomic": 156836411,
+      "breakpoint_exon": 4,
+      "breakpoint_protein_position": 120,
       "is_intronic_breakpoint": true,
-      "domain_status": "lost",
-      "domain_retained_fraction": 0.0,
+      "domain_status": "retained",
+      "domain_retained_fraction": 1.0,
       "domain_is_truncated": false,
-      "retained_domains": "",
-      "lost_domains": "Protein kinase domain",
+      "retained_domains": "Protein kinase domain",
+      "lost_domains": "",
       "disrupted_domains": "",
       "source_annotation_text": "SLAMF6 (NM_052931) - NTRK1 (NM_002529) rearrangement: c.50-1839:SLAMF6_c.360-291:NTRK1inv | Protein Fusion: out of frame  {SLAMF6:NTRK1}",
       "source_site2_effect_on_frame": "NA"
@@ -1351,15 +1351,15 @@
       "partner_gene": "SLAMF6",
       "frame_status": "out-of-frame",
       "target_role": "three_prime",
-      "breakpoint_genomic": 160468022,
-      "breakpoint_exon": 17,
-      "breakpoint_protein_position": 797,
+      "breakpoint_genomic": 156836411,
+      "breakpoint_exon": 4,
+      "breakpoint_protein_position": 120,
       "is_intronic_breakpoint": true,
-      "domain_status": "lost",
-      "domain_retained_fraction": 0.0,
+      "domain_status": "retained",
+      "domain_retained_fraction": 1.0,
       "domain_is_truncated": false,
-      "retained_domains": "",
-      "lost_domains": "Protein kinase domain",
+      "retained_domains": "Protein kinase domain",
+      "lost_domains": "",
       "disrupted_domains": "",
       "source_annotation_text": "SLAMF6 (NM_052931) - NTRK1 (NM_002529) rearrangement: c.50-1839:SLAMF6_c.360-291:NTRK1inv | Protein Fusion: out of frame  {SLAMF6:NTRK1}",
       "source_site2_effect_on_frame": "NA"
@@ -1687,15 +1687,15 @@
       "partner_gene": "TPR",
       "frame_status": "in-frame",
       "target_role": "three_prime",
-      "breakpoint_genomic": 186320275,
-      "breakpoint_exon": 17,
-      "breakpoint_protein_position": 797,
+      "breakpoint_genomic": 156844660,
+      "breakpoint_exon": 11,
+      "breakpoint_protein_position": 418,
       "is_intronic_breakpoint": true,
-      "domain_status": "lost",
-      "domain_retained_fraction": 0.0,
+      "domain_status": "retained",
+      "domain_retained_fraction": 1.0,
       "domain_is_truncated": false,
-      "retained_domains": "",
-      "lost_domains": "Protein kinase domain",
+      "retained_domains": "Protein kinase domain",
+      "lost_domains": "",
       "disrupted_domains": "",
       "source_annotation_text": "TPR (NM_003292) - NTRK1 (NM_002529) fusion: c.2610+187:TPR_c.1252-38:NTRK1inv | Protein Fusion: in frame  {TPR:NTRK1}",
       "source_site2_effect_on_frame": "NA"
@@ -1708,15 +1708,15 @@
       "partner_gene": "TPR",
       "frame_status": "unknown",
       "target_role": "three_prime",
-      "breakpoint_genomic": 186318824,
-      "breakpoint_exon": 17,
-      "breakpoint_protein_position": 797,
-      "is_intronic_breakpoint": true,
-      "domain_status": "lost",
-      "domain_retained_fraction": 0.0,
+      "breakpoint_genomic": 156843703,
+      "breakpoint_exon": 8,
+      "breakpoint_protein_position": 377,
+      "is_intronic_breakpoint": false,
+      "domain_status": "retained",
+      "domain_retained_fraction": 1.0,
       "domain_is_truncated": false,
-      "retained_domains": "",
-      "lost_domains": "Protein kinase domain",
+      "retained_domains": "Protein kinase domain",
+      "lost_domains": "",
       "disrupted_domains": "",
       "source_annotation_text": "TPR (NM_003292) - NTRK1 (NM_002529) fusion: c.2776+531:TPR_c.1129:NTRK1inv | Protein Fusion: mid-exon  {TPR:NTRK1}",
       "source_site2_effect_on_frame": "NA"
@@ -1729,15 +1729,15 @@
       "partner_gene": "TPR",
       "frame_status": "unknown",
       "target_role": "three_prime",
-      "breakpoint_genomic": 186317102,
-      "breakpoint_exon": 17,
-      "breakpoint_protein_position": 797,
-      "is_intronic_breakpoint": true,
-      "domain_status": "lost",
-      "domain_retained_fraction": 0.0,
+      "breakpoint_genomic": 156843651,
+      "breakpoint_exon": 8,
+      "breakpoint_protein_position": 359,
+      "is_intronic_breakpoint": false,
+      "domain_status": "retained",
+      "domain_retained_fraction": 1.0,
       "domain_is_truncated": false,
-      "retained_domains": "",
-      "lost_domains": "Protein kinase domain",
+      "retained_domains": "Protein kinase domain",
+      "lost_domains": "",
       "disrupted_domains": "",
       "source_annotation_text": "TPR (NM_003292) - NTRK1 (NM_002529) fusion: c.2777-512:TPR_c.1077:NTRK1inv | Protein Fusion: mid-exon  {TPR:NTRK1}",
       "source_site2_effect_on_frame": "NA"
@@ -1834,7 +1834,7 @@
         "domain_retention_p_value_used": 0.000999000999000999,
         "domain_disruption_p_value_used": null,
         "inferred_cutpoint_aa": 501,
-        "Runtime_seconds": 0.0001381250040140003
+        "Runtime_seconds": 0.00012904100003652275
       },
       "Tables": {
         "composite_evidence_ranking": [
@@ -1844,14 +1844,14 @@
             "Recurrence_score": 0.15384615384615385,
             "Domain_retention_score": 0.30004340774793187,
             "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.8726666666666667,
+            "Cutpoint_proximity_score": 0.851937984496124,
             "Confidence_certainty_score": null,
             "Components_applicable": [
               "cutpoint_proximity",
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.3600924258440416,
+            "Composite_score": 0.35565056537892537,
             "Rank": 1
           },
           {
@@ -1860,14 +1860,14 @@
             "Recurrence_score": 0.15384615384615385,
             "Domain_retention_score": 0.30004340774793187,
             "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.7821666666666667,
+            "Cutpoint_proximity_score": 0.7467054263565891,
             "Confidence_certainty_score": null,
             "Components_applicable": [
               "cutpoint_proximity",
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.3406995687011845,
+            "Composite_score": 0.33310073149188213,
             "Rank": 2
           },
           {
@@ -1903,20 +1903,36 @@
             "Rank": 4
           },
           {
-            "Partner_gene": "RABGAP1L",
-            "Event_count": 1,
-            "Recurrence_score": 0.01282051282051282,
+            "Partner_gene": "ARHGEF11",
+            "Event_count": 2,
+            "Recurrence_score": 0.02564102564102564,
             "Domain_retention_score": 0.30004340774793187,
             "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.902,
+            "Cutpoint_proximity_score": 0.9430232558139535,
             "Confidence_certainty_score": null,
             "Components_applicable": [
               "cutpoint_proximity",
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.30593857969019544,
+            "Composite_score": 0.3202237828591195,
             "Rank": 5
+          },
+          {
+            "Partner_gene": "RABGAP1L",
+            "Event_count": 1,
+            "Recurrence_score": 0.01282051282051282,
+            "Domain_retention_score": 0.30004340774793187,
+            "Domain_disruption_score": null,
+            "Cutpoint_proximity_score": 0.8860465116279069,
+            "Confidence_certainty_score": null,
+            "Components_applicable": [
+              "cutpoint_proximity",
+              "domain_retention",
+              "recurrence"
+            ],
+            "Composite_score": 0.30251997503903266,
+            "Rank": 6
           },
           {
             "Partner_gene": "VANGL2",
@@ -1924,15 +1940,15 @@
             "Recurrence_score": 0.01282051282051282,
             "Domain_retention_score": 0.30004340774793187,
             "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.902,
+            "Cutpoint_proximity_score": 0.8860465116279069,
             "Confidence_certainty_score": null,
             "Components_applicable": [
               "cutpoint_proximity",
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.30593857969019544,
-            "Rank": 6
+            "Composite_score": 0.30251997503903266,
+            "Rank": 7
           },
           {
             "Partner_gene": "ZBTB7B",
@@ -1940,15 +1956,15 @@
             "Recurrence_score": 0.01282051282051282,
             "Domain_retention_score": 0.30004340774793187,
             "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.902,
+            "Cutpoint_proximity_score": 0.8860465116279069,
             "Confidence_certainty_score": null,
             "Components_applicable": [
               "cutpoint_proximity",
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.30593857969019544,
-            "Rank": 7
+            "Composite_score": 0.30251997503903266,
+            "Rank": 8
           },
           {
             "Partner_gene": "SCP2",
@@ -1956,303 +1972,15 @@
             "Recurrence_score": 0.01282051282051282,
             "Domain_retention_score": 0.30004340774793187,
             "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.884,
+            "Cutpoint_proximity_score": 0.8651162790697674,
             "Confidence_certainty_score": null,
             "Components_applicable": [
               "cutpoint_proximity",
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.3020814368330526,
-            "Rank": 8
-          },
-          {
-            "Partner_gene": "LTAP1",
-            "Event_count": 1,
-            "Recurrence_score": 0.01282051282051282,
-            "Domain_retention_score": 0.30004340774793187,
-            "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.86,
-            "Confidence_certainty_score": null,
-            "Components_applicable": [
-              "cutpoint_proximity",
-              "domain_retention",
-              "recurrence"
-            ],
-            "Composite_score": 0.2969385796901955,
+            "Composite_score": 0.29803492520514563,
             "Rank": 9
-          },
-          {
-            "Partner_gene": "PLEKHA6",
-            "Event_count": 3,
-            "Recurrence_score": 0.038461538461538464,
-            "Domain_retention_score": 0.30004340774793187,
-            "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.796,
-            "Confidence_certainty_score": null,
-            "Components_applicable": [
-              "cutpoint_proximity",
-              "domain_retention",
-              "recurrence"
-            ],
-            "Composite_score": 0.29421330496492076,
-            "Rank": 10
-          },
-          {
-            "Partner_gene": "ATP1A2",
-            "Event_count": 1,
-            "Recurrence_score": 0.01282051282051282,
-            "Domain_retention_score": 0.30004340774793187,
-            "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.844,
-            "Confidence_certainty_score": null,
-            "Components_applicable": [
-              "cutpoint_proximity",
-              "domain_retention",
-              "recurrence"
-            ],
-            "Composite_score": 0.29351000826162404,
-            "Rank": 11
-          },
-          {
-            "Partner_gene": "IRF2BP2",
-            "Event_count": 3,
-            "Recurrence_score": 0.038461538461538464,
-            "Domain_retention_score": 0.30004340774793187,
-            "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.792,
-            "Confidence_certainty_score": null,
-            "Components_applicable": [
-              "cutpoint_proximity",
-              "domain_retention",
-              "recurrence"
-            ],
-            "Composite_score": 0.2933561621077779,
-            "Rank": 12
-          },
-          {
-            "Partner_gene": "ANKRD36",
-            "Event_count": 1,
-            "Recurrence_score": 0.01282051282051282,
-            "Domain_retention_score": 0.30004340774793187,
-            "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.834,
-            "Confidence_certainty_score": null,
-            "Components_applicable": [
-              "cutpoint_proximity",
-              "domain_retention",
-              "recurrence"
-            ],
-            "Composite_score": 0.2913671511187669,
-            "Rank": 13
-          },
-          {
-            "Partner_gene": "IQGAP3",
-            "Event_count": 1,
-            "Recurrence_score": 0.01282051282051282,
-            "Domain_retention_score": 0.30004340774793187,
-            "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.8260000000000001,
-            "Confidence_certainty_score": null,
-            "Components_applicable": [
-              "cutpoint_proximity",
-              "domain_retention",
-              "recurrence"
-            ],
-            "Composite_score": 0.2896528654044812,
-            "Rank": 14
-          },
-          {
-            "Partner_gene": "SMYD2",
-            "Event_count": 1,
-            "Recurrence_score": 0.01282051282051282,
-            "Domain_retention_score": 0.30004340774793187,
-            "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.808,
-            "Confidence_certainty_score": null,
-            "Components_applicable": [
-              "cutpoint_proximity",
-              "domain_retention",
-              "recurrence"
-            ],
-            "Composite_score": 0.2857957225473383,
-            "Rank": 15
-          },
-          {
-            "Partner_gene": "EML4",
-            "Event_count": 1,
-            "Recurrence_score": 0.01282051282051282,
-            "Domain_retention_score": 0.30004340774793187,
-            "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.796,
-            "Confidence_certainty_score": null,
-            "Components_applicable": [
-              "cutpoint_proximity",
-              "domain_retention",
-              "recurrence"
-            ],
-            "Composite_score": 0.28322429397590976,
-            "Rank": 16
-          },
-          {
-            "Partner_gene": "EPS15",
-            "Event_count": 1,
-            "Recurrence_score": 0.01282051282051282,
-            "Domain_retention_score": 0.30004340774793187,
-            "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.796,
-            "Confidence_certainty_score": null,
-            "Components_applicable": [
-              "cutpoint_proximity",
-              "domain_retention",
-              "recurrence"
-            ],
-            "Composite_score": 0.28322429397590976,
-            "Rank": 17
-          },
-          {
-            "Partner_gene": "F11R",
-            "Event_count": 1,
-            "Recurrence_score": 0.01282051282051282,
-            "Domain_retention_score": 0.30004340774793187,
-            "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.796,
-            "Confidence_certainty_score": null,
-            "Components_applicable": [
-              "cutpoint_proximity",
-              "domain_retention",
-              "recurrence"
-            ],
-            "Composite_score": 0.28322429397590976,
-            "Rank": 18
-          },
-          {
-            "Partner_gene": "PEAR1",
-            "Event_count": 1,
-            "Recurrence_score": 0.01282051282051282,
-            "Domain_retention_score": 0.30004340774793187,
-            "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.796,
-            "Confidence_certainty_score": null,
-            "Components_applicable": [
-              "cutpoint_proximity",
-              "domain_retention",
-              "recurrence"
-            ],
-            "Composite_score": 0.28322429397590976,
-            "Rank": 19
-          },
-          {
-            "Partner_gene": "AFAP1",
-            "Event_count": 1,
-            "Recurrence_score": 0.01282051282051282,
-            "Domain_retention_score": 0.30004340774793187,
-            "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.784,
-            "Confidence_certainty_score": null,
-            "Components_applicable": [
-              "cutpoint_proximity",
-              "domain_retention",
-              "recurrence"
-            ],
-            "Composite_score": 0.28065286540448114,
-            "Rank": 20
-          },
-          {
-            "Partner_gene": "DIAPH1",
-            "Event_count": 1,
-            "Recurrence_score": 0.01282051282051282,
-            "Domain_retention_score": 0.30004340774793187,
-            "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.784,
-            "Confidence_certainty_score": null,
-            "Components_applicable": [
-              "cutpoint_proximity",
-              "domain_retention",
-              "recurrence"
-            ],
-            "Composite_score": 0.28065286540448114,
-            "Rank": 21
-          },
-          {
-            "Partner_gene": "TRIM63",
-            "Event_count": 1,
-            "Recurrence_score": 0.01282051282051282,
-            "Domain_retention_score": 0.30004340774793187,
-            "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.784,
-            "Confidence_certainty_score": null,
-            "Components_applicable": [
-              "cutpoint_proximity",
-              "domain_retention",
-              "recurrence"
-            ],
-            "Composite_score": 0.28065286540448114,
-            "Rank": 22
-          },
-          {
-            "Partner_gene": "STK11",
-            "Event_count": 1,
-            "Recurrence_score": 0.01282051282051282,
-            "Domain_retention_score": 0.30004340774793187,
-            "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.77,
-            "Confidence_certainty_score": null,
-            "Components_applicable": [
-              "cutpoint_proximity",
-              "domain_retention",
-              "recurrence"
-            ],
-            "Composite_score": 0.27765286540448114,
-            "Rank": 23
-          },
-          {
-            "Partner_gene": "KIF21B",
-            "Event_count": 1,
-            "Recurrence_score": 0.01282051282051282,
-            "Domain_retention_score": 0.30004340774793187,
-            "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.764,
-            "Confidence_certainty_score": null,
-            "Components_applicable": [
-              "cutpoint_proximity",
-              "domain_retention",
-              "recurrence"
-            ],
-            "Composite_score": 0.27636715111876686,
-            "Rank": 24
-          },
-          {
-            "Partner_gene": "GON4L",
-            "Event_count": 1,
-            "Recurrence_score": 0.01282051282051282,
-            "Domain_retention_score": 0.30004340774793187,
-            "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.756,
-            "Confidence_certainty_score": null,
-            "Components_applicable": [
-              "cutpoint_proximity",
-              "domain_retention",
-              "recurrence"
-            ],
-            "Composite_score": 0.2746528654044812,
-            "Rank": 25
-          },
-          {
-            "Partner_gene": "ARHGEF11",
-            "Event_count": 2,
-            "Recurrence_score": 0.02564102564102564,
-            "Domain_retention_score": 0.30004340774793187,
-            "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.655,
-            "Confidence_certainty_score": null,
-            "Components_applicable": [
-              "cutpoint_proximity",
-              "domain_retention",
-              "recurrence"
-            ],
-            "Composite_score": 0.25850451375612954,
-            "Rank": 26
           },
           {
             "Partner_gene": "TPR",
@@ -2260,15 +1988,303 @@
             "Recurrence_score": 0.0641025641025641,
             "Domain_retention_score": 0.30004340774793187,
             "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.5631999999999999,
+            "Cutpoint_proximity_score": 0.7427906976744186,
             "Confidence_certainty_score": null,
             "Components_applicable": [
               "cutpoint_proximity",
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.2553166016682174,
+            "Composite_score": 0.29380032259845,
+            "Rank": 10
+          },
+          {
+            "Partner_gene": "LTAP1",
+            "Event_count": 1,
+            "Recurrence_score": 0.01282051282051282,
+            "Domain_retention_score": 0.30004340774793187,
+            "Domain_disruption_score": null,
+            "Cutpoint_proximity_score": 0.8372093023255813,
+            "Confidence_certainty_score": null,
+            "Components_applicable": [
+              "cutpoint_proximity",
+              "domain_retention",
+              "recurrence"
+            ],
+            "Composite_score": 0.2920548587599629,
+            "Rank": 11
+          },
+          {
+            "Partner_gene": "ATP1A2",
+            "Event_count": 1,
+            "Recurrence_score": 0.01282051282051282,
+            "Domain_retention_score": 0.30004340774793187,
+            "Domain_disruption_score": null,
+            "Cutpoint_proximity_score": 0.8186046511627907,
+            "Confidence_certainty_score": null,
+            "Components_applicable": [
+              "cutpoint_proximity",
+              "domain_retention",
+              "recurrence"
+            ],
+            "Composite_score": 0.28806814779650775,
+            "Rank": 12
+          },
+          {
+            "Partner_gene": "PLEKHA6",
+            "Event_count": 3,
+            "Recurrence_score": 0.038461538461538464,
+            "Domain_retention_score": 0.30004340774793187,
+            "Domain_disruption_score": null,
+            "Cutpoint_proximity_score": 0.7627906976744185,
+            "Confidence_certainty_score": null,
+            "Components_applicable": [
+              "cutpoint_proximity",
+              "domain_retention",
+              "recurrence"
+            ],
+            "Composite_score": 0.2870970258951533,
+            "Rank": 13
+          },
+          {
+            "Partner_gene": "IRF2BP2",
+            "Event_count": 3,
+            "Recurrence_score": 0.038461538461538464,
+            "Domain_retention_score": 0.30004340774793187,
+            "Domain_disruption_score": null,
+            "Cutpoint_proximity_score": 0.758139534883721,
+            "Confidence_certainty_score": null,
+            "Components_applicable": [
+              "cutpoint_proximity",
+              "domain_retention",
+              "recurrence"
+            ],
+            "Composite_score": 0.28610034815428953,
+            "Rank": 14
+          },
+          {
+            "Partner_gene": "ANKRD36",
+            "Event_count": 1,
+            "Recurrence_score": 0.01282051282051282,
+            "Domain_retention_score": 0.30004340774793187,
+            "Domain_disruption_score": null,
+            "Cutpoint_proximity_score": 0.8069767441860465,
+            "Confidence_certainty_score": null,
+            "Components_applicable": [
+              "cutpoint_proximity",
+              "domain_retention",
+              "recurrence"
+            ],
+            "Composite_score": 0.2855764534443483,
+            "Rank": 15
+          },
+          {
+            "Partner_gene": "RAB25",
+            "Event_count": 1,
+            "Recurrence_score": 0.01282051282051282,
+            "Domain_retention_score": 0.30004340774793187,
+            "Domain_disruption_score": null,
+            "Cutpoint_proximity_score": 0.8046511627906977,
+            "Confidence_certainty_score": null,
+            "Components_applicable": [
+              "cutpoint_proximity",
+              "domain_retention",
+              "recurrence"
+            ],
+            "Composite_score": 0.2850781145739164,
+            "Rank": 16
+          },
+          {
+            "Partner_gene": "IQGAP3",
+            "Event_count": 1,
+            "Recurrence_score": 0.01282051282051282,
+            "Domain_retention_score": 0.30004340774793187,
+            "Domain_disruption_score": null,
+            "Cutpoint_proximity_score": 0.7976744186046512,
+            "Confidence_certainty_score": null,
+            "Components_applicable": [
+              "cutpoint_proximity",
+              "domain_retention",
+              "recurrence"
+            ],
+            "Composite_score": 0.28358309796262066,
+            "Rank": 17
+          },
+          {
+            "Partner_gene": "SMYD2",
+            "Event_count": 1,
+            "Recurrence_score": 0.01282051282051282,
+            "Domain_retention_score": 0.30004340774793187,
+            "Domain_disruption_score": null,
+            "Cutpoint_proximity_score": 0.7767441860465116,
+            "Confidence_certainty_score": null,
+            "Components_applicable": [
+              "cutpoint_proximity",
+              "domain_retention",
+              "recurrence"
+            ],
+            "Composite_score": 0.2790980481287336,
+            "Rank": 18
+          },
+          {
+            "Partner_gene": "EML4",
+            "Event_count": 1,
+            "Recurrence_score": 0.01282051282051282,
+            "Domain_retention_score": 0.30004340774793187,
+            "Domain_disruption_score": null,
+            "Cutpoint_proximity_score": 0.7627906976744185,
+            "Confidence_certainty_score": null,
+            "Components_applicable": [
+              "cutpoint_proximity",
+              "domain_retention",
+              "recurrence"
+            ],
+            "Composite_score": 0.2761080149061423,
+            "Rank": 19
+          },
+          {
+            "Partner_gene": "EPS15",
+            "Event_count": 1,
+            "Recurrence_score": 0.01282051282051282,
+            "Domain_retention_score": 0.30004340774793187,
+            "Domain_disruption_score": null,
+            "Cutpoint_proximity_score": 0.7627906976744185,
+            "Confidence_certainty_score": null,
+            "Components_applicable": [
+              "cutpoint_proximity",
+              "domain_retention",
+              "recurrence"
+            ],
+            "Composite_score": 0.2761080149061423,
+            "Rank": 20
+          },
+          {
+            "Partner_gene": "F11R",
+            "Event_count": 1,
+            "Recurrence_score": 0.01282051282051282,
+            "Domain_retention_score": 0.30004340774793187,
+            "Domain_disruption_score": null,
+            "Cutpoint_proximity_score": 0.7627906976744185,
+            "Confidence_certainty_score": null,
+            "Components_applicable": [
+              "cutpoint_proximity",
+              "domain_retention",
+              "recurrence"
+            ],
+            "Composite_score": 0.2761080149061423,
+            "Rank": 21
+          },
+          {
+            "Partner_gene": "PEAR1",
+            "Event_count": 1,
+            "Recurrence_score": 0.01282051282051282,
+            "Domain_retention_score": 0.30004340774793187,
+            "Domain_disruption_score": null,
+            "Cutpoint_proximity_score": 0.7627906976744185,
+            "Confidence_certainty_score": null,
+            "Components_applicable": [
+              "cutpoint_proximity",
+              "domain_retention",
+              "recurrence"
+            ],
+            "Composite_score": 0.2761080149061423,
+            "Rank": 22
+          },
+          {
+            "Partner_gene": "AFAP1",
+            "Event_count": 1,
+            "Recurrence_score": 0.01282051282051282,
+            "Domain_retention_score": 0.30004340774793187,
+            "Domain_disruption_score": null,
+            "Cutpoint_proximity_score": 0.7488372093023256,
+            "Confidence_certainty_score": null,
+            "Components_applicable": [
+              "cutpoint_proximity",
+              "domain_retention",
+              "recurrence"
+            ],
+            "Composite_score": 0.2731179816835509,
+            "Rank": 23
+          },
+          {
+            "Partner_gene": "DIAPH1",
+            "Event_count": 1,
+            "Recurrence_score": 0.01282051282051282,
+            "Domain_retention_score": 0.30004340774793187,
+            "Domain_disruption_score": null,
+            "Cutpoint_proximity_score": 0.7488372093023256,
+            "Confidence_certainty_score": null,
+            "Components_applicable": [
+              "cutpoint_proximity",
+              "domain_retention",
+              "recurrence"
+            ],
+            "Composite_score": 0.2731179816835509,
+            "Rank": 24
+          },
+          {
+            "Partner_gene": "TRIM63",
+            "Event_count": 1,
+            "Recurrence_score": 0.01282051282051282,
+            "Domain_retention_score": 0.30004340774793187,
+            "Domain_disruption_score": null,
+            "Cutpoint_proximity_score": 0.7488372093023256,
+            "Confidence_certainty_score": null,
+            "Components_applicable": [
+              "cutpoint_proximity",
+              "domain_retention",
+              "recurrence"
+            ],
+            "Composite_score": 0.2731179816835509,
+            "Rank": 25
+          },
+          {
+            "Partner_gene": "STK11",
+            "Event_count": 1,
+            "Recurrence_score": 0.01282051282051282,
+            "Domain_retention_score": 0.30004340774793187,
+            "Domain_disruption_score": null,
+            "Cutpoint_proximity_score": 0.7325581395348837,
+            "Confidence_certainty_score": null,
+            "Components_applicable": [
+              "cutpoint_proximity",
+              "domain_retention",
+              "recurrence"
+            ],
+            "Composite_score": 0.2696296095905277,
+            "Rank": 26
+          },
+          {
+            "Partner_gene": "KIF21B",
+            "Event_count": 1,
+            "Recurrence_score": 0.01282051282051282,
+            "Domain_retention_score": 0.30004340774793187,
+            "Domain_disruption_score": null,
+            "Cutpoint_proximity_score": 0.7255813953488373,
+            "Confidence_certainty_score": null,
+            "Components_applicable": [
+              "cutpoint_proximity",
+              "domain_retention",
+              "recurrence"
+            ],
+            "Composite_score": 0.268134592979232,
             "Rank": 27
+          },
+          {
+            "Partner_gene": "GON4L",
+            "Event_count": 1,
+            "Recurrence_score": 0.01282051282051282,
+            "Domain_retention_score": 0.30004340774793187,
+            "Domain_disruption_score": null,
+            "Cutpoint_proximity_score": 0.7162790697674419,
+            "Confidence_certainty_score": null,
+            "Components_applicable": [
+              "cutpoint_proximity",
+              "domain_retention",
+              "recurrence"
+            ],
+            "Composite_score": 0.26614123749750446,
+            "Rank": 28
           },
           {
             "Partner_gene": "BCAN",
@@ -2276,15 +2292,15 @@
             "Recurrence_score": 0.02564102564102564,
             "Domain_retention_score": 0.30004340774793187,
             "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.5660000000000001,
+            "Cutpoint_proximity_score": 0.49534883720930234,
             "Confidence_certainty_score": null,
             "Components_applicable": [
               "cutpoint_proximity",
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.23943308518470094,
-            "Rank": 28
+            "Composite_score": 0.22429355030098,
+            "Rank": 29
           },
           {
             "Partner_gene": "CTRC",
@@ -2292,47 +2308,15 @@
             "Recurrence_score": 0.02564102564102564,
             "Domain_retention_score": 0.30004340774793187,
             "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.5660000000000001,
+            "Cutpoint_proximity_score": 0.49534883720930234,
             "Confidence_certainty_score": null,
             "Components_applicable": [
               "cutpoint_proximity",
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.23943308518470094,
-            "Rank": 29
-          },
-          {
-            "Partner_gene": "SLAMF6",
-            "Event_count": 3,
-            "Recurrence_score": 0.038461538461538464,
-            "Domain_retention_score": 0.30004340774793187,
-            "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.40800000000000003,
-            "Confidence_certainty_score": null,
-            "Components_applicable": [
-              "cutpoint_proximity",
-              "domain_retention",
-              "recurrence"
-            ],
-            "Composite_score": 0.2110704478220636,
+            "Composite_score": 0.22429355030098,
             "Rank": 30
-          },
-          {
-            "Partner_gene": "COP1",
-            "Event_count": 1,
-            "Recurrence_score": 0.01282051282051282,
-            "Domain_retention_score": 0.30004340774793187,
-            "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.40800000000000003,
-            "Confidence_certainty_score": null,
-            "Components_applicable": [
-              "cutpoint_proximity",
-              "domain_retention",
-              "recurrence"
-            ],
-            "Composite_score": 0.2000814368330526,
-            "Rank": 31
           },
           {
             "Partner_gene": "NOS1AP",
@@ -2340,15 +2324,63 @@
             "Recurrence_score": 0.01282051282051282,
             "Domain_retention_score": 0.30004340774793187,
             "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.40800000000000003,
+            "Cutpoint_proximity_score": 0.5186046511627906,
             "Confidence_certainty_score": null,
             "Components_applicable": [
               "cutpoint_proximity",
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.2000814368330526,
+            "Composite_score": 0.22378243351079347,
+            "Rank": 31
+          },
+          {
+            "Partner_gene": "NELFCD",
+            "Event_count": 1,
+            "Recurrence_score": 0.01282051282051282,
+            "Domain_retention_score": 0.30004340774793187,
+            "Domain_disruption_score": null,
+            "Cutpoint_proximity_score": 0.49534883720930234,
+            "Confidence_certainty_score": null,
+            "Components_applicable": [
+              "cutpoint_proximity",
+              "domain_retention",
+              "recurrence"
+            ],
+            "Composite_score": 0.21879904480647452,
             "Rank": 32
+          },
+          {
+            "Partner_gene": "SEMA4A",
+            "Event_count": 1,
+            "Recurrence_score": 0.01282051282051282,
+            "Domain_retention_score": 0.30004340774793187,
+            "Domain_disruption_score": null,
+            "Cutpoint_proximity_score": 0.49534883720930234,
+            "Confidence_certainty_score": null,
+            "Components_applicable": [
+              "cutpoint_proximity",
+              "domain_retention",
+              "recurrence"
+            ],
+            "Composite_score": 0.21879904480647452,
+            "Rank": 33
+          },
+          {
+            "Partner_gene": "COP1",
+            "Event_count": 1,
+            "Recurrence_score": 0.01282051282051282,
+            "Domain_retention_score": 0.30004340774793187,
+            "Domain_disruption_score": null,
+            "Cutpoint_proximity_score": 0.4534883720930233,
+            "Confidence_certainty_score": null,
+            "Components_applicable": [
+              "cutpoint_proximity",
+              "domain_retention",
+              "recurrence"
+            ],
+            "Composite_score": 0.20982894513870046,
+            "Rank": 34
           },
           {
             "Partner_gene": "TARS2",
@@ -2356,15 +2388,15 @@
             "Recurrence_score": 0.01282051282051282,
             "Domain_retention_score": 0.30004340774793187,
             "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.372,
+            "Cutpoint_proximity_score": 0.2697674418604651,
             "Confidence_certainty_score": null,
             "Components_applicable": [
               "cutpoint_proximity",
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.19236715111876687,
-            "Rank": 33
+            "Composite_score": 0.17046017437458083,
+            "Rank": 35
           },
           {
             "Partner_gene": "P2RY8",
@@ -2372,62 +2404,30 @@
             "Recurrence_score": 0.01282051282051282,
             "Domain_retention_score": 0.30004340774793187,
             "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.362,
+            "Cutpoint_proximity_score": 0.2581395348837209,
             "Confidence_certainty_score": null,
             "Components_applicable": [
               "cutpoint_proximity",
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.19022429397590973,
-            "Rank": 34
-          },
-          {
-            "Partner_gene": "CADM3",
-            "Event_count": 1,
-            "Recurrence_score": 0.01282051282051282,
-            "Domain_retention_score": 0.30004340774793187,
-            "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.238,
-            "Confidence_certainty_score": null,
-            "Components_applicable": [
-              "cutpoint_proximity",
-              "domain_retention",
-              "recurrence"
-            ],
-            "Composite_score": 0.16365286540448118,
-            "Rank": 35
-          },
-          {
-            "Partner_gene": "PRCC",
-            "Event_count": 1,
-            "Recurrence_score": 0.01282051282051282,
-            "Domain_retention_score": 0.30004340774793187,
-            "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.238,
-            "Confidence_certainty_score": null,
-            "Components_applicable": [
-              "cutpoint_proximity",
-              "domain_retention",
-              "recurrence"
-            ],
-            "Composite_score": 0.16365286540448118,
+            "Composite_score": 0.16796848002242135,
             "Rank": 36
           },
           {
-            "Partner_gene": "TAFA2",
-            "Event_count": 1,
-            "Recurrence_score": 0.01282051282051282,
+            "Partner_gene": "SLAMF6",
+            "Event_count": 3,
+            "Recurrence_score": 0.038461538461538464,
             "Domain_retention_score": 0.30004340774793187,
             "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.238,
+            "Cutpoint_proximity_score": 0.11395348837209307,
             "Confidence_certainty_score": null,
             "Components_applicable": [
               "cutpoint_proximity",
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.16365286540448118,
+            "Composite_score": 0.14806048104465497,
             "Rank": 37
           },
           {
@@ -2461,55 +2461,55 @@
             "Rank": 39
           },
           {
-            "Partner_gene": "SHPRH",
+            "Partner_gene": "CADM3",
             "Event_count": 1,
             "Recurrence_score": 0.01282051282051282,
             "Domain_retention_score": 0.30004340774793187,
             "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.14,
+            "Cutpoint_proximity_score": 0.11395348837209307,
             "Confidence_certainty_score": null,
             "Components_applicable": [
               "cutpoint_proximity",
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.1426528654044812,
+            "Composite_score": 0.13707147005564396,
             "Rank": 40
           },
           {
-            "Partner_gene": "NELFCD",
+            "Partner_gene": "PRCC",
             "Event_count": 1,
             "Recurrence_score": 0.01282051282051282,
             "Domain_retention_score": 0.30004340774793187,
             "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.0,
+            "Cutpoint_proximity_score": 0.11395348837209307,
             "Confidence_certainty_score": null,
             "Components_applicable": [
               "cutpoint_proximity",
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.11265286540448118,
+            "Composite_score": 0.13707147005564396,
             "Rank": 41
           },
           {
-            "Partner_gene": "RAB25",
+            "Partner_gene": "TAFA2",
             "Event_count": 1,
             "Recurrence_score": 0.01282051282051282,
             "Domain_retention_score": 0.30004340774793187,
             "Domain_disruption_score": null,
-            "Cutpoint_proximity_score": 0.0,
+            "Cutpoint_proximity_score": 0.11395348837209307,
             "Confidence_certainty_score": null,
             "Components_applicable": [
               "cutpoint_proximity",
               "domain_retention",
               "recurrence"
             ],
-            "Composite_score": 0.11265286540448118,
+            "Composite_score": 0.13707147005564396,
             "Rank": 42
           },
           {
-            "Partner_gene": "SEMA4A",
+            "Partner_gene": "SHPRH",
             "Event_count": 1,
             "Recurrence_score": 0.01282051282051282,
             "Domain_retention_score": 0.30004340774793187,
@@ -2530,22 +2530,22 @@
         "domain_disruption sub-score excluded: the supplied result had no applicable p-value (e.g. disruption_required_domains not configured for this gene).",
         "confidence_certainty sub-score excluded: no applicable confidence_stats MLE/CI result was supplied."
       ],
-      "Created_at": "2026-09-04T00:21:21.055087Z",
-      "Input_fingerprint": "30dbd9f1828c30b8c77be5aa97c18d79ea29ed500e384b48ae3dede13ff407b3"
+      "Created_at": "2026-09-04T00:40:36.190071Z",
+      "Input_fingerprint": "1ced031997e532d990b9952de74bfad0fc68ffd2eb4390a5b7791b8e17241863"
     },
     {
       "Algorithm": "confidence_stats",
       "Algorithm_version": null,
       "Parameters": {},
       "Summary": {
-        "Runtime_seconds": 5.458015948534012e-06
+        "Runtime_seconds": 6.875023245811462e-06
       },
       "Tables": {},
       "Warnings": [
         "Algorithm failed: ValueError: params['group_field'] is required"
       ],
-      "Created_at": "2026-09-04T00:21:16.314769Z",
-      "Input_fingerprint": "30dbd9f1828c30b8c77be5aa97c18d79ea29ed500e384b48ae3dede13ff407b3"
+      "Created_at": "2026-09-04T00:40:31.903849Z",
+      "Input_fingerprint": "1ced031997e532d990b9952de74bfad0fc68ffd2eb4390a5b7791b8e17241863"
     },
     {
       "Algorithm": "cutpoint_detection",
@@ -2560,263 +2560,283 @@
         "reason": null,
         "n_events_analyzed": 76,
         "inferred_cutpoint_aa": 501,
-        "observed_statistic_neg_log10_p": 7.53273347837379,
-        "observed_p_value": 2.9326924534050423e-08,
+        "observed_statistic_neg_log10_p": 2.5045326441976177,
+        "observed_p_value": 0.0031294452347083927,
         "observed_odds_ratio": null,
-        "corrected_p_value": 0.000999000999000999,
+        "corrected_p_value": 0.014985014985014986,
         "known_domain_boundary_comparison": {
           "nearest_known_domain_boundary_aa": 512,
           "distance_aa": 11
         },
-        "Runtime_seconds": 4.737526084005367
+        "Runtime_seconds": 4.283562167023774
       },
       "Tables": {
         "cutpoint_scan": [
           {
-            "cutpoint": 1,
-            "n_positive_at_or_below": 0,
-            "n_positive_above": 56,
-            "n_negative_at_or_below": 3,
-            "n_negative_above": 17,
-            "odds_ratio": 0.0,
-            "p_value": 0.016216216216216214,
-            "neg_log10_p_value": 1.7900504736833514
-          },
-          {
             "cutpoint": 71,
             "n_positive_at_or_below": 0,
-            "n_positive_above": 56,
-            "n_negative_at_or_below": 4,
-            "n_negative_above": 16,
+            "n_positive_above": 64,
+            "n_negative_at_or_below": 1,
+            "n_negative_above": 11,
             "odds_ratio": 0.0,
-            "p_value": 0.0037763791188448717,
-            "neg_log10_p_value": 2.4229244124255334
+            "p_value": 0.15789473684210525,
+            "neg_log10_p_value": 0.8016323462331666
           },
           {
             "cutpoint": 120,
-            "n_positive_at_or_below": 2,
-            "n_positive_above": 54,
-            "n_negative_at_or_below": 5,
-            "n_negative_above": 15,
-            "odds_ratio": 0.1111111111111111,
-            "p_value": 0.011949669136626493,
-            "neg_log10_p_value": 1.9226441193289514
+            "n_positive_at_or_below": 5,
+            "n_positive_above": 59,
+            "n_negative_at_or_below": 2,
+            "n_negative_above": 10,
+            "odds_ratio": 0.423728813559322,
+            "p_value": 0.3043106841520683,
+            "neg_log10_p_value": 0.5166827995746912
           },
           {
             "cutpoint": 182,
-            "n_positive_at_or_below": 2,
-            "n_positive_above": 54,
-            "n_negative_at_or_below": 6,
-            "n_negative_above": 14,
-            "odds_ratio": 0.08641975308641975,
-            "p_value": 0.0034025183569261616,
-            "neg_log10_p_value": 2.468199523056228
+            "n_positive_at_or_below": 5,
+            "n_positive_above": 59,
+            "n_negative_at_or_below": 3,
+            "n_negative_above": 9,
+            "odds_ratio": 0.2542372881355932,
+            "p_value": 0.10748982443269033,
+            "neg_log10_p_value": 0.9686326464637113
           },
           {
             "cutpoint": 187,
-            "n_positive_at_or_below": 3,
-            "n_positive_above": 53,
-            "n_negative_at_or_below": 6,
-            "n_negative_above": 14,
-            "odds_ratio": 0.1320754716981132,
-            "p_value": 0.008430254109691067,
-            "neg_log10_p_value": 2.074159334417563
+            "n_positive_at_or_below": 6,
+            "n_positive_above": 58,
+            "n_negative_at_or_below": 3,
+            "n_negative_above": 9,
+            "odds_ratio": 0.3103448275862069,
+            "p_value": 0.14608214986786255,
+            "neg_log10_p_value": 0.83540284831964
           },
           {
             "cutpoint": 284,
-            "n_positive_at_or_below": 7,
-            "n_positive_above": 49,
-            "n_negative_at_or_below": 6,
-            "n_negative_above": 14,
-            "odds_ratio": 0.3333333333333333,
-            "p_value": 0.09130338741976977,
-            "neg_log10_p_value": 1.0395131095366381
+            "n_positive_at_or_below": 10,
+            "n_positive_above": 54,
+            "n_negative_at_or_below": 5,
+            "n_negative_above": 7,
+            "odds_ratio": 0.25925925925925924,
+            "p_value": 0.05253839246726117,
+            "neg_log10_p_value": 1.2795232195834179
+          },
+          {
+            "cutpoint": 294,
+            "n_positive_at_or_below": 11,
+            "n_positive_above": 53,
+            "n_negative_at_or_below": 5,
+            "n_negative_above": 7,
+            "odds_ratio": 0.29056603773584905,
+            "p_value": 0.11464025310482523,
+            "neg_log10_p_value": 0.9406628637664377
           },
           {
             "cutpoint": 321,
-            "n_positive_at_or_below": 9,
-            "n_positive_above": 47,
-            "n_negative_at_or_below": 6,
-            "n_negative_above": 14,
-            "odds_ratio": 0.44680851063829785,
-            "p_value": 0.20120178858262872,
-            "neg_log10_p_value": 0.6963681629396017
+            "n_positive_at_or_below": 13,
+            "n_positive_above": 51,
+            "n_negative_at_or_below": 5,
+            "n_negative_above": 7,
+            "odds_ratio": 0.3568627450980392,
+            "p_value": 0.14136093824402443,
+            "neg_log10_p_value": 0.8496705809825442
           },
           {
             "cutpoint": 343,
-            "n_positive_at_or_below": 10,
-            "n_positive_above": 46,
-            "n_negative_at_or_below": 6,
-            "n_negative_above": 14,
-            "odds_ratio": 0.5072463768115942,
-            "p_value": 0.3380971655602688,
-            "neg_log10_p_value": 0.47095847012951203
+            "n_positive_at_or_below": 14,
+            "n_positive_above": 50,
+            "n_negative_at_or_below": 5,
+            "n_negative_above": 7,
+            "odds_ratio": 0.392,
+            "p_value": 0.1614921032975089,
+            "neg_log10_p_value": 0.7918487091109843
+          },
+          {
+            "cutpoint": 359,
+            "n_positive_at_or_below": 15,
+            "n_positive_above": 49,
+            "n_negative_at_or_below": 5,
+            "n_negative_above": 7,
+            "odds_ratio": 0.42857142857142855,
+            "p_value": 0.28166616270038797,
+            "neg_log10_p_value": 0.550265322823117
+          },
+          {
+            "cutpoint": 377,
+            "n_positive_at_or_below": 16,
+            "n_positive_above": 48,
+            "n_negative_at_or_below": 5,
+            "n_negative_above": 7,
+            "odds_ratio": 0.4666666666666667,
+            "p_value": 0.29450254706111656,
+            "neg_log10_p_value": 0.530910944782467
           },
           {
             "cutpoint": 379,
-            "n_positive_at_or_below": 11,
-            "n_positive_above": 45,
-            "n_negative_at_or_below": 6,
-            "n_negative_above": 14,
-            "odds_ratio": 0.5703703703703704,
-            "p_value": 0.36083713731786293,
-            "neg_log10_p_value": 0.4426887712902436
+            "n_positive_at_or_below": 17,
+            "n_positive_above": 47,
+            "n_negative_at_or_below": 5,
+            "n_negative_above": 7,
+            "odds_ratio": 0.5063829787234042,
+            "p_value": 0.31247043251825074,
+            "neg_log10_p_value": 0.505191071445305
           },
           {
             "cutpoint": 383,
-            "n_positive_at_or_below": 12,
-            "n_positive_above": 44,
-            "n_negative_at_or_below": 6,
-            "n_negative_above": 14,
-            "odds_ratio": 0.6363636363636364,
-            "p_value": 0.5416583711852934,
-            "neg_log10_p_value": 0.26627454056053385
+            "n_positive_at_or_below": 18,
+            "n_positive_above": 46,
+            "n_negative_at_or_below": 5,
+            "n_negative_above": 7,
+            "odds_ratio": 0.5478260869565217,
+            "p_value": 0.494013437398657,
+            "neg_log10_p_value": 0.30626123790080845
           },
           {
             "cutpoint": 393,
-            "n_positive_at_or_below": 21,
-            "n_positive_above": 35,
-            "n_negative_at_or_below": 6,
-            "n_negative_above": 14,
-            "odds_ratio": 1.4,
-            "p_value": 0.5981461259775909,
-            "neg_log10_p_value": 0.22319270572177108
+            "n_positive_at_or_below": 27,
+            "n_positive_above": 37,
+            "n_negative_at_or_below": 5,
+            "n_negative_above": 7,
+            "odds_ratio": 1.0216216216216216,
+            "p_value": 1.0,
+            "neg_log10_p_value": -0.0
           },
           {
             "cutpoint": 399,
-            "n_positive_at_or_below": 33,
-            "n_positive_above": 23,
-            "n_negative_at_or_below": 6,
-            "n_negative_above": 14,
-            "odds_ratio": 3.347826086956522,
-            "p_value": 0.03708657206945314,
-            "neg_log10_p_value": 1.430783306874162
+            "n_positive_at_or_below": 39,
+            "n_positive_above": 25,
+            "n_negative_at_or_below": 5,
+            "n_negative_above": 7,
+            "odds_ratio": 2.184,
+            "p_value": 0.33960073354007925,
+            "neg_log10_p_value": 0.46903138034780045
           },
           {
             "cutpoint": 405,
-            "n_positive_at_or_below": 33,
-            "n_positive_above": 23,
-            "n_negative_at_or_below": 7,
-            "n_negative_above": 13,
-            "odds_ratio": 2.6645962732919255,
-            "p_value": 0.0749107262760199,
-            "neg_log10_p_value": 1.1254559923277516
+            "n_positive_at_or_below": 39,
+            "n_positive_above": 25,
+            "n_negative_at_or_below": 6,
+            "n_negative_above": 6,
+            "odds_ratio": 1.56,
+            "p_value": 0.5328211446391313,
+            "neg_log10_p_value": 0.27341854881920497
           },
           {
             "cutpoint": 411,
-            "n_positive_at_or_below": 34,
-            "n_positive_above": 22,
-            "n_negative_at_or_below": 7,
-            "n_negative_above": 13,
-            "odds_ratio": 2.8701298701298703,
-            "p_value": 0.06754986460751262,
-            "neg_log10_p_value": 1.1703755171122554
+            "n_positive_at_or_below": 40,
+            "n_positive_above": 24,
+            "n_negative_at_or_below": 6,
+            "n_negative_above": 6,
+            "odds_ratio": 1.6666666666666667,
+            "p_value": 0.5236156499522178,
+            "neg_log10_p_value": 0.28098738162793063
           },
           {
             "cutpoint": 414,
-            "n_positive_at_or_below": 35,
-            "n_positive_above": 21,
-            "n_negative_at_or_below": 7,
-            "n_negative_above": 13,
-            "odds_ratio": 3.0952380952380953,
-            "p_value": 0.04004702370486121,
-            "neg_log10_p_value": 1.3974297551499482
+            "n_positive_at_or_below": 41,
+            "n_positive_above": 23,
+            "n_negative_at_or_below": 6,
+            "n_negative_above": 6,
+            "odds_ratio": 1.7826086956521738,
+            "p_value": 0.5184932375861125,
+            "neg_log10_p_value": 0.2852569034951671
           },
           {
             "cutpoint": 417,
-            "n_positive_at_or_below": 40,
-            "n_positive_above": 16,
+            "n_positive_at_or_below": 46,
+            "n_positive_above": 18,
             "n_negative_at_or_below": 7,
-            "n_negative_above": 13,
-            "odds_ratio": 4.642857142857143,
-            "p_value": 0.006696858321472636,
-            "neg_log10_p_value": 2.1741288888872488
+            "n_negative_above": 5,
+            "odds_ratio": 1.8253968253968254,
+            "p_value": 0.49401343739865705,
+            "neg_log10_p_value": 0.3062612379008084
           },
           {
             "cutpoint": 418,
-            "n_positive_at_or_below": 41,
-            "n_positive_above": 15,
+            "n_positive_at_or_below": 48,
+            "n_positive_above": 16,
             "n_negative_at_or_below": 7,
-            "n_negative_above": 13,
-            "odds_ratio": 5.076190476190476,
-            "p_value": 0.003357250090137354,
-            "neg_log10_p_value": 2.4740163058413205
+            "n_negative_above": 5,
+            "odds_ratio": 2.142857142857143,
+            "p_value": 0.29450254706111656,
+            "neg_log10_p_value": 0.530910944782467
           },
           {
             "cutpoint": 423,
-            "n_positive_at_or_below": 42,
-            "n_positive_above": 14,
+            "n_positive_at_or_below": 49,
+            "n_positive_above": 15,
             "n_negative_at_or_below": 7,
-            "n_negative_above": 13,
-            "odds_ratio": 5.571428571428571,
-            "p_value": 0.0023640590243833087,
-            "neg_log10_p_value": 2.626341684455774
+            "n_negative_above": 5,
+            "odds_ratio": 2.3333333333333335,
+            "p_value": 0.28166616270038797,
+            "neg_log10_p_value": 0.550265322823117
           },
           {
             "cutpoint": 443,
-            "n_positive_at_or_below": 43,
-            "n_positive_above": 13,
+            "n_positive_at_or_below": 50,
+            "n_positive_above": 14,
             "n_negative_at_or_below": 7,
-            "n_negative_above": 13,
-            "odds_ratio": 6.142857142857143,
-            "p_value": 0.001878568480982406,
-            "neg_log10_p_value": 2.7261729686225915
+            "n_negative_above": 5,
+            "odds_ratio": 2.5510204081632653,
+            "p_value": 0.1614921032975089,
+            "neg_log10_p_value": 0.7918487091109843
           },
           {
             "cutpoint": 452,
-            "n_positive_at_or_below": 54,
-            "n_positive_above": 2,
+            "n_positive_at_or_below": 61,
+            "n_positive_above": 3,
             "n_negative_at_or_below": 8,
-            "n_negative_above": 12,
-            "odds_ratio": 40.5,
-            "p_value": 2.8864461493321154e-07,
-            "neg_log10_p_value": 6.539636540457423
+            "n_negative_above": 4,
+            "odds_ratio": 10.166666666666666,
+            "p_value": 0.010191376831302902,
+            "neg_log10_p_value": 1.9917671398557228
           },
           {
             "cutpoint": 492,
-            "n_positive_at_or_below": 55,
-            "n_positive_above": 1,
+            "n_positive_at_or_below": 62,
+            "n_positive_above": 2,
             "n_negative_at_or_below": 8,
-            "n_negative_above": 12,
-            "odds_ratio": 82.5,
-            "p_value": 4.669748752729564e-08,
-            "neg_log10_p_value": 7.330706485223709
+            "n_negative_above": 4,
+            "odds_ratio": 15.5,
+            "p_value": 0.004800736843751964,
+            "neg_log10_p_value": 2.3186920995794114
           },
           {
             "cutpoint": 501,
-            "n_positive_at_or_below": 56,
+            "n_positive_at_or_below": 64,
             "n_positive_above": 0,
             "n_negative_at_or_below": 9,
-            "n_negative_above": 11,
+            "n_negative_above": 3,
             "odds_ratio": null,
-            "p_value": 2.9326924534050423e-08,
-            "neg_log10_p_value": 7.53273347837379
+            "p_value": 0.0031294452347083927,
+            "neg_log10_p_value": 2.5045326441976177
           },
           {
             "cutpoint": 571,
-            "n_positive_at_or_below": 56,
+            "n_positive_at_or_below": 64,
             "n_positive_above": 0,
             "n_negative_at_or_below": 10,
-            "n_negative_above": 10,
+            "n_negative_above": 2,
             "odds_ratio": null,
-            "p_value": 1.935577019247327e-07,
-            "neg_log10_p_value": 6.7131895428319215
+            "p_value": 0.023157894736842103,
+            "neg_log10_p_value": 1.6353009244666417
           },
           {
             "cutpoint": 616,
-            "n_positive_at_or_below": 56,
+            "n_positive_at_or_below": 64,
             "n_positive_above": 0,
             "n_negative_at_or_below": 11,
-            "n_negative_above": 9,
+            "n_negative_above": 1,
             "odds_ratio": null,
-            "p_value": 1.1789423662688267e-06,
-            "neg_log10_p_value": 5.92850742528932
+            "p_value": 0.15789473684210525,
+            "neg_log10_p_value": 0.8016323462331666
           }
         ]
       },
       "Warnings": [],
-      "Created_at": "2026-09-04T00:21:21.053891Z",
-      "Input_fingerprint": "30dbd9f1828c30b8c77be5aa97c18d79ea29ed500e384b48ae3dede13ff407b3"
+      "Created_at": "2026-09-04T00:40:36.188914Z",
+      "Input_fingerprint": "1ced031997e532d990b9952de74bfad0fc68ffd2eb4390a5b7791b8e17241863"
     },
     {
       "Algorithm": "domain_disruption",
@@ -2827,14 +2847,14 @@
         "fisher_p_value": null,
         "permutation_empirical_p_value": null,
         "observed_in_frame_disruption_rate": null,
-        "Runtime_seconds": 9.583018254488707e-06
+        "Runtime_seconds": 1.0624993592500687e-05
       },
       "Tables": {},
       "Warnings": [
         "NTRK1 has no disruption_required_domains configured; domain-disruption analysis was skipped."
       ],
-      "Created_at": "2026-09-04T00:21:16.316323Z",
-      "Input_fingerprint": "30dbd9f1828c30b8c77be5aa97c18d79ea29ed500e384b48ae3dede13ff407b3"
+      "Created_at": "2026-09-04T00:40:31.905336Z",
+      "Input_fingerprint": "1ced031997e532d990b9952de74bfad0fc68ffd2eb4390a5b7791b8e17241863"
     },
     {
       "Algorithm": "domain_retention",
@@ -2845,21 +2865,21 @@
         "adaptive": false
       },
       "Summary": {
-        "fisher_odds_ratio": 6.08641975308642,
-        "fisher_p_value": 0.003634638414060191,
+        "fisher_odds_ratio": 4.411764705882353,
+        "fisher_p_value": 0.04826275446570913,
         "permutation_empirical_p_value": 0.000999000999000999,
-        "observed_in_frame_retention_rate": 0.90625,
-        "Runtime_seconds": 0.202848749991972
+        "observed_in_frame_retention_rate": 0.9375,
+        "Runtime_seconds": 0.18370470800437033
       },
       "Tables": {
         "frame_domain_contingency_table": [
           [
-            29,
-            27
+            30,
+            34
           ],
           [
-            3,
-            17
+            2,
+            10
           ]
         ],
         "domain_retention_descriptives": [
@@ -2867,10 +2887,10 @@
             "Domain_key": "kinase",
             "Domain_name": "Protein kinase domain",
             "Quantitative_call_count": 76,
-            "Fully_retained_count": 56,
-            "Truncated_count": 2,
-            "Fully_lost_count": 18,
-            "Mean_retained_fraction_among_non_retained_calls": 0.05851851851851851
+            "Fully_retained_count": 64,
+            "Truncated_count": 3,
+            "Fully_lost_count": 9,
+            "Mean_retained_fraction_among_non_retained_calls": 0.1117283950617284
           }
         ],
         "permutation_null_retention_rates": {
@@ -2879,8 +2899,8 @@
         }
       },
       "Warnings": [],
-      "Created_at": "2026-09-04T00:21:16.312816Z",
-      "Input_fingerprint": "df69a6ab29389b7501ce661e1de492f414d736a85bec3fa16d9753995dc28360"
+      "Created_at": "2026-09-04T00:40:31.901936Z",
+      "Input_fingerprint": "388f1438b0aea5442346ea413efd06664c06384d36ac9be8bfcc495ba27a5198"
     },
     {
       "Algorithm": "exon_retention",
@@ -2888,7 +2908,7 @@
       "Parameters": {},
       "Summary": {
         "retained_fraction": null,
-        "Runtime_seconds": 1.2208998668938875e-05
+        "Runtime_seconds": 3.416699473746121e-05
       },
       "Tables": {
         "Exon_retention": []
@@ -2896,8 +2916,8 @@
       "Warnings": [
         "No target exon was supplied in params or GeneConfig."
       ],
-      "Created_at": "2026-09-04T00:21:16.871682Z",
-      "Input_fingerprint": "30dbd9f1828c30b8c77be5aa97c18d79ea29ed500e384b48ae3dede13ff407b3"
+      "Created_at": "2026-09-04T00:40:32.417315Z",
+      "Input_fingerprint": "1ced031997e532d990b9952de74bfad0fc68ffd2eb4390a5b7791b8e17241863"
     },
     {
       "Algorithm": "frequency",
@@ -2909,7 +2929,7 @@
         "input_event_count": 78,
         "analyzed_event_count": 78,
         "unique_partner_gene_count": 43,
-        "Runtime_seconds": 6.220900104381144e-05
+        "Runtime_seconds": 8.845800766721368e-05
       },
       "Tables": {
         "Partner_gene_counts": [
@@ -3088,22 +3108,22 @@
         ]
       },
       "Warnings": [],
-      "Created_at": "2026-09-04T00:21:16.871641Z",
-      "Input_fingerprint": "30dbd9f1828c30b8c77be5aa97c18d79ea29ed500e384b48ae3dede13ff407b3"
+      "Created_at": "2026-09-04T00:40:32.328782Z",
+      "Input_fingerprint": "1ced031997e532d990b9952de74bfad0fc68ffd2eb4390a5b7791b8e17241863"
     },
     {
       "Algorithm": "joint_partner",
       "Algorithm_version": null,
       "Parameters": {},
       "Summary": {
-        "Runtime_seconds": 1.2540986062958837e-05
+        "Runtime_seconds": 1.1041003745049238e-05
       },
       "Tables": {},
       "Warnings": [
         "Algorithm failed: ValueError: joint_partner requires a GeneConfig with gene_pair"
       ],
-      "Created_at": "2026-09-04T00:21:16.931745Z",
-      "Input_fingerprint": "30dbd9f1828c30b8c77be5aa97c18d79ea29ed500e384b48ae3dede13ff407b3"
+      "Created_at": "2026-09-04T00:40:32.597106Z",
+      "Input_fingerprint": "1ced031997e532d990b9952de74bfad0fc68ffd2eb4390a5b7791b8e17241863"
     }
   ],
   "reference": null

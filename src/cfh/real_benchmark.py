@@ -20,7 +20,12 @@ from cfh.genes.registry import GeneConfig, load_gene_config
 from cfh.ingestion import cbioportal_api
 from cfh.mapping.domain_source import ProteinDomain
 from cfh.mapping.feature_mapper import map_event
-from cfh.mapping.genome_nexus_source import GenomeNexusClient, resolve_domains
+from cfh.mapping.genome_nexus_source import (
+    CanonicalTranscript,
+    GenomeNexusClient,
+    parse_canonical_transcript,
+    resolve_domains,
+)
 from cfh.mapping.transcript_source import resolve_breakpoint_protein_position
 from cfh.model.algorithm_result import AlgorithmResult
 from cfh.model.fusion_event import FusionEvent
@@ -42,6 +47,15 @@ class RealBenchmarkInputError(RealBenchmarkError):
 
 class RealBenchmarkNetworkError(RealBenchmarkError):
     """Raised when a required public data service cannot be reached."""
+
+
+_TARGET_LOCUS_TOLERANCE_BP = 1_000_000
+"""Permit a nearby assembly/annotation offset while rejecting remote loci.
+
+Some imported cBioPortal rows omit or mix genome-build metadata. A one-Mb
+envelope retains legitimate target-gene coordinates that differ slightly
+between builds, while easily rejecting partner positions many megabases away.
+"""
 
 
 @dataclass
@@ -80,20 +94,69 @@ def _is_target_protein_fusion(event: FusionEvent, target_gene: str) -> bool:
     )
 
 
-def _target_breakpoint(row: dict, target_gene: str) -> int:
-    target = target_gene.upper()
-    if str(row.get("Site1_Hugo_Symbol") or "").upper() == target:
-        value = row.get("Site1_Position")
-    elif str(row.get("Site2_Hugo_Symbol") or "").upper() == target:
-        value = row.get("Site2_Position")
-    else:  # pragma: no cover - guarded by _is_target_protein_fusion
-        raise ValueError(f"row does not contain target gene {target_gene}")
-    if value is None or pd.isna(value):
+def _target_locus(canonical: CanonicalTranscript) -> tuple[int, int]:
+    """Return the inclusive genomic footprint spanned by a target's exons."""
+    if not canonical.exons:
+        raise ValueError("Genome Nexus returned no exon coordinates for target-locus validation")
+    return (
+        min(exon.start for exon in canonical.exons),
+        max(exon.end for exon in canonical.exons),
+    )
+
+
+def _target_breakpoint(row: dict, target_gene: str, target_locus: tuple[int, int]) -> int:
+    """Choose the only site position compatible with the target's GN locus.
+
+    cBioPortal structural-variant rows can pair a site label with the other
+    fusion partner's coordinate. Labels alone are therefore not a safe
+    breakpoint selector. The canonical transcript already fetched from
+    Genome Nexus supplies the target's exon-spanned genomic footprint; use
+    that to select a position independently of its reported site label.
+    """
+    locus_start, locus_end = target_locus
+    exact_candidates: list[tuple[str, int]] = []
+    nearby_candidates: list[tuple[str, int]] = []
+    invalid_values: list[str] = []
+    for site in ("Site1", "Site2"):
+        value = row.get(f"{site}_Position")
+        if value is None or pd.isna(value):
+            continue
+        try:
+            position = int(value)
+        except (TypeError, ValueError):
+            invalid_values.append(f"{site}={value!r}")
+            continue
+        if locus_start <= position <= locus_end:
+            exact_candidates.append((site, position))
+        elif (
+            locus_start - _TARGET_LOCUS_TOLERANCE_BP
+            <= position
+            <= locus_end + _TARGET_LOCUS_TOLERANCE_BP
+        ):
+            nearby_candidates.append((site, position))
+
+    if len(exact_candidates) == 1:
+        return exact_candidates[0][1]
+    site_positions = ", ".join(
+        f"{site}={row.get(f'{site}_Position')!r}" for site in ("Site1", "Site2")
+    )
+    if len(exact_candidates) == 2:
+        raise ValueError(
+            f"{target_gene} fusion has ambiguous genomic breakpoints within target locus "
+            f"{locus_start}-{locus_end}: {site_positions}"
+        )
+    if len(nearby_candidates) == 1:
+        return nearby_candidates[0][1]
+    if not invalid_values and all(
+        row.get(f"{site}_Position") is None or pd.isna(row.get(f"{site}_Position"))
+        for site in ("Site1", "Site2")
+    ):
         raise ValueError(f"{target_gene} fusion has no genomic breakpoint")
-    try:
-        return int(value)
-    except (TypeError, ValueError) as exc:
-        raise ValueError(f"{target_gene} fusion has invalid genomic breakpoint {value!r}") from exc
+    invalid_note = f"; invalid values: {', '.join(invalid_values)}" if invalid_values else ""
+    raise ValueError(
+        f"{target_gene} fusion has no site breakpoint within target locus "
+        f"{locus_start}-{locus_end}: {site_positions}{invalid_note}"
+    )
 
 
 def _target_role(event: FusionEvent, target_gene: str) -> str:
@@ -284,6 +347,19 @@ def analyze_structural_variant_calls_with_config(
         # the lookup (and its network call) entirely rather than resolve
         # domains nothing will use.
         domains = []
+    if selected:
+        try:
+            target_canonical = parse_canonical_transcript(
+                client.fetch_canonical_transcript(config.gene_symbol)
+            )
+            target_locus = _target_locus(target_canonical)
+        except requests.RequestException as exc:
+            raise RealBenchmarkNetworkError(
+                f"Genome Nexus target-locus lookup failed for {config.gene_symbol}: {exc}. "
+                "Check network access and https://www.genomenexus.org availability, then retry."
+            ) from exc
+    else:
+        target_locus = None
     domain_source = _ResolvedDomainSource(domains)
     events: list[FusionEvent] = []
     features: list[FusionFeature] = []
@@ -296,7 +372,9 @@ def analyze_structural_variant_calls_with_config(
     for row, event in selected:
         try:
             role = _target_role(event, config.gene_symbol)
-            breakpoint = _target_breakpoint(row, config.gene_symbol)
+            if target_locus is None:  # pragma: no cover - no selected records means no loop
+                raise ValueError("target locus was not resolved")
+            breakpoint = _target_breakpoint(row, config.gene_symbol, target_locus)
             mapping = resolve_breakpoint_protein_position(
                 None,
                 config,
@@ -656,6 +734,10 @@ def markdown_summary(run: RealBenchmarkRun) -> str:
         "coordinates. Counts are event-level with no patient deduplication. The "
         "Fisher comparison's `other` column combines out-of-frame and unknown-frame "
         "events, as pre-specified by the domain-retention algorithm.",
+        "",
+        "For each fusion, breakpoint selection preferred the Genome Nexus canonical "
+        "transcript's exon-spanned target locus over cBioPortal site labels; malformed "
+        "rows with no unambiguous target-locus coordinate were skipped and listed in Warnings.",
         "",
         "## Full-suite highlights",
         "",

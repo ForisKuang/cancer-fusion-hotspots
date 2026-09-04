@@ -14,10 +14,46 @@ from cfh.ingestion import cbioportal_api
 from cfh.mapping.genome_nexus_source import GenomeNexusClient
 from cfh.real_benchmark import (
     RealBenchmarkNetworkError,
+    _target_breakpoint,
     analyze_structural_variant_calls,
     run_real_benchmark,
     write_outputs,
 )
+
+
+def test_target_breakpoint_uses_genome_nexus_locus_when_cbioportal_site_labels_are_swapped():
+    """Regression for P-0053901-T01-IM6's malformed STRN-ALK source row.
+
+    The live source labels site2 as ALK but pairs it with STRN's position
+    (37145859). The actual ALK coordinate is in site1 (29446375), inside
+    Genome Nexus's canonical ALK exon-spanned locus (29415640-30144432).
+    """
+    row = {
+        "Site1_Hugo_Symbol": "STRN",
+        "Site1_Position": 29446375,
+        "Site2_Hugo_Symbol": "ALK",
+        "Site2_Position": 37145859,
+    }
+
+    assert _target_breakpoint(row, "ALK", (29415640, 30144432)) == 29446375
+
+
+@pytest.mark.parametrize(
+    ("row", "message"),
+    [
+        (
+            {"Site1_Position": 10_000_000, "Site2_Position": 20_000_000},
+            "no site breakpoint within target locus",
+        ),
+        (
+            {"Site1_Position": 150, "Site2_Position": 175},
+            "ambiguous genomic breakpoints within target locus",
+        ),
+    ],
+)
+def test_target_breakpoint_rejects_unmappable_or_ambiguous_source_positions(row, message):
+    with pytest.raises(ValueError, match=message):
+        _target_breakpoint(row, "TARGET", (100, 200))
 
 
 def _genome_nexus_client(fixture_path):

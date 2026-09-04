@@ -9,11 +9,11 @@ Retrieved from public cBioPortal and Genome Nexus on 2026-09-04.
 - Protein-fusion records mapped: 76
 - Malformed/unmappable fusion records skipped: 2
 - In-frame: 32/78 (41.0%)
-- PF07714 (512-781 aa) retained: 56/78 (71.8%)
-- In-frame and PF07714-retained: 29/32
-- Fisher exact test (one-sided): odds ratio 6.08642, p=0.00363464
+- PF07714 (512-781 aa) retained: 64/78 (82.1%)
+- In-frame and PF07714-retained: 30/32
+- Fisher exact test (one-sided): odds ratio 4.41176, p=0.0482628
 - Breakpoint-permutation empirical p-value: 0.000999001
-- Contingency table `[[retained/in-frame, retained/other], [not-retained/in-frame, not-retained/other]]`: `[[29, 27], [3, 17]]`
+- Contingency table `[[retained/in-frame, retained/other], [not-retained/in-frame, not-retained/other]]`: `[[30, 34], [2, 10]]`
 
 ## Method
 
@@ -21,11 +21,13 @@ The cBioPortal `msk_impact_50k_2026_structural_variants` structural-variant prof
 
 NTRK1 genomic breakpoints were mapped against the Genome Nexus canonical transcript, and retention was classified against its returned PF07714 coordinates. Counts are event-level with no patient deduplication. The Fisher comparison's `other` column combines out-of-frame and unknown-frame events, as pre-specified by the domain-retention algorithm.
 
+For each fusion, breakpoint selection preferred the Genome Nexus canonical transcript's exon-spanned target locus over cBioPortal site labels; malformed rows with no unambiguous target-locus coordinate were skipped and listed in Warnings.
+
 ## Full-suite highlights
 
 - Registered algorithms executed: composite_score, confidence_stats, cutpoint_detection, domain_disruption, domain_retention, exon_retention, frequency, joint_partner
-- Cutpoint detection: inferred breakpoint 501 aa; corrected permutation p=0.000999001.
-- Top composite score: LMNA (12 events), 0.360092.
+- Cutpoint detection: inferred breakpoint 501 aa; corrected permutation p=0.014985.
+- Top composite score: LMNA (12 events), 0.355651.
 
 ## Partners
 
@@ -38,4 +40,4 @@ AFAP1 (1), ANKRD36 (1), ARHGEF11 (2), ATP1A2 (1), BCAN (2), CADM3 (1), COP1 (1),
 
 ## Interpretation
 
-LMNA and TPM3 each occur in 12/78 and 12/78 events, respectively; 29/32 in-frame events retain PF07714. This is directionally consistent with LMNA-NTRK1/TPM3-NTRK1 biology, while the all-event in-frame percentage is reported as observed rather than treated as a literature replication.
+LMNA and TPM3 each occur in 12/78 and 12/78 events, respectively; 30/32 in-frame events retain PF07714. This is directionally consistent with LMNA-NTRK1/TPM3-NTRK1 biology, while the all-event in-frame percentage is reported as observed rather than treated as a literature replication.
