@@ -52,6 +52,9 @@ from cfh.real_benchmark import analyze_structural_variant_calls
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _RUNS_DIR = _REPO_ROOT / "runs"
+_RET_COMPOSITE_RESULTS = (
+    _RUNS_DIR / "ret_msk-impact-50k-2026_20260904T005538Z" / "results.json"
+)
 _GENOME_NEXUS_BRAF_FIXTURE = (
     Path(__file__).resolve().parents[1]
     / "fixtures"
@@ -245,15 +248,12 @@ def test_composite_score_real_braf_msk_impact_all_five_subscores_applicable():
             "confidence_certainty",
         }
 
-    # KIAA1549 is by far BRAF's most recurrent real partner in this cohort
-    # (43/178 mapped events, ~3x the next most frequent) -- with recurrence at 30%
-    # weight it should come out on top. Pinned to the exact real value (not
-    # just the ranking) with seed=42/n_permutations=2_000 fixed above, so a
-    # future regression in the aggregation math is actually caught rather
-    # than only a change in which partner sorts first.
-    assert ranking[0]["Partner_gene"] == "KIAA1549"
-    assert ranking[0]["Event_count"] == 43
-    assert ranking[0]["Composite_score"] == pytest.approx(0.29574, abs=5e-5)
+    # With corrected locus mapping, AGK leads the five-component composite
+    # despite KIAA1549 remaining the most recurrent partner. Pin the exact
+    # corrected real-data result so changes in aggregation are caught.
+    assert ranking[0]["Partner_gene"] == "AGK"
+    assert ranking[0]["Event_count"] == 14
+    assert ranking[0]["Composite_score"] == pytest.approx(0.2579, abs=5e-5)
 
 
 def _ret_events_and_features(results_path: Path) -> tuple[list[FusionEvent], list[FusionFeature]]:
@@ -298,7 +298,11 @@ def test_composite_score_real_ret_msk_impact_gracefully_degrades():
     domain_disruption (recorded as an explicit skipped result) and
     confidence_stats (a real recorded failure) rather than zero-filling them.
     """
-    results_path = _real_run_results_path("ret_msk-impact-50k-2026")
+    # This benchmark needs the orchestrator result set from PR #27. A newer
+    # ``real-benchmark`` run contains only the algorithms configured for that
+    # command, so selecting the lexicographically latest directory is not a
+    # stable way to identify this fixture.
+    results_path = _RET_COMPOSITE_RESULTS
     payload = json.loads(results_path.read_text())
     committed_results = {item["Algorithm"]: item for item in payload["algorithm_results"]}
     domain_disruption_result = committed_results["domain_disruption"]
@@ -341,7 +345,7 @@ def test_composite_score_real_ret_msk_impact_gracefully_degrades():
     # objects verbatim (no seed/n_permutations choice made here at all).
     assert ranking[0]["Partner_gene"] == "KIF5B"
     assert ranking[0]["Event_count"] == 87
-    assert ranking[0]["Composite_score"] == pytest.approx(0.4099, abs=5e-5)
+    assert ranking[0]["Composite_score"] == pytest.approx(0.47278906298812945)
 
     for row in ranking:
         assert row["Domain_disruption_score"] is None
@@ -420,8 +424,8 @@ def test_composite_score_via_real_orchestrator_dispatch_braf():
     }
     ranking = composite_result.Tables["composite_evidence_ranking"]
     assert ranking, "expected a populated composite_score ranking table"
-    assert ranking[0]["Partner_gene"] == "KIAA1549"
-    assert ranking[0]["Event_count"] == 43
+    assert ranking[0]["Partner_gene"] == "AGK"
+    assert ranking[0]["Event_count"] == 14
     assert all(0.0 <= row["Composite_score"] <= 1.0 for row in ranking)
 
 
