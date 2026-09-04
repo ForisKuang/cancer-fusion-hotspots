@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
+import pytest
 import requests
 
 from cfh.cohort.auto_config import (
@@ -13,7 +14,7 @@ from cfh.cohort.auto_config import (
     build_auto_gene_config,
     select_key_domain,
 )
-from cfh.mapping.genome_nexus_source import CanonicalTranscript, PfamDomain
+from cfh.mapping.genome_nexus_source import CanonicalTranscript, ExonRecord, PfamDomain
 
 
 def _canonical(pfam_domains, *, protein_id="ENSP00000TEST", transcript_id="ENST00000TEST"):
@@ -133,11 +134,20 @@ def test_pfam_description_source_caches_on_disk(tmp_path):
 
 def test_build_auto_gene_config_populates_minimal_fields_only():
     canonical = _canonical(
-        [PfamDomain(pfam_id="PF07714", start_aa=458, end_aa=712)],
+        [
+            PfamDomain(pfam_id="PF00001", start_aa=10, end_aa=40),
+            PfamDomain(pfam_id="PF07714", start_aa=60, end_aa=90),
+        ],
         protein_id="ENSP00000288602",
         transcript_id="ENST00000288602",
     )
-    description_source = _mock_description_source({"PF07714": "Protein tyrosine kinase"})
+    canonical.exons = [
+        ExonRecord("e1", 1, 150, 1, 1),
+        ExonRecord("e2", 151, 300, 2, 1),
+    ]
+    description_source = _mock_description_source(
+        {"PF00001": "Regulatory domain", "PF07714": "Protein tyrosine kinase"}
+    )
 
     config = build_auto_gene_config(
         "braf", 673, canonical, description_source=description_source
@@ -150,9 +160,8 @@ def test_build_auto_gene_config_populates_minimal_fields_only():
     assert config.entrez_gene_id == 673
     assert len(config.key_domains) == 1
     assert config.key_domains[0].accession == "PF07714"
-    # Fields deliberately left unset -- the existing opt-in/no-op pattern.
-    assert config.disruption_required_domains == []
-    assert config.expected_retained_exon_hint is None
+    assert [domain.name for domain in config.disruption_required_domains] == ["Regulatory domain"]
+    assert config.expected_retained_exon_hint == "2"
     assert config.gene_pair is None
 
 
@@ -168,6 +177,21 @@ def test_build_auto_gene_config_handles_gene_with_no_pfam_domains():
 def test_build_auto_gene_config_returns_none_without_protein_id():
     canonical = _canonical([], protein_id=None, transcript_id="ENST00000TEST")
     assert build_auto_gene_config("SOMEGENE", 42, canonical) is None
+
+
+@pytest.mark.network
+def test_build_auto_gene_config_derives_defaults_from_live_genome_nexus():
+    batch = batch_fetch_canonical_transcripts(["RET"])
+    canonical = batch.by_gene_symbol["RET"]
+
+    config = build_auto_gene_config("RET", 5979, canonical)
+
+    assert config is not None
+    assert config.expected_retained_exon_hint is not None
+    assert all(
+        domain.accession != config.key_domains[0].accession
+        for domain in config.disruption_required_domains
+    )
 
 
 def test_batch_fetch_canonical_transcripts_posts_gene_list_in_one_call():
