@@ -15,7 +15,9 @@ import pytest
 from cfh.reporting.fusion_schematic import (
     BACKBONE_COLOR,
     _domain_color_segments,
+    _fit_domain_label,
     _fusion_groups,
+    exon_boundary_ticks_svg,
     partner_color,
     render_fusion_schematic_svg,
     render_intragenic_deletion_schematic_svg,
@@ -367,3 +369,93 @@ def test_deletion_schematic_backbone_color_present():
     )
     svg = render_intragenic_deletion_schematic_svg(payload)
     assert BACKBONE_COLOR in svg
+
+
+# --- exon and domain-name labels -------------------------------------------
+
+_EXON_BOUNDARIES = [
+    {"exon_rank": 1, "start_aa": 1, "end_aa": 120},
+    {"exon_rank": 2, "start_aa": 121, "end_aa": 300},
+    {"exon_rank": 3, "start_aa": 301, "end_aa": 458},
+    {"exon_rank": 4, "start_aa": 459, "end_aa": 712},
+    {"exon_rank": 5, "start_aa": 713, "end_aa": _PROTEIN_LENGTH},
+]
+
+
+def test_exon_boundary_ticks_svg_derives_real_exon_numbers_from_gene_track():
+    """The exon number comes from gene_track's own ``exon_rank`` field
+    (the real ordinal exon from the canonical transcript), not something
+    guessed from position order."""
+    elements = exon_boundary_ticks_svg(
+        _EXON_BOUNDARIES, axis_left=60.0, scale=1.0, y=100.0, max_position=_PROTEIN_LENGTH
+    )
+    text = "\n".join(elements)
+    for rank in (1, 2, 3, 4, 5):
+        assert f">E{rank}<" in text
+
+
+def test_fusion_schematic_shared_axis_carries_exon_number_labels():
+    payload = _payload(
+        [_event("AGK", 380, "three_prime")],
+        gene_track=_gene_track(exon_boundaries=_EXON_BOUNDARIES),
+    )
+    svg = render_fusion_schematic_svg(payload)
+    for rank in (2, 3, 4, 5):
+        assert f">E{rank}<" in svg
+
+
+def test_deletion_schematic_shared_axis_carries_exon_number_labels():
+    payload = _payload(
+        [],
+        gene_track=_gene_track(exon_boundaries=_EXON_BOUNDARIES),
+        intragenic_deletions=[
+            {
+                "retained_up_to_aa": 150,
+                "resumed_from_aa": 450,
+                "n_exons_deleted": 5,
+                "frame_status": "in-frame",
+            }
+        ],
+    )
+    svg = render_intragenic_deletion_schematic_svg(payload)
+    for rank in (2, 3, 4, 5):
+        assert f">E{rank}<" in svg
+
+
+def test_fit_domain_label_returns_full_name_when_it_fits():
+    assert _fit_domain_label("RAS-binding domain", 200) == "RAS-binding domain"
+
+
+def test_fit_domain_label_truncates_with_ellipsis_when_narrow():
+    label = _fit_domain_label("Protein kinase domain", 40)
+    assert label is not None
+    assert label.endswith("…")
+    assert label != "Protein kinase domain"
+
+
+def test_fit_domain_label_skips_unreadably_narrow_segments():
+    assert _fit_domain_label("Protein kinase domain", 5) is None
+
+
+def test_fusion_schematic_domain_segment_carries_its_real_name():
+    # Kinase domain (458-712) is fully inside the retained [380, 766] span.
+    payload = _payload([_event("AGK", 380, "three_prime", status="retained")])
+    svg = render_fusion_schematic_svg(payload)
+    assert "Protein kinase domain" in svg
+
+
+def test_deletion_schematic_domain_segment_carries_its_real_name():
+    # Kinase domain (458-712) sits inside the resumed [400, 766] block.
+    payload = _payload(
+        [],
+        intragenic_deletions=[
+            {
+                "retained_up_to_aa": 150,
+                "resumed_from_aa": 400,
+                "n_exons_deleted": 5,
+                "frame_status": "in-frame",
+            }
+        ],
+    )
+    svg = render_intragenic_deletion_schematic_svg(payload)
+    assert "Protein kinase domain" in svg

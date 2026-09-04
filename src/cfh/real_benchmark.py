@@ -35,10 +35,17 @@ from cfh.model.fusion_feature import FusionFeature
 from cfh.normalization.event_normalizer import normalize
 from cfh.orchestrator.run import run_algorithms
 from cfh.reporting.fusion_schematic import (
+    exon_boundary_ticks_svg,
     render_fusion_schematic_svg,
     render_intragenic_deletion_schematic_svg,
 )
-from cfh.reporting.palette import BREAKPOINT_COLOR, LOST_COLOR, RETAINED_COLOR, TRUNCATED_COLOR
+from cfh.reporting.palette import (
+    BREAKPOINT_COLOR,
+    LOST_COLOR,
+    RETAINED_COLOR,
+    TRUNCATED_COLOR,
+    deterministic_color,
+)
 from cfh.reporting.pdf import render_pdf_report
 from cfh.stats.breakpoint_tests import build_frame_domain_contingency_table
 from cfh.studies.registry import load_study_config
@@ -668,6 +675,33 @@ def analyze_structural_variant_calls_with_config(
         if has_key_domain
         else None
     )
+    # Every one of config.key_domains that Genome Nexus resolved a span for
+    # -- generalizes domain_definition above (which only ever looks at
+    # key_domains[0]) so a gene configured with more than one
+    # retention-target domain gets all of them surfaced in summary
+    # ["key_domains"] for the domain-retention-track visualization
+    # (_domain_track_svg), not just the first.
+    key_domain_definitions = [
+        {
+            "name": key_domain.name,
+            "accession": key_domain.accession,
+            "start_aa": matched.start_aa,
+            "end_aa": matched.end_aa,
+        }
+        for key_domain in config.key_domains
+        for matched in [
+            next(
+                (
+                    domain
+                    for domain in domains
+                    if domain.accession == key_domain.accession
+                    or domain.name == key_domain.accession
+                ),
+                None,
+            )
+        ]
+        if matched is not None
+    ]
     total = len(selected_events)
     summary = {
         "raw_structural_variant_count": len(calls),
@@ -689,6 +723,7 @@ def analyze_structural_variant_calls_with_config(
         "domain_accession": config.key_domains[0].accession if has_key_domain else None,
         "domain_start_aa": domain_definition.start_aa if domain_definition else None,
         "domain_end_aa": domain_definition.end_aa if domain_definition else None,
+        "key_domains": key_domain_definitions,
     }
     return RealBenchmarkRun(
         gene_symbol=config.gene_symbol,
@@ -1113,17 +1148,114 @@ def _discrepancies(run: RealBenchmarkRun) -> list[dict]:
     return discrepancies
 
 
+def _domain_track_key_domains(run: RealBenchmarkRun) -> list[dict]:
+    """Every key (retention-target) domain with a resolved amino-acid span
+    to highlight on the domain-retention track, gene-agnostic and not
+    limited to one domain.
+
+    Prefers ``run.summary["key_domains"]`` (all of a gene's configured
+    ``key_domains``, see :func:`analyze_structural_variant_calls`). Falls
+    back to deriving a single-entry list from the older
+    ``domain_accession``/``domain_start_aa``/``domain_end_aa`` summary
+    fields (looking the accession's human-readable name up in
+    ``run.gene_track["domains"]`` when available) so this also works
+    against a ``results.json`` written before ``key_domains`` existed --
+    the same span, just not yet carrying its own name/accession.
+    """
+    key_domains = run.summary.get("key_domains")
+    if key_domains:
+        return key_domains
+    accession = run.summary.get("domain_accession")
+    start = run.summary.get("domain_start_aa")
+    end = run.summary.get("domain_end_aa")
+    if start is None or end is None:
+        return []
+    name = accession
+    for domain in (run.gene_track or {}).get("domains") or []:
+        if domain.get("accession") == accession:
+            name = domain.get("name") or accession
+            break
+    return [
+        {
+            "name": name or "target domain",
+            "accession": accession,
+            "start_aa": start,
+            "end_aa": end,
+        }
+    ]
+
+
+def _domain_highlight_color(index: int, domain_name: str) -> str:
+    """First key domain keeps this module's original highlight green (so
+    the common single-domain case looks the same as before this change);
+    any additional key domain gets its own stable color, derived the same
+    way :func:`cfh.reporting.fusion_schematic.partner_color` derives a
+    partner's color, so two domain highlights are visually distinguishable
+    without hardcoding a fixed-size color list."""
+    if index == 0:
+        return "#62b36f"
+    return deterministic_color(domain_name, lightness=0.6, saturation=0.5)
+
+
 def _domain_track_svg(run: RealBenchmarkRun, outlier_ids: set[str]) -> str:
-    """Render breakpoints by quantitative domain-retention state."""
-    start = run.summary.get("domain_start_aa") or 0
-    end = run.summary.get("domain_end_aa") or 0
+    """Render breakpoints by quantitative domain-retention state.
+
+    Shares its exon-boundary tick/label convention
+    (:func:`cfh.reporting.fusion_schematic.exon_boundary_ticks_svg`) with
+    the fusion-transcript schematic so the two renderers can't drift apart
+    on how an exon number is derived or drawn; both read the same
+    gene-agnostic ``gene_track["exon_boundaries_aa"]`` field.
+    """
+    axis_left = 60.0
+    axis_width = 800.0
+    key_domains = _domain_track_key_domains(run)
     positions = [
         row["breakpoint_protein_position"]
         for row in run.rows
         if row["breakpoint_protein_position"]
     ]
-    maximum = max([end, *positions, 1])
-    scale = 800 / maximum
+    protein_length = (run.gene_track or {}).get("protein_length")
+    domain_ends = [d["end_aa"] for d in key_domains if d.get("end_aa") is not None]
+    maximum = max([*domain_ends, *positions, protein_length or 0, 1])
+    scale = axis_width / maximum
+
+    domain_band_height = 16.0
+    domain_band_gap = 3.0
+    top_margin = 34.0
+    domains_block_height = len(key_domains) * (domain_band_height + domain_band_gap)
+    backbone_y = top_margin + domains_block_height + 10.0
+
+    domain_elements = []
+    for index, domain in enumerate(key_domains):
+        d_start = domain.get("start_aa")
+        d_end = domain.get("end_aa")
+        if d_start is None or d_end is None:
+            continue
+        band_top = top_margin + index * (domain_band_height + domain_band_gap)
+        rect_x0 = axis_left + d_start * scale
+        rect_width = max(2.0, (d_end - d_start) * scale)
+        rect_x1 = rect_x0 + rect_width
+        color = _domain_highlight_color(index, domain.get("name") or "domain")
+        domain_elements.append(
+            f'<rect x="{rect_x0:.1f}" y="{band_top:.1f}" '
+            f'width="{rect_width:.1f}" height="{domain_band_height:.1f}" '
+            f'fill="{color}" opacity="0.55"/>'
+        )
+        label = f"{domain.get('name') or 'domain'} ({d_start}-{d_end})"
+        label_y = band_top + domain_band_height - 4
+        near_right_edge = rect_x0 > axis_left + axis_width / 2
+        if near_right_edge:
+            domain_elements.append(
+                f'<text x="{rect_x1:.1f}" y="{label_y:.1f}" font-family="sans-serif" '
+                f'font-size="9.5" text-anchor="end">{label}</text>'
+            )
+        else:
+            domain_elements.append(
+                f'<text x="{rect_x0:.1f}" y="{label_y:.1f}" font-family="sans-serif" '
+                f'font-size="9.5">{label}</text>'
+            )
+
+    dots_top = backbone_y + 8.0
     dots = []
     for index, row in enumerate(run.rows):
         position = row["breakpoint_protein_position"]
@@ -1141,30 +1273,74 @@ def _domain_track_svg(run: RealBenchmarkRun, outlier_ids: set[str]) -> str:
             color = "#aaaaaa"
         stroke = BREAKPOINT_COLOR if row["event_id"] in outlier_ids else "none"
         stroke_width = "1.5" if row["event_id"] in outlier_ids else "0"
-        y = 100 + (index % 5) * 7
+        y = dots_top + (index % 5) * 7
         dots.append(
-            f'<circle cx="{60 + position * scale:.1f}" cy="{y}" r="3" fill="{color}" '
+            f'<circle cx="{axis_left + position * scale:.1f}" cy="{y:.1f}" r="3" fill="{color}" '
             f'stroke="{stroke}" stroke-width="{stroke_width}"/>'
         )
+    dots_bottom = dots_top + 4 * 7 + 3
+
+    position_axis_y = dots_bottom + 12.0
+    position_ticks = [0, *range(100, int(maximum), 100), int(maximum)]
+    position_axis_elements = [
+        f'<line x1="{axis_left:.1f}" y1="{position_axis_y:.1f}" '
+        f'x2="{axis_left + axis_width:.1f}" y2="{position_axis_y:.1f}" '
+        'stroke="#444444" stroke-width="1"/>'
+    ]
+    seen_ticks: set[int] = set()
+    for tick in position_ticks:
+        if tick in seen_ticks:
+            continue
+        seen_ticks.add(tick)
+        x = axis_left + tick * scale
+        anchor = "start" if tick == 0 else ("end" if tick == int(maximum) else "middle")
+        position_axis_elements.append(
+            f'<line x1="{x:.1f}" y1="{position_axis_y:.1f}" x2="{x:.1f}" '
+            f'y2="{position_axis_y + 5:.1f}" stroke="#444444" stroke-width="1"/>'
+        )
+        position_axis_elements.append(
+            f'<text x="{x:.1f}" y="{position_axis_y + 15:.1f}" font-family="sans-serif" '
+            f'font-size="8" text-anchor="{anchor}">{tick}</text>'
+        )
+
+    exon_boundaries = (run.gene_track or {}).get("exon_boundaries_aa") or []
+    exon_tick_y = position_axis_y + 20.0
+    exon_tick_elements = exon_boundary_ticks_svg(
+        exon_boundaries,
+        axis_left=axis_left,
+        scale=scale,
+        y=exon_tick_y,
+        max_position=maximum,
+    )
+    exon_tick_label_height = 20.0 if exon_boundaries else 0.0
+
+    legend_y = exon_tick_y + exon_tick_label_height + 15.0
+    height = legend_y + 15.0
+
     return "\n".join([
-        '<svg xmlns="http://www.w3.org/2000/svg" width="920" height="180" viewBox="0 0 920 180">',
-        '<rect width="920" height="180" fill="white"/>',
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="920" height="{height:.0f}" '
+        f'viewBox="0 0 920 {height:.0f}">',
+        f'<rect width="920" height="{height:.0f}" fill="white"/>',
         f'<text x="60" y="28" font-family="sans-serif" font-size="16">'
         f'{run.gene_symbol} domain-retention track</text>',
-        '<line x1="60" y1="90" x2="860" y2="90" stroke="#444" stroke-width="4"/>',
-        f'<rect x="{60 + start * scale:.1f}" y="76" '
-        f'width="{max(2, (end-start)*scale):.1f}" height="28" '
-        'fill="#62b36f" opacity="0.55"/>',
+        *domain_elements,
+        f'<line x1="{axis_left:.1f}" y1="{backbone_y:.1f}" x2="{axis_left + axis_width:.1f}" '
+        f'y2="{backbone_y:.1f}" stroke="#444" stroke-width="4"/>',
         *dots,
-        f'<circle cx="60" cy="150" r="4" fill="{RETAINED_COLOR}"/>'
-        '<text x="70" y="155" font-family="sans-serif" font-size="12">fully retained</text>',
-        f'<circle cx="180" cy="150" r="4" fill="{TRUNCATED_COLOR}"/>'
-        '<text x="190" y="155" font-family="sans-serif" font-size="12">truncated</text>',
-        f'<circle cx="275" cy="150" r="4" fill="{LOST_COLOR}"/>'
-        '<text x="285" y="155" font-family="sans-serif" font-size="12">fully lost</text>',
-        f'<circle cx="365" cy="150" r="4" fill="white" stroke="{BREAKPOINT_COLOR}" '
+        *position_axis_elements,
+        *exon_tick_elements,
+        f'<circle cx="60" cy="{legend_y:.1f}" r="4" fill="{RETAINED_COLOR}"/>'
+        f'<text x="70" y="{legend_y + 5:.1f}" font-family="sans-serif" font-size="12">'
+        'fully retained</text>',
+        f'<circle cx="180" cy="{legend_y:.1f}" r="4" fill="{TRUNCATED_COLOR}"/>'
+        f'<text x="190" y="{legend_y + 5:.1f}" font-family="sans-serif" font-size="12">'
+        'truncated</text>',
+        f'<circle cx="275" cy="{legend_y:.1f}" r="4" fill="{LOST_COLOR}"/>'
+        f'<text x="285" y="{legend_y + 5:.1f}" font-family="sans-serif" font-size="12">'
+        'fully lost</text>',
+        f'<circle cx="365" cy="{legend_y:.1f}" r="4" fill="white" stroke="{BREAKPOINT_COLOR}" '
         'stroke-width="1.5"/>'
-        '<text x="375" y="155" font-family="sans-serif" font-size="12">'
+        f'<text x="375" y="{legend_y + 5:.1f}" font-family="sans-serif" font-size="12">'
         'reference discrepancy</text>',
         '</svg>',
     ])

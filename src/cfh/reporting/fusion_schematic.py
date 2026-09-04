@@ -26,10 +26,12 @@ partner always renders the same color within and across runs.
 
 from __future__ import annotations
 
-import colorsys
-import zlib
-
-from cfh.reporting.palette import BREAKPOINT_COLOR, RETAINED_COLOR, TRUNCATED_COLOR
+from cfh.reporting.palette import (
+    BREAKPOINT_COLOR,
+    RETAINED_COLOR,
+    TRUNCATED_COLOR,
+    deterministic_color,
+)
 
 __all__ = [
     "RETAINED_COLOR",
@@ -39,6 +41,8 @@ __all__ = [
     "AXIS_COLOR",
     "CONNECTOR_COLOR",
     "partner_color",
+    "exon_boundary_ticks_svg",
+    "render_position_axis_svg",
     "render_fusion_schematic_svg",
     "render_intragenic_deletion_schematic_svg",
 ]
@@ -58,6 +62,9 @@ _AXIS_LEFT = 60
 _AXIS_WIDTH = 560
 _LABEL_LEFT = _AXIS_LEFT + _AXIS_WIDTH + 40
 _SVG_WIDTH = 1000
+_EXON_TICK_LABEL_HEIGHT = 20
+"""Extra vertical room reserved below the shared position axis for its
+rotated exon-number labels (see :func:`exon_boundary_ticks_svg`)."""
 _TOP_MARGIN = 56
 _LEGEND_HEIGHT = 30
 _BOTTOM_MARGIN = 40
@@ -68,13 +75,12 @@ def partner_color(partner_gene: str) -> str:
 
     Same partner always gets the same color within a run and across runs
     (a pure function of the name), so a reader can visually track one
-    partner across rows. Uses a CRC32 hash into hue space rather than
-    Python's salted ``hash()``, which is randomized per-process and would
-    make the same partner render a different color on every regeneration.
+    partner across rows. Thin wrapper around the shared
+    :func:`cfh.reporting.palette.deterministic_color` hash so this
+    module's own hue-from-name formula can't silently diverge from
+    :mod:`cfh.real_benchmark`'s per-domain highlight coloring.
     """
-    hue = (zlib.crc32(partner_gene.encode("utf-8")) % 360) / 360.0
-    r, g, b = colorsys.hls_to_rgb(hue, 0.55, 0.55)
-    return f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}"
+    return deterministic_color(partner_gene)
 
 
 def _clip(value: float, low: float, high: float) -> float:
@@ -123,6 +129,70 @@ def _exon_ticks(
         if interval_start < start < interval_end:
             ticks.append(start)
     return sorted(set(ticks))
+
+
+def exon_boundary_ticks_svg(
+    exon_boundaries: list[dict],
+    *,
+    axis_left: float,
+    scale: float,
+    y: float,
+    max_position: float | None = None,
+    tick_length: float = 4.0,
+) -> list[str]:
+    """One small tick + rotated ``E<rank>`` label per exon boundary in
+    ``exon_boundaries`` (gene_track's ``exon_boundaries_aa`` field, which
+    carries each exon's own ``exon_rank`` -- the real ordinal exon number
+    from the canonical transcript, not something derived/guessed here),
+    against a position axis already scaled the same way as the rest of a
+    diagram (``x = axis_left + position * scale``).
+
+    Drawn once along a diagram's shared axis rather than once per row:
+    exon boundaries are a property of the target gene's canonical
+    transcript, not of any individual fusion/breakpoint row, so repeating
+    the same label on every row (up to 28 in the fusion schematic) would
+    only add clutter, not information. Exported so
+    :func:`cfh.real_benchmark._domain_track_svg`'s own x-axis draws exon
+    boundaries with this exact convention instead of maintaining a second,
+    potentially-drifting copy of it.
+    """
+    elements: list[str] = []
+    seen_positions: set[float] = set()
+    for boundary in exon_boundaries:
+        start = boundary.get("start_aa")
+        rank = boundary.get("exon_rank")
+        if start is None or rank is None or start in seen_positions:
+            continue
+        if max_position is not None and not (0 <= start <= max_position):
+            continue
+        seen_positions.add(start)
+        x = axis_left + start * scale
+        elements.append(
+            f'<line x1="{x:.1f}" y1="{y:.1f}" x2="{x:.1f}" y2="{y + tick_length:.1f}" '
+            'stroke="#777777" stroke-width="0.7"/>'
+        )
+        label_y = y + tick_length + 1
+        elements.append(
+            f'<text x="{x:.1f}" y="{label_y:.1f}" font-family="sans-serif" font-size="5.5" '
+            f'fill="#666666" transform="rotate(55 {x:.1f} {label_y:.1f})">E{rank}</text>'
+        )
+    return elements
+
+
+def _fit_domain_label(name: str, available_width: float, *, font_size: float = 7.0) -> str | None:
+    """Best-effort short label for a domain-colored segment: the full
+    domain name when it fits the segment's rendered pixel width, a
+    truncated ``…``-suffixed prefix when it doesn't, or ``None`` (skip
+    entirely) when the segment is too narrow for even a short
+    abbreviation -- stacking unreadable overlapping glyphs would be worse
+    than no label at all."""
+    avg_char_width = font_size * 0.58
+    max_chars = int(available_width // avg_char_width)
+    if max_chars < 3:
+        return None
+    if len(name) <= max_chars:
+        return name
+    return name[: max_chars - 1].rstrip() + "…"
 
 
 def _domain_label_for_accession(domains: list[dict], accession: str | None) -> str | None:
@@ -219,9 +289,24 @@ def _svg_open(width: int, height: int) -> str:
     )
 
 
-def _axis_svg(y: float, protein_length: int, scale: float) -> list[str]:
-    x0 = _AXIS_LEFT
-    x1 = _AXIS_LEFT + protein_length * scale
+def render_position_axis_svg(
+    y: float,
+    protein_length: int,
+    scale: float,
+    *,
+    axis_left: float = _AXIS_LEFT,
+    exon_boundaries: list[dict] | None = None,
+) -> list[str]:
+    """The shared amino-acid-position axis drawn once at the bottom of a
+    schematic: the 1/protein-length endpoint labels (existing behavior),
+    plus -- when ``exon_boundaries`` (gene_track's ``exon_boundaries_aa``)
+    is given -- one tick and ``E<rank>`` label per exon boundary, via
+    :func:`exon_boundary_ticks_svg`. Exported so
+    :func:`cfh.real_benchmark._domain_track_svg` can draw its own x-axis
+    with the exact same exon-labeling convention.
+    """
+    x0 = axis_left
+    x1 = axis_left + protein_length * scale
     elements = [
         f'<line x1="{x0:.1f}" y1="{y:.1f}" x2="{x1:.1f}" y2="{y:.1f}" '
         f'stroke="{AXIS_COLOR}" stroke-width="1"/>',
@@ -229,6 +314,15 @@ def _axis_svg(y: float, protein_length: int, scale: float) -> list[str]:
         f'<text x="{x1:.1f}" y="{y + 14:.1f}" font-family="sans-serif" font-size="9" '
         f'text-anchor="end">{protein_length} aa</text>',
     ]
+    elements.extend(
+        exon_boundary_ticks_svg(
+            exon_boundaries or [],
+            axis_left=axis_left,
+            scale=scale,
+            y=y + 18,
+            max_position=protein_length,
+        )
+    )
     return elements
 
 
@@ -282,7 +376,14 @@ def render_fusion_schematic_svg(payload: dict, *, max_rows: int = _MAX_ROWS_DEFA
     n_rows = len(shown)
     plot_height = n_rows * (_ROW_HEIGHT + _ROW_GAP)
     truncation_note_height = 16 if truncated_count else 0
-    height = _TOP_MARGIN + plot_height + _LEGEND_HEIGHT + truncation_note_height + _BOTTOM_MARGIN
+    height = (
+        _TOP_MARGIN
+        + plot_height
+        + _EXON_TICK_LABEL_HEIGHT
+        + _LEGEND_HEIGHT
+        + truncation_note_height
+        + _BOTTOM_MARGIN
+    )
 
     gene_symbol = payload.get("gene_symbol") or "target gene"
     elements = [_svg_open(_SVG_WIDTH, height)]
@@ -322,15 +423,24 @@ def render_fusion_schematic_svg(payload: dict, *, max_rows: int = _MAX_ROWS_DEFA
             f'<rect x="{t_x0:.1f}" y="{row_top:.1f}" width="{max(0.5, t_x1 - t_x0):.1f}" '
             f'height="{_ROW_HEIGHT}" fill="{BACKBONE_COLOR}"/>'
         )
-        for seg_start, seg_end, seg_color, _name in _domain_color_segments(
+        for seg_start, seg_end, seg_color, seg_name in _domain_color_segments(
             domains, target_span[0], target_span[1]
         ):
             sx0 = _AXIS_LEFT + seg_start * scale
             sx1 = _AXIS_LEFT + seg_end * scale
+            seg_width = max(0.5, sx1 - sx0)
             elements.append(
-                f'<rect x="{sx0:.1f}" y="{row_top:.1f}" width="{max(0.5, sx1 - sx0):.1f}" '
+                f'<rect x="{sx0:.1f}" y="{row_top:.1f}" width="{seg_width:.1f}" '
                 f'height="{_ROW_HEIGHT}" fill="{seg_color}"/>'
             )
+            seg_label = _fit_domain_label(seg_name, seg_width)
+            if seg_label:
+                elements.append(
+                    f'<text x="{(sx0 + sx1) / 2:.1f}" y="{row_mid + 3:.1f}" '
+                    'font-family="sans-serif" font-size="7" text-anchor="middle" '
+                    'fill="#111111" stroke="white" stroke-width="2" paint-order="stroke">'
+                    f"{seg_label}</text>"
+                )
         for tick_aa in _exon_ticks(exon_boundaries, target_span[0], target_span[1]):
             tx = _AXIS_LEFT + tick_aa * scale
             tick_bottom = row_top + _ROW_HEIGHT
@@ -353,8 +463,10 @@ def render_fusion_schematic_svg(payload: dict, *, max_rows: int = _MAX_ROWS_DEFA
         )
         y += _ROW_HEIGHT + _ROW_GAP
 
-    elements.extend(_axis_svg(y + 4, protein_length, scale))
-    y += 24
+    elements.extend(
+        render_position_axis_svg(y + 4, protein_length, scale, exon_boundaries=exon_boundaries)
+    )
+    y += 24 + _EXON_TICK_LABEL_HEIGHT
     elements.extend(_legend_svg(y))
     y += _LEGEND_HEIGHT - 6
     if truncated_count:
@@ -421,7 +533,14 @@ def render_intragenic_deletion_schematic_svg(
     n_rows = len(shown)
     plot_height = n_rows * (_ROW_HEIGHT + _ROW_GAP)
     truncation_note_height = 16 if truncated_count else 0
-    height = _TOP_MARGIN + plot_height + _LEGEND_HEIGHT + truncation_note_height + _BOTTOM_MARGIN
+    height = (
+        _TOP_MARGIN
+        + plot_height
+        + _EXON_TICK_LABEL_HEIGHT
+        + _LEGEND_HEIGHT
+        + truncation_note_height
+        + _BOTTOM_MARGIN
+    )
 
     gene_symbol = payload.get("gene_symbol") or "target gene"
     elements = [_svg_open(_SVG_WIDTH, height)]
@@ -449,15 +568,24 @@ def render_intragenic_deletion_schematic_svg(
                 f'<rect x="{ix0:.1f}" y="{row_top:.1f}" width="{max(0.5, ix1 - ix0):.1f}" '
                 f'height="{_ROW_HEIGHT}" fill="{BACKBONE_COLOR}"/>'
             )
-            for seg_start, seg_end, seg_color, _name in _domain_color_segments(
+            for seg_start, seg_end, seg_color, seg_name in _domain_color_segments(
                 domains, interval_start, interval_end
             ):
                 sx0 = _AXIS_LEFT + seg_start * scale
                 sx1 = _AXIS_LEFT + seg_end * scale
+                seg_width = max(0.5, sx1 - sx0)
                 elements.append(
-                    f'<rect x="{sx0:.1f}" y="{row_top:.1f}" width="{max(0.5, sx1 - sx0):.1f}" '
+                    f'<rect x="{sx0:.1f}" y="{row_top:.1f}" width="{seg_width:.1f}" '
                     f'height="{_ROW_HEIGHT}" fill="{seg_color}"/>'
                 )
+                seg_label = _fit_domain_label(seg_name, seg_width)
+                if seg_label:
+                    elements.append(
+                        f'<text x="{(sx0 + sx1) / 2:.1f}" y="{row_mid + 3:.1f}" '
+                        'font-family="sans-serif" font-size="7" text-anchor="middle" '
+                        'fill="#111111" stroke="white" stroke-width="2" paint-order="stroke">'
+                        f"{seg_label}</text>"
+                    )
             for tick_aa in _exon_ticks(exon_boundaries, interval_start, interval_end):
                 tx = _AXIS_LEFT + tick_aa * scale
                 elements.append(
@@ -485,8 +613,10 @@ def render_intragenic_deletion_schematic_svg(
         )
         y += _ROW_HEIGHT + _ROW_GAP
 
-    elements.extend(_axis_svg(y + 4, protein_length, scale))
-    y += 24
+    elements.extend(
+        render_position_axis_svg(y + 4, protein_length, scale, exon_boundaries=exon_boundaries)
+    )
+    y += 24 + _EXON_TICK_LABEL_HEIGHT
     elements.extend(_legend_svg(y))
     y += _LEGEND_HEIGHT - 6
     if truncated_count:
