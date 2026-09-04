@@ -4,10 +4,12 @@ already-committed ``msk_impact_50k_2026`` cohort-scan run.
 
 The real-data test is the one that matters most: it checks the SVG's own
 generated coordinates (not just an eyeballed picture) to confirm the
-already-verified finding from that run -- ETV6 (q~0.0044) and RET
-(q~0.0426) are FDR-significant and plotted above the dashed q=0.05
-threshold line, while BRAF (q~0.145) is not significant and plotted below
-it.
+already-verified finding from the locus-validated rerun of that cohort scan
+-- ETV6 (q~0.0043) is FDR-significant and plotted above the dashed q=0.05
+threshold line, while RET (q~0.1198) and BRAF (q~0.2356) are not significant
+and plotted below it. (RET's significance call flipped after the locus
+validation fix corrected its breakpoint mapping -- see the ``real_benchmark``
+rerun that produced this run.)
 """
 
 from __future__ import annotations
@@ -25,7 +27,7 @@ REPO_ROOT = Path(__file__).parent.parent
 REAL_COHORT_SCAN_SUMMARY_JSON = (
     REPO_ROOT
     / "runs"
-    / "cohort-scan_msk_impact_50k_2026_20260903T223024Z"
+    / "cohort-scan_msk_impact_50k_2026_20260904T005352Z"
     / "cohort_scan"
     / "summary.json"
 )
@@ -160,7 +162,12 @@ def test_rejects_invalid_significance_level(bad_level):
         render_manhattan_svg([], significance_level=bad_level)
 
 
-def test_real_committed_cohort_scan_run_places_etv6_ret_above_and_braf_below_threshold():
+def test_real_committed_cohort_scan_run_places_etv6_above_and_ret_braf_below_threshold():
+    """Locked to the locus-validated rerun's real numbers. RET's q-value moved
+    from ~0.0426 (significant) pre-fix to ~0.1198 (not significant) post-fix
+    because the locus validation corrected RET's breakpoint mapping; ETV6 and
+    BRAF's significance calls were unaffected by that fix.
+    """
     payload = json.loads(REAL_COHORT_SCAN_SUMMARY_JSON.read_text())
     rows = payload["genes"]
     assert len(rows) == 544
@@ -168,11 +175,11 @@ def test_real_committed_cohort_scan_run_places_etv6_ret_above_and_braf_below_thr
     genes_by_symbol = {row["gene_symbol"]: row for row in rows}
     etv6, ret, braf = genes_by_symbol["ETV6"], genes_by_symbol["RET"], genes_by_symbol["BRAF"]
     assert etv6["fdr_significant"] is True
-    assert ret["fdr_significant"] is True
+    assert ret["fdr_significant"] is False
     assert braf["fdr_significant"] is False
-    assert math.isclose(etv6["min_fdr_adjusted_q_value"], 0.004437, rel_tol=1e-3)
-    assert math.isclose(ret["min_fdr_adjusted_q_value"], 0.04261, rel_tol=1e-3)
-    assert math.isclose(braf["min_fdr_adjusted_q_value"], 0.1453, rel_tol=1e-3)
+    assert math.isclose(etv6["min_fdr_adjusted_q_value"], 0.004334, rel_tol=1e-3)
+    assert math.isclose(ret["min_fdr_adjusted_q_value"], 0.11976, rel_tol=1e-3)
+    assert math.isclose(braf["min_fdr_adjusted_q_value"], 0.23560, rel_tol=1e-3)
 
     svg = render_manhattan_svg(rows, significance_level=0.05)
     threshold_y = _threshold_line_y(svg)
@@ -184,9 +191,8 @@ def test_real_committed_cohort_scan_run_places_etv6_ret_above_and_braf_below_thr
     # SVG y grows downward, so "visually above the dashed line" means a
     # smaller cy than the threshold line's y1/y2.
     assert etv6_y < threshold_y, "ETV6 must plot above the FDR threshold line"
-    assert ret_y < threshold_y, "RET must plot above the FDR threshold line"
+    assert ret_y > threshold_y, "RET must plot below the FDR threshold line"
     assert braf_y > threshold_y, "BRAF must plot below the FDR threshold line"
 
-    # Both significant genes are labeled by symbol.
+    # The one significant gene is labeled by symbol.
     assert ">ETV6<" in svg
-    assert ">RET<" in svg

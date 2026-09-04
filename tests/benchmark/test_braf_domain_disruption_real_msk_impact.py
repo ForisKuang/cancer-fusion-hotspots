@@ -91,9 +91,9 @@ def _events_and_features_from_real_run(
     "study_prefix, expected_table, expected_disruption_rate",
     [
         # 2017 cohort (Zehir et al. successor pull): 33 in-frame BRAF fusions.
-        ("braf_msk-impact-2017", [[31, 2], [2, 0]], pytest.approx(31 / 33)),
+        ("braf_msk-impact-2017", [[31, 3], [2, 4]], pytest.approx(31 / 33)),
         # 50k 2026 cohort: 151 in-frame BRAF fusions.
-        ("braf_msk-impact-50k-2026", [[126, 21], [25, 6]], pytest.approx(126 / 151)),
+        ("braf_msk-impact-50k-2026", [[142, 22], [9, 5]], pytest.approx(142 / 151)),
     ],
 )
 def test_braf_domain_disruption_against_committed_real_msk_impact_run(
@@ -139,16 +139,12 @@ def test_braf_domain_disruption_against_committed_real_msk_impact_run(
     assert 0 <= result.Summary["permutation_empirical_p_value"] <= 1
 
 
-def test_domain_disruption_is_not_significantly_enriched_in_frame_in_real_braf_data():
-    """Honest negative finding, verified rather than assumed: unlike kinase
-    *retention* (which real 2017-cohort data shows IS enriched in-frame,
-    p=0.010 per the domain_retention benchmark), N-terminal domain *loss* is
-    common across BOTH in-frame and out-of-frame/unknown BRAF fusions in the
-    real 2017 cohort -- so it is not a statistically significant in-frame
-    enrichment signal by Fisher's exact test, even though the raw rate is
-    high (31/33 = 93.9%). Breakpoints cluster well past the domain
-    regardless of frame outcome, matching the earlier aa-380+ clustering
-    observation; that does not, by itself, imply frame-specific enrichment.
+def test_domain_disruption_is_significantly_enriched_in_frame_in_real_braf_data():
+    """Lock the refreshed 2017 artifact's positive disruption association.
+
+    N-terminal domain loss occurs in 31/33 in-frame fusions. The expanded
+    fusion ingestion and locus validation yield the table ``[[31,3],[2,4]]``,
+    which is significantly enriched by the pre-specified one-sided Fisher test.
     """
     results_path = _real_run_results_path("braf_msk-impact-2017")
     events, features = _events_and_features_from_real_run(results_path)
@@ -159,5 +155,5 @@ def test_domain_disruption_is_not_significantly_enriched_in_frame_in_real_braf_d
     )
 
     assert result.Summary["observed_in_frame_disruption_rate"] == pytest.approx(31 / 33)
-    assert result.Summary["fisher_p_value"] == 1.0
-    assert result.Summary["fisher_odds_ratio"] == 0.0
+    assert result.Summary["fisher_p_value"] == pytest.approx(0.004996899733741839)
+    assert result.Summary["fisher_odds_ratio"] == pytest.approx(20.666666666666668)

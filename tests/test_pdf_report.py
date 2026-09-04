@@ -2,7 +2,7 @@
 
 This exercises the full PDF-rendering path (``cfh.reporting.pdf``) against
 the already-committed real BRAF benchmark artifact under
-``runs/braf_msk-impact-2017_20260903T151142Z/`` -- no network access, no
+``runs/braf_msk-impact-2017_20260904T005539Z/`` -- no network access, no
 new fixtures -- and asserts the extracted text contains the actual numbers
 from that run's results.json, not just that "a PDF was produced".
 """
@@ -18,7 +18,7 @@ from cfh.reporting.pdf import render_pdf_report
 from cfh.reporting.text import format_stat
 
 REPO_ROOT = Path(__file__).parent.parent
-BRAF_RUN_DIR = REPO_ROOT / "runs" / "braf_msk-impact-2017_20260903T151142Z"
+BRAF_RUN_DIR = REPO_ROOT / "runs" / "braf_msk-impact-2017_20260904T005539Z"
 
 
 def test_pdf_report_generated_from_real_braf_run_contains_actual_numbers(tmp_path):
@@ -45,8 +45,8 @@ def test_pdf_report_generated_from_real_braf_run_contains_actual_numbers(tmp_pat
     assert payload["gene_symbol"] in text
     assert payload["study_id"] in text
     assert str(summary["total_fusions"]) in text
-    assert "94.3%" in text  # in_frame_percent formatted to 1 decimal
-    assert "88.6%" in text  # kinase_retained_percent formatted to 1 decimal
+    assert f"{summary['in_frame_percent']:.1f}%" in text
+    assert f"{summary['kinase_retained_percent']:.1f}%" in text
     assert summary["domain_accession"] in text
     assert format_stat(summary["fisher_p_value"]) in text
 

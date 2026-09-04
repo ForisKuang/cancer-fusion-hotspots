@@ -245,15 +245,12 @@ def test_composite_score_real_braf_msk_impact_all_five_subscores_applicable():
             "confidence_certainty",
         }
 
-    # KIAA1549 is by far BRAF's most recurrent real partner in this cohort
-    # (43/178 mapped events, ~3x the next most frequent) -- with recurrence at 30%
-    # weight it should come out on top. Pinned to the exact real value (not
-    # just the ranking) with seed=42/n_permutations=2_000 fixed above, so a
-    # future regression in the aggregation math is actually caught rather
-    # than only a change in which partner sorts first.
-    assert ranking[0]["Partner_gene"] == "KIAA1549"
-    assert ranking[0]["Event_count"] == 43
-    assert ranking[0]["Composite_score"] == pytest.approx(0.29574, abs=5e-5)
+    # With corrected locus mapping, AGK leads the five-component composite
+    # despite KIAA1549 remaining the most recurrent partner. Pin the exact
+    # corrected real-data result so changes in aggregation are caught.
+    assert ranking[0]["Partner_gene"] == "AGK"
+    assert ranking[0]["Event_count"] == 14
+    assert ranking[0]["Composite_score"] == pytest.approx(0.2579, abs=5e-5)
 
 
 def _ret_events_and_features(results_path: Path) -> tuple[list[FusionEvent], list[FusionFeature]]:
@@ -341,7 +338,7 @@ def test_composite_score_real_ret_msk_impact_gracefully_degrades():
     # objects verbatim (no seed/n_permutations choice made here at all).
     assert ranking[0]["Partner_gene"] == "KIF5B"
     assert ranking[0]["Event_count"] == 87
-    assert ranking[0]["Composite_score"] == pytest.approx(0.4099, abs=5e-5)
+    assert ranking[0]["Composite_score"] == pytest.approx(0.47278906298812945)
 
     for row in ranking:
         assert row["Domain_disruption_score"] is None
@@ -420,8 +417,8 @@ def test_composite_score_via_real_orchestrator_dispatch_braf():
     }
     ranking = composite_result.Tables["composite_evidence_ranking"]
     assert ranking, "expected a populated composite_score ranking table"
-    assert ranking[0]["Partner_gene"] == "KIAA1549"
-    assert ranking[0]["Event_count"] == 43
+    assert ranking[0]["Partner_gene"] == "AGK"
+    assert ranking[0]["Event_count"] == 14
     assert all(0.0 <= row["Composite_score"] <= 1.0 for row in ranking)
 
 
