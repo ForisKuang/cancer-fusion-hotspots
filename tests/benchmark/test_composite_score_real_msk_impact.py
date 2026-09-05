@@ -12,13 +12,12 @@ each run's ``results.json`` and runs the real algorithm plugins end to end:
   ``disruption_required_domains``, and ``breakpoint_hotspot``/
   ``domain_disruption`` analysis modes) proves composite_score with all five
   sub-scores applicable at once.
-* RET (only ``domain_retention`` configured -- no
-  ``disruption_required_domains``) proves composite_score degrades
-  gracefully on real data with fewer applicable algorithms, reusing the
-  ``frequency``/``domain_retention``/``cutpoint_detection``/
-  ``confidence_stats`` results already present in that committed run's own
-  ``results.json`` and excluding the explicitly-skipped ``domain_disruption``
-  result rather than zero-filling it.
+* RET (no explicit ``disruption_required_domains`` in its curated YAML, but
+  one is auto-derived from its own kinase Pfam domain match) also proves
+  composite_score with all five sub-scores applicable at once, reusing the
+  ``frequency``/``domain_retention``/``domain_disruption``/
+  ``cutpoint_detection``/``confidence_stats`` results already present in
+  that committed run's own ``results.json``.
 
 Both tests print the actual ranked output so it is reported honestly,
 whatever it turns out to be, rather than asserted into a predetermined
@@ -243,12 +242,13 @@ def test_composite_score_real_braf_msk_impact_all_five_subscores_applicable():
             "confidence_certainty",
         }
 
-    # With corrected locus mapping, AGK leads the five-component composite
-    # despite KIAA1549 remaining the most recurrent partner. Pin the exact
-    # corrected real-data result so changes in aggregation are caught.
-    assert ranking[0]["Partner_gene"] == "AGK"
-    assert ranking[0]["Event_count"] == 14
-    assert ranking[0]["Composite_score"] == pytest.approx(0.2579, abs=5e-5)
+    # With corrected locus mapping and directional intronic-breakpoint
+    # snapping, KIAA1549 -- BRAF's most recurrent real partner -- also leads
+    # the five-component composite. Pin the exact corrected real-data
+    # result so changes in aggregation are caught.
+    assert ranking[0]["Partner_gene"] == "KIAA1549"
+    assert ranking[0]["Event_count"] == 43
+    assert ranking[0]["Composite_score"] == pytest.approx(0.29300550202103604)
 
 
 def _ret_events_and_features(results_path: Path) -> tuple[list[FusionEvent], list[FusionFeature]]:
@@ -280,23 +280,26 @@ def _ret_events_and_features(results_path: Path) -> tuple[list[FusionEvent], lis
     return events, features
 
 
-def test_composite_score_real_ret_msk_impact_gracefully_degrades():
-    """RET only configures ``domain_retention`` (genes/configs/ret.yaml has
-    no ``disruption_required_domains``), a config-level fact independent of
-    any particular run. This reuses the ``frequency``, ``domain_retention``,
+def test_composite_score_real_ret_msk_impact_all_five_subscores_applicable():
+    """``genes/configs/ret.yaml`` has no explicit ``disruption_required_domains``,
+    but :func:`~cfh.genes.registry.derive_gene_config_defaults` auto-derives
+    one from RET's own kinase Pfam domain match (the same coordinate-derived
+    default BRAF's curated config sets explicitly), so a real ``cfh
+    analyze``/``cfh cohort-scan`` run's committed ``domain_disruption``
+    result for RET is a genuinely computed statistic, not a skip. This
+    reuses the ``frequency``, ``domain_retention``, ``domain_disruption``,
     ``cutpoint_detection``, and ``confidence_stats`` AlgorithmResult objects
     already present in the latest committed RET run's results.json verbatim
-    -- the most literal form of "consume already-computed outputs as inputs"
-    -- and proves composite_score ranks real RET fusion partners while
-    excluding domain_disruption (recorded as an explicit skipped result)
-    rather than zero-filling it.
+    -- the most literal form of "consume already-computed outputs as
+    inputs" -- and proves composite_score ranks real RET fusion partners
+    with all five sub-scores applicable at once.
     """
     results_path = _real_run_results_path("ret_msk-impact-50k-2026")
     payload = json.loads(results_path.read_text())
     committed_results = {item["Algorithm"]: item for item in payload["algorithm_results"]}
     domain_disruption_result = committed_results["domain_disruption"]
-    assert domain_disruption_result["Summary"]["fisher_p_value"] is None
-    assert "was skipped" in domain_disruption_result["Warnings"][0]
+    assert domain_disruption_result["Summary"]["fisher_p_value"] is not None
+    assert domain_disruption_result["Warnings"] == []
     assert committed_results["confidence_stats"]["Warnings"] == []
     assert committed_results["cutpoint_detection"]["Summary"]["determinable"] is True
 
@@ -311,6 +314,7 @@ def test_composite_score_real_ret_msk_impact_gracefully_degrades():
             "algorithm_results": [
                 committed_results["frequency"],
                 committed_results["domain_retention"],
+                committed_results["domain_disruption"],
                 committed_results["cutpoint_detection"],
                 committed_results["confidence_stats"],
             ]
@@ -321,7 +325,7 @@ def test_composite_score_real_ret_msk_impact_gracefully_degrades():
     assert result.Summary["components_applicable"] == {
         "recurrence": True,
         "domain_retention": True,
-        "domain_disruption": False,
+        "domain_disruption": True,
         "cutpoint_proximity": True,
         "confidence_certainty": True,
     }
@@ -334,19 +338,17 @@ def test_composite_score_real_ret_msk_impact_gracefully_degrades():
     # objects verbatim (no seed/n_permutations choice made here at all).
     assert ranking[0]["Partner_gene"] == "KIF5B"
     assert ranking[0]["Event_count"] == 87
-    assert ranking[0]["Composite_score"] == pytest.approx(0.5046697811340378)
+    assert ranking[0]["Composite_score"] == pytest.approx(0.4593659412119797)
 
     for row in ranking:
-        assert row["Domain_disruption_score"] is None
+        assert row["Domain_disruption_score"] is not None
         assert row["Confidence_certainty_score"] is not None
-        assert "domain_disruption" not in row["Components_applicable"]
+        assert "domain_disruption" in row["Components_applicable"]
         assert "confidence_certainty" in row["Components_applicable"]
     composite_scores = [row["Composite_score"] for row in ranking]
     assert composite_scores == sorted(composite_scores, reverse=True)
     assert all(0.0 <= score <= 1.0 for score in composite_scores)
-
-    warning_text = " ".join(result.Warnings)
-    assert "domain_disruption" in warning_text
+    assert result.Warnings == []
 
 
 # --- Real orchestrator-dispatch integration tests -------------------------
@@ -412,8 +414,8 @@ def test_composite_score_via_real_orchestrator_dispatch_braf():
     }
     ranking = composite_result.Tables["composite_evidence_ranking"]
     assert ranking, "expected a populated composite_score ranking table"
-    assert ranking[0]["Partner_gene"] == "AGK"
-    assert ranking[0]["Event_count"] == 14
+    assert ranking[0]["Partner_gene"] == "KIAA1549"
+    assert ranking[0]["Event_count"] == 43
     assert all(0.0 <= row["Composite_score"] <= 1.0 for row in ranking)
 
 
