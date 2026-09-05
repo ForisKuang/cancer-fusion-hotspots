@@ -1,6 +1,6 @@
 # BRAF real-data fusion benchmark: msk_impact_50k_2026
 
-Retrieved from public cBioPortal and Genome Nexus on 2026-09-04.
+Retrieved from public cBioPortal and Genome Nexus on 2026-09-05.
 
 ## Results
 
@@ -43,7 +43,7 @@ For each fusion, breakpoint selection preferred the Genome Nexus canonical trans
 
 ## Full-suite highlights
 
-- Registered algorithms executed: composite_score, confidence_stats, cutpoint_detection, domain_disruption, domain_retention, exon_retention, frequency, joint_partner
+- Registered algorithms executed: composite_score, confidence_stats, cutpoint_detection, domain_disruption, domain_retention, exon_retention, frequency, joint_partner, window_detection
 - Cutpoint detection: inferred breakpoint 380 aa; corrected permutation p=0.001998.
 - Top composite score: KIAA1549 (43 events), 0.333664.
 
