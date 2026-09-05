@@ -1,5 +1,5 @@
-"""Validate the fusion-transcript schematic against the real, committed BRAF
-benchmark artifact under ``runs/braf_msk-impact-50k-2026_20260904T172738Z/``.
+"""Validate the fusion-transcript schematic against the real, committed
+latest BRAF ``braf_msk-impact-50k-2026_*`` benchmark artifact under ``runs/``.
 
 No network access, no synthetic fixtures: this reads the exact
 ``results.json`` already committed to the repo (regenerated live from
@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import json
 import re
-from pathlib import Path
 
 from cfh.reporting.fusion_schematic import (
     render_fusion_schematic_svg,
@@ -24,9 +23,9 @@ from cfh.reporting.fusion_schematic import (
 # fusion_schematic) so these assertions catch the two renderers actually
 # drifting apart, not just a coincidental match today.
 from cfh.reporting.palette import RETAINED_COLOR, TRUNCATED_COLOR
+from conftest import latest_run_dir
 
-REPO_ROOT = Path(__file__).parent.parent
-BRAF_RUN_DIR = REPO_ROOT / "runs" / "braf_msk-impact-50k-2026_20260904T172738Z"
+BRAF_RUN_DIR = latest_run_dir("braf_msk-impact-50k-2026")
 
 _AXIS_LEFT = 60.0
 _AXIS_WIDTH = 560.0

@@ -46,9 +46,8 @@ from cfh.model.fusion_event import FusionEvent
 from cfh.model.fusion_feature import FusionFeature
 from cfh.orchestrator.run import run_algorithms
 from cfh.real_benchmark import analyze_structural_variant_calls
+from conftest import latest_run_dir
 
-_REPO_ROOT = Path(__file__).resolve().parents[2]
-_RUNS_DIR = _REPO_ROOT / "runs"
 _GENOME_NEXUS_BRAF_FIXTURE = (
     Path(__file__).resolve().parents[1]
     / "fixtures"
@@ -58,10 +57,7 @@ _GENOME_NEXUS_BRAF_FIXTURE = (
 
 
 def _real_run_results_path(prefix: str) -> Path:
-    candidates = sorted(_RUNS_DIR.glob(f"{prefix}_*"))
-    if not candidates:
-        pytest.skip(f"no committed real run directory found for {prefix!r} under {_RUNS_DIR}")
-    return candidates[-1] / "results.json"
+    return latest_run_dir(prefix) / "results.json"
 
 
 def _domain_bounds(pfam_id: str) -> tuple[int, int]:
